@@ -1,0 +1,130 @@
+{
+  "version": "1.0.0",
+  "repoRoot": ".",
+  "detection": {
+    "primaryLanguage": null,
+    "framework": null,
+    "packageManager": null,
+    "ciProvider": "GitHub Actions",
+    "monorepo": false,
+    "note": "Stack not yet chosen. See docs/specs/01-tech-stack.md. Re-run `harnext setup` once application code lands."
+  },
+  "riskTiers": {
+    "tier1": {
+      "name": "low",
+      "description": "Documentation, markdown, changelogs, and non-code config changes",
+      "patterns": [
+        "docs/**",
+        "*.md",
+        "**/*.md",
+        "**/*.txt",
+        "CHANGELOG*",
+        "LICENSE*",
+        "NOTICE",
+        ".editorconfig",
+        ".gitignore"
+      ],
+      "requiredChecks": ["lint"],
+      "mergePolicy": {
+        "minApprovals": 0,
+        "requireReviewAgent": false,
+        "allowSelfMerge": true
+      },
+      "evidenceRequirements": ["lint-clean"]
+    },
+    "tier2": {
+      "name": "medium",
+      "description": "Application source, tests, and build configuration",
+      "patterns": [
+        "app/**",
+        "src/**",
+        "tests/**",
+        "database/**",
+        "routes/**",
+        "resources/**",
+        "config/**",
+        "composer.json",
+        "package.json"
+      ],
+      "requiredChecks": ["lint", "type-check", "test", "build"],
+      "mergePolicy": {
+        "minApprovals": 1,
+        "requireReviewAgent": true,
+        "allowSelfMerge": false
+      },
+      "evidenceRequirements": ["tests-pass", "lint-clean", "type-check-clean"]
+    },
+    "tier3": {
+      "name": "high",
+      "description": "Tenant isolation, authorisation, flight-log parsing, and schema migrations. Getting these wrong is either a cross-tenant data breach or a corruption of the airworthiness record.",
+      "patterns": [
+        "**/*polic*",
+        "**/*permission*",
+        "**/*authoriz*",
+        "**/*authoris*",
+        "**/*tenant*",
+        "**/*scope*",
+        "**/*parser*",
+        "**/*import*",
+        "**/migrations/**",
+        "database/migrations/**"
+      ],
+      "requiredChecks": [
+        "lint",
+        "type-check",
+        "test",
+        "build",
+        "manual-approval"
+      ],
+      "mergePolicy": {
+        "minApprovals": 2,
+        "requireReviewAgent": true,
+        "allowSelfMerge": false
+      },
+      "evidenceRequirements": [
+        "tests-pass",
+        "lint-clean",
+        "type-check-clean",
+        "manual-review"
+      ]
+    }
+  },
+  "commands": {
+    "lint": "bash scripts/check-conventions.sh",
+    "test": null,
+    "build": null,
+    "typeCheck": null
+  },
+  "shaDiscipline": {
+    "enabled": true,
+    "enforceExactSha": true,
+    "rejectStaleReviews": true,
+    "description": "All CI gates pin to exact commit SHA from the risk policy gate"
+  },
+  "architecturalBoundaries": {},
+  "docsDrift": {
+    "trackedDocs": ["README.md", "CONTEXT.md", "docs/**"],
+    "maxStaleDays": 14,
+    "requireUpdateWithCodeChange": false,
+    "exemptPatterns": ["**/*.test.*", "tests/**"]
+  },
+  "evidenceConfig": {
+    "screenshotDir": ".harness/evidence",
+    "retentionDays": 30,
+    "requiredForUI": false,
+    "browserTool": "puppeteer"
+  },
+  "monorepo": {
+    "enabled": false,
+    "packages": [],
+    "sharedChecks": []
+  },
+  "protected_files": [
+    ".github/workflows/**",
+    "harness.config.json",
+    "CLAUDE.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "aiPlatform": "claude"
+}

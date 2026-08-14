@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # Conventions — the mechanically-decidable half of review.
+  #
+  # While this repo is documentation-only every change is Tier 1 and `lint` is the
+  # single required check. Stack-specific jobs (type-check, test, build) land here
+  # alongside the application code, per harness.config.json.
+  # ============================================================================
+  lint:
+    name: Conventions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # check-conventions.sh diff-scopes against the merge-base with main
+          fetch-depth: 0
+
+      - name: Check conventions
+        run: bash scripts/check-conventions.sh
+
+  # ============================================================================
+  # Full-tree sweep. The conventions check is diff-scoped on PRs so that
+  # pre-existing violations never block unrelated work; this catches anything
+  # that slipped in before the guard existed.
+  # ============================================================================
+  sweep:
+    name: Full-tree sweep
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Check conventions (all files)
+        run: bash scripts/check-conventions.sh --all

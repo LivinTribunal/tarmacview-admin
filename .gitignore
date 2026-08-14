@@ -1,0 +1,69 @@
+# Reverse-engineering scratch — raw captures from the predecessor system contain
+# personal data of real pilots across several operator organisations. Never commit.
+.raw/
+captures/
+*.har
+
+# PHP / Composer
+/vendor/
+composer.phar
+
+# Node
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.phpunit.result.cache
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+*.env
+!.env.example
+
+# Logs
+*.log
+
+# Build artifacts
+.harness/
+.harnext/
+out/
+public/build/
+public/hot
+
+# Storage / uploads
+storage/*.key
+storage/app/public/
+storage/framework/
+storage/logs/
+
+# Backups & dumps
+backups/
+*.dump
+*.sql.gz
+
+# Flight-log fixtures — scrub before committing any sample, then whitelist it
+fixtures/raw/
