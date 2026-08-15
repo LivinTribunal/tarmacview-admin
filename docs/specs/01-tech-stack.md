@@ -45,6 +45,7 @@ deliberately against the recommendation this document used to carry.
 | Tenant isolation | **Postgres row-level security** |
 | Auth | **Better Auth** — admin-provisioned accounts, admin-initiated reset, no public signup |
 | Hosting | **AWS**, app and database on one small instance, direct connections |
+| Test runner | **Vitest** |
 
 Row-level security was chosen because `CLAUDE.md` calls tenant scoping a security property
 enforced globally rather than per-controller. RLS is the only option on the table where
@@ -58,6 +59,13 @@ isolation would fall back to application code — the option explicitly rejected
 the workload is the wrong shape for it: the operator report filters on any combination of
 period, pilot and device, and unassigned flights carry no value for the very attributes a
 key-value store would index on.
+
+Vitest carries the test layers because all five of them in `docs/rebuild/00-operating-model.md`
+§5 are contract- and unit-shaped: they read `contracts/`, walk the route tree and exercise
+domain rules, and none of them needs a browser. **Playwright is deliberately not chosen.**
+`harness.config.json` tier 2 lists `playwright.config.*`, which anticipates a browser runner
+without committing to one, and a pattern list is not a decision — if end-to-end coverage is
+ever wanted, choosing the runner is a separate decision made here.
 
 ### What this costs, honestly
 

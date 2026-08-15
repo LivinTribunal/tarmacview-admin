@@ -15,7 +15,10 @@ record around them.
 
 ## Status
 
-**This repository currently contains the rebuild specification, not the application.**
+**The rebuild specification, and the first slice of the application on top of it.** That
+slice is the walking skeleton's shell — the device-type register's routes and form, and the
+route and form contract suites that test them against `contracts/`. Schema, tenancy and auth
+are the slice after it.
 
 The predecessor system exists and runs in production, but its source repository was lost.
 This repo starts from a clean-room behavioural specification reconstructed by black-box
@@ -80,12 +83,19 @@ docs/
   specs/          the rebuild specification — read 00-index.md first
   rebuild/        how the rebuild is driven: operating model, risk tiers
 contracts/        machine-readable route, form and report contracts — the test oracle
+src/              application source: app/ routes, components/, lib/
+tests/            the contract suites, asserted against contracts/
 CONTEXT.md        domain glossary — the canonical vocabulary
 CLAUDE.md         conventions for agents and contributors
 harness.config.json  risk-tier configuration
 ```
 
-Application code lands alongside these, starting with the walking skeleton.
+```bash
+npm install
+npm run test        # the contract suites
+npm run typecheck
+npm run build
+```
 
 ## Documentation
 

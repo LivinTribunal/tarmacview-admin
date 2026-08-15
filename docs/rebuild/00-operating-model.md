@@ -186,11 +186,22 @@ nothing before it. So:
    without a test to write against. **Done** — `contracts/` is committed and protected.
 2. **Walking skeleton.** One vertical slice end to end — auth, tenancy, one resource,
    one test of each of the five layers. This is where the TypeScript stack proves itself.
-   **In progress, docs half only.** Three things have landed ahead of the code: the
-   `01-tech-stack.md` rewrite from a fingerprint of the predecessor into a decision about
-   the rebuild, the reconciliation of the documents that decision and the two closed gaps
-   made stale, and the oracle ceilings recorded in §5 above. No application code exists yet
-   — no `package.json`, no schema, no tenancy, and none of the five suites.
+   Three things landed ahead of the code: the `01-tech-stack.md` rewrite from a fingerprint
+   of the predecessor into a decision about the rebuild, the reconciliation of the documents
+   that decision and the two closed gaps made stale, and the oracle ceilings in §5 above.
+   The slice itself is split in two, because the second half is tier 3 and the first is not:
+
+   - **2a — the shell.** `package.json`, `tsconfig.json`, the Vitest config, the
+     device-type routes and form, and the *Route contract* and *Form contract* layers. It
+     must not merge until the `harness.config.json` `commands` flip lands with it: while
+     `build` and `typeCheck` are `null` and `test` runs the spec gate, the slice's own
+     suites never execute in CI and a green check set proves nothing.
+   - **2b — the tier-3 slice.** Schema, tenancy, auth, and the three remaining layers.
+     *Domain invariants* — an airframe with no device type reports "no limit configured",
+     never a pass, and a service interval fires on cycles or calendar months, whichever
+     comes first. *Tenant isolation* — a property over the **airframe**, not the device
+     type: the catalogue is deployment-wide and carries no organisation binding, so it has
+     no subject to scope. *Report schema parity* — over the `data.devices[]` block.
 3. **The register resources.** Thirteen admin surfaces, contract-tested, parallelisable
    across runner slots because each is independent once the skeleton exists.
 4. **Ingestion.** Blocked on real sample files. Three import paths and the sync pipeline.
@@ -213,6 +224,10 @@ Carried from `CLAUDE.md` because these are the ones an autonomous loop erodes fi
   protected-file edit a hard failure when `HARNEXT_AGENT=1`, and all seven agent stages set
   it. The oracle lock is a gate that stops the loop, not a convention it is asked to honour.
 - Root-cause over workaround. `--no-verify` is never the answer.
+- **A stale document found during a pass on a build issue is filed as its own issue, never
+  folded into it.** The bias list here is `land > unblock > verify > build > plan > file`,
+  and *build* loses every time, because documentation is what this repo currently is and a
+  planning pass over any issue will always find more of it to fix.
 - **Never put a closing keyword next to an issue number in a PR body, not even to negate
   one.** GitHub's linked-issue parser does not read negation: it matches the keyword and
   the number and ignores the sentence around them. A PR body written specifically to
