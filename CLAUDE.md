@@ -88,6 +88,51 @@ Each of these is in the spec and each is a defect waiting to happen:
 - **Tenant scoping is a security property, not a feature.** Every organisation-owned
   entity must be scoped by default, enforced globally rather than per-controller.
 
+## Quality Gates
+
+Two mechanical gates, both runnable locally and both run by CI:
+
+```bash
+bash scripts/check-conventions.sh    # diff-scoped: is this change well-formed
+bash scripts/structural-tests.sh     # whole-tree: is the repo still consistent
+```
+
+`check-conventions.sh` is the mechanically-decidable half of review — personal
+data, AI attribution, dead relative links, protected files, and confidence
+marking on spec claims. It is diff-scoped against the merge-base with `main`, so
+pre-existing violations never block a PR that merely sits next to them.
+`HARNEXT_AGENT=1` makes protected-file edits a hard failure (agents) rather than a
+warning (humans).
+
+`structural-tests.sh` is whole-tree: every numbered spec doc reachable from both
+the index and the README, contiguous numbering, load-bearing files present and
+parseable, check scripts executable. Architectural boundary enforcement joins it
+when application code lands.
+
+**Never silence a gate.** Suppression comments, lowered thresholds, and edits to
+CI config to make something pass are forbidden, and the conventions check fails on
+newly added ones. Fix the underlying content.
+
+## Review lenses
+
+Three skills in `.claude/skills/`, used by the review stage and available directly:
+
+- **`ponytail-review`** — excess only. What to delete: duplicated facts,
+  speculative structure, single-member abstractions. One line per finding, ends
+  with `net: -N lines possible.`
+- **`grain-review`** — structural fit only. Does this match how the repo already
+  does it: is the fact filed in the right document, does the claim carry its
+  Observed/Inferred marking, does it use `CONTEXT.md` vocabulary, is a new doc
+  reachable from the index. Requires comparing against siblings before judging.
+- **`pr-ready`** — the pre-push pass: gates, then both lenses on your own diff,
+  then the PR body. Owns the new-content ladder — *does it need to exist → does
+  something already do it → can an existing thing be extended → can it be one line
+  → only then write it.* **Adding a new function, or a new spec document, is the
+  last resort.**
+
+When the two lenses disagree, **consistency beats cuts**: if `ponytail-review`
+wants to delete something `grain-review` says matches its siblings, keep it.
+
 ## Code Style Rules
 
 Stack-specific conventions land here once the stack is chosen. Until then:

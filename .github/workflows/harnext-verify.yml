@@ -1,0 +1,105 @@
+name: Harnext Verify
+on:
+  issues:
+    types: [labeled]
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue or PR number to run this stage on'
+        required: true
+        type: string
+
+jobs:
+  claude:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.label.name == 'harnext:verify'
+    # agent stages run on the local runner: they need the Skill tool,
+    # subagents and worktrees, which github-hosted runners cannot give them.
+    # deterministic gates stay on github-hosted CI.
+    runs-on: ['self-hosted', 'harnext', 'harnext-tarmacview-admin']
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: write
+    concurrency:
+      group: harnext-verify-${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # PAT_TOKEN so the agent's `git push` is authored by the user.
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # PAT_TOKEN so the agent's `git push` carries the `workflow` OAuth
+          # scope - GITHUB_TOKEN cannot push changes under .github/workflows/**.
+          github_token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          prompt: |
+            Verify the PR gates.
+
+            Step 1 — post the running stub BEFORE any work:
+              ID=$(gh api -X POST repos/:owner/:repo/issues/<PR>/comments -f body='harnext verify: running…' -q .id)
+            Keep `$ID` for the final update.
+
+            Step 2 — check out the branch: `gh pr checkout <PR>`.
+
+            Step 3 — run both gates for this docs-only repo, capturing stdout+stderr and the exit code of each:
+              `bash scripts/check-conventions.sh`   — diff-scoped: is this change well-formed
+              `bash scripts/structural-tests.sh`    — whole-tree: is the repo still internally consistent
+
+            No typecheck or build commands are configured (see `harness.config.json`, commands). Do not invent them.
+
+            UI verification: this repo has no UI package (`hasUI: false` at root, no packages). Skip browser work entirely.
+
+            Step 4 — mechanical fixes only. If the lint failure is a trivial formatting / whitespace / obvious typo issue introduced by the PR, fix it, re-run the gate, and commit with a lowercase verb-first message, no AI attribution, author `Štefan Moravík <stevko.moravik@gmail.com>`. Anything requiring judgement (spec wording, Observed/Inferred classification, domain vocabulary choices, clean-room concerns) is out of scope — report it and let review handle it.
+
+            Step 5 — UPDATE the stub comment in place:
+              gh api -X PATCH repos/:owner/:repo/issues/comments/$ID --field body=@<path>
+            Body must include: gate name, command, exit code, and (on failure) the last ~30 lines of output in a fenced block. Do NOT create a second comment.
+
+            Fail the stage iff either gate exited non-zero after any mechanical fixes.
+
+            The number for this run is ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}.
+          claude_args: '--model claude-opus-4-7 --max-turns 60 --allowedTools "Read,Glob,Grep,Bash,Edit,Write"'
+          allowed_bots: 'github-actions'
+      - name: Transition labels on success
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          NUM: ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: |
+          # Detect if the agent opened a PR when this ran on an issue.
+          IS_PR=$(gh api repos/${{ github.repository }}/issues/$NUM --jq '.pull_request != null')
+          NEW_PR=""
+          if [ "$IS_PR" != "true" ] && [ -n "$EXECUTION_FILE" ] && [ -f "$EXECUTION_FILE" ]; then
+            AGENT_TEXT=$(jq -r '[.[] | select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text] | join("\n")' "$EXECUTION_FILE" || echo "")
+            NEW_PR=$(printf '%s' "$AGENT_TEXT" | grep -oE 'https://github.com/${{ github.repository }}/pull/[0-9]+' | head -n1 | grep -oE '[0-9]+$' || true)
+            if [ -z "$NEW_PR" ]; then
+              NEW_PR=$(gh api repos/${{ github.repository }}/issues/$NUM/timeline --jq '[.[] | select(.event == "cross-referenced") | .source.issue | select(.pull_request != null) | .number] | last' 2>/dev/null || echo "")
+            fi
+          fi
+
+          if [ -n "$NEW_PR" ] && [ "$NEW_PR" != "null" ]; then
+            gh api -X DELETE repos/${{ github.repository }}/issues/$NUM/labels/harnext:verify || true
+            # Terminal stage — no follow-up label to add on the PR.
+          else
+            gh api -X DELETE repos/${{ github.repository }}/issues/$NUM/labels/harnext:verify
+          fi
+      - name: Park on needs-judgment on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          NUM: ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
+        run: |
+          gh api -X DELETE repos/${{ github.repository }}/issues/$NUM/labels/harnext:verify || true
+          gh api -X POST repos/${{ github.repository }}/issues/$NUM/labels -f labels[]=harnext:needs-judgment

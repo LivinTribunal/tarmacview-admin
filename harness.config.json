@@ -24,13 +24,13 @@
         ".editorconfig",
         ".gitignore"
       ],
-      "requiredChecks": ["lint"],
+      "requiredChecks": ["lint", "structural-tests"],
       "mergePolicy": {
         "minApprovals": 0,
         "requireReviewAgent": false,
         "allowSelfMerge": true
       },
-      "evidenceRequirements": ["lint-clean"]
+      "evidenceRequirements": ["lint-clean", "structural-clean"]
     },
     "tier2": {
       "name": "medium",
@@ -91,7 +91,7 @@
   },
   "commands": {
     "lint": "bash scripts/check-conventions.sh",
-    "test": null,
+    "test": "bash scripts/structural-tests.sh",
     "build": null,
     "typeCheck": null
   },

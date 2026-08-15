@@ -49,8 +49,12 @@ Thumbs.db
 
 # Build artifacts
 .harness/
-.harnext/
 out/
+
+# harnext keeps the risk contract and the check scripts under .harnext/ and they are
+# invoked by the workflows, so the directory is tracked. Its own .harnext/.gitignore
+# excludes the throwaway parts (analysis-runs/, tech-stack.json).
+.harnext/logs/
 public/build/
 public/hot
 

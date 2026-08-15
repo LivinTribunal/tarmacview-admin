@@ -1,0 +1,134 @@
+name: Harnext Review
+# workflow_dispatch is required alongside the labeled trigger because
+# GitHub suppresses `issues.labeled` / `pull_request.labeled` events when
+# the label was added via GITHUB_TOKEN (infinite-loop guard). Chained
+# handoffs from another workflow arrive as `gh workflow run` dispatches.
+on:
+  issues:
+    types: [labeled]
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue or PR number to run this stage on'
+        required: true
+        type: string
+
+jobs:
+  claude:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.label.name == 'harnext:review'
+    # agent stages run on the local runner: they need the Skill tool,
+    # subagents and worktrees, which github-hosted runners cannot give them.
+    # deterministic gates stay on github-hosted CI.
+    runs-on: ['self-hosted', 'harnext', 'harnext-tarmacview-admin']
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: write
+    concurrency:
+      group: harnext-review-review-${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # PAT_TOKEN so the agent's `git push` is authored by the user.
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Run Claude Code (reviewer)
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          # OAuth via the Claude Code GitHub App — usage counts against the
+          # user's Claude subscription (Pro/Max), not metered API billing.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # PAT_TOKEN so the agent's `git push` carries the `workflow` OAuth
+          # scope - GITHUB_TOKEN cannot push changes under .github/workflows/**.
+          github_token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          prompt: |
+            You are the reviewer stage of a harnext pipeline. The PR number is ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}.
+
+            Check out the PR branch. Read the linked issue (`gh pr view <PR> --json body,closingIssuesReferences`), the plan comment, and the diff (`gh pr diff <PR>`).
+
+            Review against, in this order:
+              1. **Clean-room** — any transcribed predecessor source, templates, CSS, or design assets? Any wording that reads as copy-paste from the live system rather than description?
+              2. **Personal data** — real names, e-mails, licence numbers, tenant names, device serials, or org access tokens in prose, examples, or fixtures?
+              3. **Observed vs Inferred** — every predecessor claim marked; nothing silently promoted; sources of inferences plausible.
+              4. **Domain vocabulary** — matches `CONTEXT.md` (UAS, occurrence, licence, certificate); no reintroduced synonyms.
+              5. **Domain rules from `CLAUDE.md`** — nullable email, unassigned flights, failed-parse retention, duplicate sync, dual service intervals, stated maintenance readings, missing device-type semantics, detach ≠ delete, tenant scoping as security property. Any spec text that contradicts these?
+              6. **Structural hygiene** — facts in one place with cross-refs, `docs/specs/00-index.md` updated when new files land, markdown/comment conventions followed, no changes to protected files.
+              7. **Gates** — `bash scripts/check-conventions.sh` and `bash scripts/structural-tests.sh`, both clean. Report what the scripts say; do not hand-judge what they already decide.
+
+            Then the two quality lenses. This stage runs on the self-hosted runner, so the `Skill` tool is available — use it, do not paraphrase these from memory:
+
+              8. **Excess.** Invoke the `ponytail-review` skill on the diff. Findings are tagged `dupe:` / `delete:` / `yagni:` / `shrink:`. It never flags Observed/Inferred markings, the reasoning under a domain rule, or a documented open question — if it does, drop that finding.
+              9. **Structure.** Invoke the `grain-review` skill on the same diff. Findings are tagged `misfiled:` / `unmarked:` / `vocab:` / `shape:` / `reinvent:` / `orphan:`. It must compare against sibling sections before judging; a first-of-its-kind section has no grain to go against.
+              10. **Reconcile.** Where the two disagree, **consistency beats cuts** — if `ponytail-review` wants to delete something `grain-review` says matches its siblings, keep it and note `keep: matches <N> siblings`.
+
+            Post one review with `gh pr review <PR>` — `--approve`, `--request-changes`, or `--comment`. In `--request-changes`, list each required change with the file, the line if possible, and the specific rule or lens tag it violates.
+          # --allowedTools is REQUIRED. The action denies ALL tool calls by
+          # default; any Bash call without this allowlist is silently
+          # permission-denied.
+          claude_args: '--model claude-opus-4-7 --max-turns 60 --allowedTools "Read,Glob,Grep,Bash,Skill"'
+          # Needed when another workflow dispatches this one via
+          # `gh workflow run` — the actor becomes github-actions[bot] and
+          # the action rejects bot actors unless listed here.
+          allowed_bots: 'github-actions'
+
+      - name: Loop control (decide next step)
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          NUM: ${{ github.event.pull_request.number || inputs.issue_number }}
+        run: |
+          set -euo pipefail
+
+          labels=$(gh api "repos/${{ github.repository }}/issues/$NUM/labels" --jq '.[].name')
+          iter=$(printf '%s\n' "$labels" | grep -oE '^harnext:review-iter-[0-9]+$' | head -n1 | grep -oE '[0-9]+$' || echo "")
+          if [ -z "$iter" ]; then iter=1; fi
+
+          state=$(gh api "repos/${{ github.repository }}/pulls/$NUM/reviews" --jq '.[].state' | tail -n1)
+
+          echo "iter=$iter state=$state"
+
+          if [ "$state" = "CHANGES_REQUESTED" ] && [ "$iter" -lt 3 ]; then
+            # A. loop back into the fixer
+            gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/harnext:review-iter-$iter" || true
+            next=$((iter + 1))
+            gh api -X POST "repos/${{ github.repository }}/issues/$NUM/labels" -f labels[]="harnext:review-iter-$next"
+            gh workflow run "harnext-review-fix.yml" --field issue_number="$NUM"
+            exit 0
+          fi
+
+          if [ "$state" = "CHANGES_REQUESTED" ] && [ "$iter" -ge 3 ]; then
+            # B. loop budget exhausted — park for human judgment
+            gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/harnext:review-iter-$iter" || true
+            gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/harnext:review" || true
+            gh api -X POST "repos/${{ github.repository }}/issues/$NUM/labels" -f labels[]="harnext:needs-judgment"
+            exit 0
+          fi
+
+          # C. APPROVED / COMMENTED / DISMISSED / PENDING / empty — hand off to verify
+          gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/harnext:review-iter-$iter" || true
+          gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/harnext:review" || true
+          gh api -X POST "repos/${{ github.repository }}/issues/$NUM/labels" -f labels[]="harnext:verify"
+          gh workflow run "harnext-verify.yml" --field issue_number="$NUM" || true
+
+      - name: Park on needs-judgment on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          NUM: ${{ github.event.pull_request.number || inputs.issue_number }}
+        run: |
+          set -eu
+          labels=$(gh api "repos/${{ github.repository }}/issues/$NUM/labels" --jq '.[].name' || echo "")
+          iter=$(printf '%s\n' "$labels" | grep -oE '^harnext:review-iter-[0-9]+$' | head -n1 | grep -oE '[0-9]+$' || echo "")
+          if [ -z "$iter" ]; then iter=1; fi
+          gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/harnext:review-iter-$iter" || true
+          gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/harnext:review" || true
+          gh api -X POST "repos/${{ github.repository }}/issues/$NUM/labels" -f labels[]="harnext:needs-judgment"
