@@ -1,0 +1,31 @@
+{
+  "version": "1",
+  "riskTierRules": {
+    "high": [
+      "docs/specs/**",
+      "CONTEXT.md",
+      "CLAUDE.md",
+      "harness.config.json",
+      ".github/workflows/**",
+      "LICENSE",
+      "NOTICE"
+    ],
+    "low": [
+      "**"
+    ]
+  },
+  "mergePolicy": {
+    "high": {
+      "requiredChecks": [
+        "risk-policy-gate",
+        "CI Pipeline"
+      ]
+    },
+    "low": {
+      "requiredChecks": [
+        "risk-policy-gate",
+        "CI Pipeline"
+      ]
+    }
+  }
+}

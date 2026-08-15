@@ -1,0 +1,49 @@
+name: harnext doc-gardening
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  claude:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    concurrency:
+      group: harnext-doc-gardening-${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Sweep the docs for drift introduced by recent merges. Read `docs/specs/00-index.md`, then walk the spec tree and `CONTEXT.md`.
+
+            Create a branch `docs/gardening-<yyyy-mm-dd>` from `main` and make edits limited to:
+              - Fixing broken cross-references between spec files.
+              - Removing duplicated facts so each lives in exactly one file, replacing the duplicate with a cross-reference.
+              - Adding to `CONTEXT.md` any domain concept that now appears in two or more spec files without an entry.
+              - Correcting Observed/Inferred markers where a claim's provenance has become clearer (only when the change is documented in the PR body — never guess).
+              - Enforcing markdown conventions from `CLAUDE.md`: sparse lowercase comments, dashes not em-dashes, short section labels.
+              - Scrubbing any personal data (real names, e-mails, licence numbers, tenant names, device serials, org access tokens) that slipped in — replace with placeholders.
+
+            Out of scope: rewriting spec content, resolving any of the three open questions in `CLAUDE.md`, editing protected files (`.github/workflows/**`, `harness.config.json`, `LICENSE`, `NOTICE`), scaffolding application code.
+
+            Run `bash scripts/check-conventions.sh`. Commit with lowercase verb-first messages, no AI attribution, author `Štefan Moravík <stevko.moravik@gmail.com>`. Open a DRAFT PR with `gh pr create --draft --base main` whose body lists each edit and its reason. Do not merge.
+          claude_args: '--model claude-opus-4-7 --max-turns 60 --allowedTools "Read,Glob,Grep,Bash"'
+          allowed_bots: 'github-actions'
+      - name: Comment on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUM: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr comment "$NUM" --body "harnext:doc-gardening failed: see workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

@@ -1,0 +1,69 @@
+name: Harnext Review Fix
+
+# Fix phase of the review loop. Invoked exclusively via `gh workflow run` from
+# the review workflow when a changes_requested review lands. Runs the fixer
+# agent against the PR branch, then re-dispatches the review workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'PR number to run the fixer against'
+        required: true
+        type: string
+
+jobs:
+  claude:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: write
+    concurrency:
+      group: harnext-review-fix-${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          # OAuth via the Claude Code GitHub App — usage counts against the
+          # user's Claude subscription (Pro/Max), not metered API billing.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            The PR has a changes_requested review. Read it with `gh pr view <PR> --json reviews` and `gh api repos/:owner/:repo/pulls/<PR>/comments`. Re-read `CLAUDE.md` and `docs/specs/00-index.md`.
+
+            Check out the PR branch. Address every requested change at the root cause — do not paper over with hedging language or by moving the violation elsewhere. Same hard rules as implement: no personal data, no transcribed predecessor content, mark Observed vs Inferred, `CONTEXT.md` vocabulary, no edits to protected files, no gate silencing.
+
+            Run `bash scripts/check-conventions.sh` and fix any failures at their root.
+
+            Commit with lowercase verb-first messages, no AI attribution, author `Štefan Moravík <stevko.moravik@gmail.com>`. Push. Reply once on the PR summarising, per reviewer point, what changed and where. If the scope of the PR shifted, update the PR body with `gh pr edit <PR> --body-file <path>` — extend the in-scope section or add a `Folded-in fixes` section naming each unrelated fix, its root cause, and why it rode along.
+
+            The PR number is: ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
+          claude_args: '--model claude-opus-4-7 --max-turns 60 --allowedTools "Read,Glob,Grep,Bash,Edit,Write"'
+          allowed_bots: 'github-actions'
+      - name: Re-dispatch review on success
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUM: ${{ github.event.pull_request.number || inputs.issue_number }}
+        run: |
+          gh workflow run "harnext-review.yml" --field issue_number="$NUM"
+      - name: Park on needs-judgment on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUM: ${{ github.event.pull_request.number || inputs.issue_number }}
+        run: |
+          iter=$(gh api "repos/${{ github.repository }}/issues/$NUM/labels" --jq '.[].name' | \
+                grep -oE '^harnext:review-iter-[0-9]+$' | head -n1 || echo "")
+          if [ -n "$iter" ]; then
+            gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/$iter" || true
+          fi
+          gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/harnext:review" || true
+          gh api -X POST "repos/${{ github.repository }}/issues/$NUM/labels" -f labels[]="harnext:needs-judgment"

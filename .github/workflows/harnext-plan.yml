@@ -1,0 +1,176 @@
+name: harnext plan
+# workflow_dispatch is required alongside the labeled trigger because
+# GitHub suppresses `issues.labeled` / `pull_request.labeled` events
+# when the label was added via GITHUB_TOKEN (infinite-loop guard).
+on:
+  issues:
+    types: [labeled]
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue or PR number to run this stage on'
+        required: true
+        type: string
+
+jobs:
+  claude:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.label.name == 'harnext:plan'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: write
+    concurrency:
+      group: harnext-plan-${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve issue number
+        id: resolve
+        env:
+          NUM: ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
+        run: echo "num=$NUM" >> "$GITHUB_OUTPUT"
+
+      - name: Snapshot branch head
+        id: pre
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          # OAuth via the Claude Code GitHub App — usage counts against the
+          # user's Claude subscription (Pro/Max), not metered API billing.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Read the issue with `gh issue view <num>`. Read `docs/specs/00-index.md` first, then any spec files the issue touches, plus `CONTEXT.md` and `CLAUDE.md`.
+
+            Produce an implementation plan for a docs-only change (no application code exists yet). Post exactly one comment via `gh issue comment <num> --body-file <path>` containing:
+              - **Summary** — one paragraph, in `CONTEXT.md` vocabulary.
+              - **Files to change** — each path with a one-line reason. Call out any new spec file needed and where it slots into `docs/specs/00-index.md`.
+              - **Approach** — how the edits fit the existing spec structure. Every predecessor claim must be marked Observed or Inferred; state which category any new claim falls into and why.
+              - **Cross-references** — which existing spec sections or `CONTEXT.md` entries must be updated in the same PR so a fact still lives in one place.
+              - **Risks** — clean-room (transcribing predecessor source/assets), personal-data leakage in examples, silently promoting inferred → observed, breaking one of the domain rules in `CLAUDE.md`.
+              - **Test plan** — the only gate is `bash scripts/check-conventions.sh`; list any manual reviewer checks (e.g. "verify no real pilot names in the new fixture snippet").
+
+            Do not edit any files. Do not create a branch. One comment only.
+
+            The issue or PR number for this run is: ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
+          # --allowedTools is REQUIRED. The action denies ALL tool calls by
+          # default; any Bash call without this allowlist is silently denied.
+          claude_args: '--model claude-opus-4-7 --max-turns 60 --allowedTools "Read,Glob,Grep,Bash"'
+          # Needed when another workflow dispatches this one via
+          # `gh workflow run` — the actor becomes github-actions[bot]
+          # which the action rejects unless listed here.
+          allowed_bots: 'github-actions'
+
+      - name: Detect handoff to PR
+        if: success()
+        id: handoff
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUM: ${{ steps.resolve.outputs.num }}
+          EVENT_NAME: ${{ github.event_name }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: |
+          set -euo pipefail
+          echo "pr_number=" >> "$GITHUB_OUTPUT"
+
+          # Only issues can hand off to a PR; PR-triggered runs stay on the PR.
+          is_issue="false"
+          if [ "$EVENT_NAME" = "issues" ]; then
+            is_issue="true"
+          elif [ "$EVENT_NAME" = "workflow_dispatch" ] || [ "$EVENT_NAME" = "pull_request" ]; then
+            # dispatch may target either — probe the API.
+            kind=$(gh api "repos/${{ github.repository }}/issues/$NUM" --jq '.pull_request != null' 2>/dev/null || echo "false")
+            if [ "$kind" = "false" ]; then
+              is_issue="true"
+            fi
+          fi
+
+          if [ "$is_issue" != "true" ]; then
+            echo "Stage ran on a PR; no handoff detection needed."
+            exit 0
+          fi
+
+          pr_num=""
+
+          # (a) execution_file — JSON array of turn objects (NOT JSONL).
+          if [ -n "${EXECUTION_FILE:-}" ] && [ -f "$EXECUTION_FILE" ]; then
+            text=$(jq -r '[.[] | select(.type == "assistant") | .message.content[] | select(.type == "text") | .text] | join("\n")' "$EXECUTION_FILE" || true)
+            if [ -n "$text" ]; then
+              pr_num=$(printf '%s' "$text" | grep -oE 'https://github\.com/${{ github.repository }}/pull/[0-9]+' | head -n1 | grep -oE '[0-9]+$' || true)
+            fi
+          fi
+
+          # (b) issue timeline for cross-referenced PRs.
+          if [ -z "$pr_num" ]; then
+            pr_num=$(gh api "repos/${{ github.repository }}/issues/$NUM/timeline" \
+              -H "Accept: application/vnd.github+json" \
+              --jq '[.[] | select(.event == "cross-referenced") | .source.issue | select(.pull_request != null) | .number] | last' 2>/dev/null || true)
+            if [ "$pr_num" = "null" ]; then pr_num=""; fi
+          fi
+
+          if [ -n "$pr_num" ]; then
+            echo "Detected handoff PR #$pr_num"
+            echo "pr_number=$pr_num" >> "$GITHUB_OUTPUT"
+          else
+            echo "No PR handoff detected."
+          fi
+
+      - name: Transition labels on success
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUM: ${{ steps.resolve.outputs.num }}
+          PR_NUM: ${{ steps.handoff.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+
+          gh label create harnext:implement --color ededed --description "harnext: implement stage" 2>/dev/null || true
+          gh label create harnext:awaiting-approval --color fbca04 --description "harnext: awaiting human approval" 2>/dev/null || true
+
+          # Always remove the stage label from the originating issue/PR.
+          gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/harnext:plan" 2>/dev/null || true
+
+          if [ -n "$PR_NUM" ]; then
+            # Handoff: issue goes to awaiting-approval; PR picks up the next stage label.
+            gh api -X POST "repos/${{ github.repository }}/issues/$NUM/labels" \
+              -f "labels[]=harnext:awaiting-approval"
+            gh api -X POST "repos/${{ github.repository }}/issues/$PR_NUM/labels" \
+              -f "labels[]=harnext:implement"
+            # Dispatch the next workflow explicitly — labels added via
+            # GITHUB_TOKEN do NOT fire `labeled` events.
+            gh workflow run harnext-implement.yml \
+              --field issue_number=$PR_NUM || true
+          else
+            # No handoff — chain directly on the same number.
+            gh api -X POST "repos/${{ github.repository }}/issues/$NUM/labels" \
+              -f "labels[]=harnext:implement"
+            gh workflow run harnext-implement.yml \
+              --field issue_number=$NUM || true
+          fi
+
+      - name: Park on needs-judgment on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUM: ${{ steps.resolve.outputs.num }}
+        run: |
+          set -euo pipefail
+          gh label create harnext:needs-judgment --color b60205 --description "harnext: needs human judgment" 2>/dev/null || true
+          gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/harnext:plan" 2>/dev/null || true
+          gh api -X POST "repos/${{ github.repository }}/issues/$NUM/labels" \
+            -f "labels[]=harnext:needs-judgment"

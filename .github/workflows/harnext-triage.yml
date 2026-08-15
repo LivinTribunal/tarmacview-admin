@@ -1,0 +1,80 @@
+name: harnext triage
+on:
+  issues:
+    types: [labeled]
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue or PR number to run this stage on'
+        required: true
+        type: string
+
+jobs:
+  triage:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.label.name == 'harnext:triage'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: write
+    concurrency:
+      group: harnext-triage-${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            You are the triage stage of the harnext pipeline for LivinTribunal/tarmacview-admin.
+
+            The issue or PR number for this run is: ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
+
+            Read the issue body with `gh issue view <num> --json title,body,labels,author,createdAt`. Skim `CLAUDE.md`, `docs/specs/00-index.md`, and `CONTEXT.md` to place the ask in scope.
+
+            This repo is documentation-only right now — the application stack is not yet chosen (see `docs/specs/01-tech-stack.md`). Every change is Tier 1 (`docs/**`, `*.md`). Flag any request that presumes existing application code as premature.
+
+            Post exactly one comment via `gh issue comment <num> --body-file <path>` with:
+              - severity (blocker / high / normal / low)
+              - scope (which spec file(s) or `CONTEXT.md` section it touches; note if it needs a new spec file)
+              - domain check — does it use the vocabulary from `CONTEXT.md` (UAS, occurrence, licence, certificate)? Flag synonyms.
+              - clean-room / personal-data risk — does the ask push toward transcribing predecessor code, assets, or real pilot data?
+              - open-question dependency — does it depend on one of the three unresolved items in `CLAUDE.md` (permission model, flight-log parsers, User↔Organisation scoping)?
+              - ready-to-plan (yes / no) with a one-line reason. Not ready if the ask conflicts with the clean-room constraint or depends on an unresolved open question.
+
+            Do not edit any files. Do not create a branch. One comment only.
+          claude_args: '--model claude-opus-4-7 --max-turns 60 --allowedTools "Read,Glob,Grep,Bash"'
+          allowed_bots: 'github-actions'
+
+      - name: Transition labels on success
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUM: ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
+        run: |
+          gh api -X DELETE repos/${{ github.repository }}/issues/$NUM/labels/harnext:triage || true
+          gh api -X POST repos/${{ github.repository }}/issues/$NUM/labels \
+            -f labels[]=harnext:plan
+          gh workflow run harnext-plan.yml \
+            --field issue_number=$NUM || true
+
+      - name: Park on needs-judgment on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUM: ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
+        run: |
+          gh api -X DELETE repos/${{ github.repository }}/issues/$NUM/labels/harnext:triage || true
+          gh api -X POST repos/${{ github.repository }}/issues/$NUM/labels \
+            -f labels[]=harnext:needs-judgment
