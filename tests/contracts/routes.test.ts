@@ -1,8 +1,9 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { NextRequest } from 'next/server'
 import { describe, expect, it } from 'vitest'
-import { requiresSession } from '@/middleware'
+import { middleware, requiresSession } from '@/middleware'
 
 // what this suite can and cannot claim is recorded once, in
 // docs/rebuild/00-operating-model.md §5 "Route contract". In short: the capture was
@@ -87,5 +88,27 @@ describe('route contract: the session gate covers the application paths, not ass
 
   it('the auth endpoints are reachable anonymously, or nobody could ever sign in', () => {
     expect(requiresSession('/api/auth/sign-in/email')).toBe(false)
+  })
+})
+
+// where the redirect lands is the rebuild's own decision, not an oracle assertion: the
+// capture was a GET-only crawl of an authenticated session, so it never fetched a
+// sign-in page and contracts/routes.json holds no entry for one. What is asserted here
+// is internal consistency - the place the gate sends people is a place this application
+// serves, and it is not itself gated.
+describe('the sign-in redirect, a decision recorded in docs/specs/09-roles-permissions.md', () => {
+  const turnedAway = middleware(new NextRequest('http://localhost/admin/device-types'))
+  const target = new URL(turnedAway.headers.get('location') ?? '', 'http://localhost')
+
+  it('sends an anonymous visitor to a path the app router actually serves', () => {
+    expect(served).toContain(target.pathname)
+  })
+
+  it('preserves where they were going', () => {
+    expect(target.searchParams.get('next')).toBe('/admin/device-types')
+  })
+
+  it('does not gate the page it redirects to, which would be a loop', () => {
+    expect(requiresSession(target.pathname)).toBe(false)
   })
 })

@@ -76,6 +76,12 @@ information) but it should be a conscious decision in the rebuild, not an accide
 | POST | `/livewire/update` | Session | Framework internal |
 | GET | `/demo/kml` | — | Linked from `/dashboard`; not catalogued |
 
+The `/login` and `/logout` rows above come from the crawl's route table rather than from a
+fetched page — the capture ran as an authenticated session and never visited a sign-in
+form, so the paths and their auth are Observed and nothing about the form itself is. What
+the rebuild does at `/login`, and why it has **no `/logout` path** (sign-out is a POST
+server action), is decided in `09-roles-permissions.md` §"Sign-in and sign-out".
+
 **Confirmed absent** (all 404): `/register`, `/forgot-password`, `/password/reset`.
 There is no self-service registration or password reset — accounts are provisioned by an
 admin. Decide deliberately whether the rebuild keeps that. For an aviation compliance tool

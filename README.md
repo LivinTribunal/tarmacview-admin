@@ -86,7 +86,7 @@ docs/
 contracts/        machine-readable route, form and report contracts — the test oracle
 src/              application source: app/ routes, components/, lib/
 drizzle/          schema migrations, including the row-level security policies
-tests/            the contract, domain and tenancy suites
+tests/            the contract, domain, tenancy and sign-in suites
 CONTEXT.md        domain glossary — the canonical vocabulary
 CLAUDE.md         conventions for agents and contributors
 harness.config.json  risk-tier configuration
@@ -95,13 +95,13 @@ harness.config.json  risk-tier configuration
 ```bash
 npm install
 cp .env.example .env.local   # DATABASE_URL, and Better Auth's secret and origin
-npm run test                 # contract, domain and tenancy suites
+npm run test                 # contract, domain, tenancy and sign-in suites
 npm run typecheck
 npm run build
 ```
 
-The tenancy suite starts a real Postgres through Testcontainers, so it needs a container
-engine running. It fails rather than skips without one, deliberately.
+The tenancy and sign-in suites start a real Postgres through Testcontainers, so they need
+a container engine running. They fail rather than skip without one, deliberately.
 
 ## Documentation
 
