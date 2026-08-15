@@ -137,16 +137,20 @@ deliberately rather than inherited by accident:
 
 ### Sign-in and sign-out — decided
 
-Also a **decision about the rebuild**, taken by the owner on 15 Aug 2026 and settled on
-issue #32. Nothing here is Observed: the inspection was a GET-only crawl of an already
-authenticated session, so it never fetched a sign-in page. The route table recorded a
-`/login` path (doc 02 §Other) and nothing else about it — no fields, no failure
-behaviour, no post-sign-in redirect.
+Also a **decision about the rebuild**, taken on 15 Aug 2026 by the rebuild loop under the
+owner's standing autonomy grant, and recorded on issue #32. The owner has not reviewed it;
+it is settled enough to build on and open enough to overturn, and that is the difference
+between this and a decision they took themselves.
 
-- **The path is `/login`.** The session gate and the register pages already redirect
-  there, so this ratifies what the code assumes rather than adding a third spelling. The
-  predecessor is Slovak-only and `/prihlasenie` was equally plausible; unobserved either
-  way, and changing it later is a two-line edit.
+Only the path is Observed. The inspection was a GET-only crawl of an already authenticated
+session, so it never fetched the sign-in page: the route table recorded that `/login`
+exists and serves a public login form (doc 02 §Other) and nothing further — no fields, no
+failure behaviour, no post-sign-in redirect. Everything below except the path is decided.
+
+- **The path is `/login`.** Observed in doc 02, and the session gate and register pages
+  already redirect there, so this ratifies both the evidence and what the code assumes.
+  The predecessor is Slovak-only, so `/prihlasenie` would have been plausible had the
+  crawl not settled it.
 - **The gate's `next` parameter is honoured, and validated.** Only a single-slash-prefixed
   relative path is accepted — anything protocol-relative, carrying a scheme, carrying a
   backslash or carrying a control character falls back to `/`. An unvalidated one is an
