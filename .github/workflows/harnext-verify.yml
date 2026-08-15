@@ -105,7 +105,14 @@ jobs:
             gh api -X DELETE repos/${{ github.repository }}/issues/$NUM/labels/harnext:verify || true
             # Terminal stage — no follow-up label to add on the PR.
           else
-            gh api -X DELETE repos/${{ github.repository }}/issues/$NUM/labels/harnext:verify
+            # `|| true` for the same reason as the branch above: verify is the
+            # terminal stage, so this delete is the last thing the chain does. a
+            # duplicate dispatch means the second run finds the label already
+            # gone, and an unguarded delete then fails the step - which hands a
+            # PASSING run to the park-on-failure step and mislabels it
+            # needs-judgment. every other label delete in every stage is
+            # guarded; this was the one that was not.
+            gh api -X DELETE repos/${{ github.repository }}/issues/$NUM/labels/harnext:verify || true
           fi
       - name: Park on needs-judgment on failure
         if: failure()
