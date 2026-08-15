@@ -64,11 +64,10 @@ that is effectively the regulator-facing evidence pack.
 
 ## Architecture
 
-Not yet chosen. [docs/specs/01-tech-stack.md](docs/specs/01-tech-stack.md) fingerprints the
-predecessor and sets out the trade-off: the predecessor's admin panel was a resource-driven
-admin framework, and staying on that shape makes the admin surface largely declarative,
-while moving off it means reimplementing column toggles, deferred loading, filter panels,
-bulk actions and modal action forms by hand.
+TypeScript on Next.js, with Postgres row-level security carrying tenant isolation — decided
+15 Aug 2026, deliberately against the predecessor's shape.
+[docs/specs/01-tech-stack.md](docs/specs/01-tech-stack.md) records the full choice, what it
+costs, and the fingerprint it was taken against.
 
 The operator report is the product's real face and has a small, explicit contract (one JSON
 endpoint plus a handful of REST actions), so it can be built independently of whatever the
@@ -79,19 +78,21 @@ admin panel runs on.
 ```
 docs/
   specs/          the rebuild specification — read 00-index.md first
+  rebuild/        how the rebuild is driven: operating model, risk tiers
+contracts/        machine-readable route, form and report contracts — the test oracle
 CONTEXT.md        domain glossary — the canonical vocabulary
 CLAUDE.md         conventions for agents and contributors
 harness.config.json  risk-tier configuration
 ```
 
-Application code lands alongside these once the stack is chosen.
+Application code lands alongside these, starting with the walking skeleton.
 
 ## Documentation
 
 | Doc | Purpose |
 |-----|---------|
 | **[docs/specs/00-index.md](docs/specs/00-index.md)** | **Start here.** Scope, method, confidence marking, open gaps |
-| [docs/specs/01-tech-stack.md](docs/specs/01-tech-stack.md) | Predecessor fingerprint and rebuild cost implications |
+| [docs/specs/01-tech-stack.md](docs/specs/01-tech-stack.md) | Predecessor fingerprint, and the rebuild's own stack decision |
 | [docs/specs/02-sitemap-routes.md](docs/specs/02-sitemap-routes.md) | Every route, method, auth requirement |
 | [docs/specs/03-data-model.md](docs/specs/03-data-model.md) | Entities, fields, relationships, ERD |
 | [docs/specs/04-admin-resources.md](docs/specs/04-admin-resources.md) | Admin resources: tables, filters, actions, forms |
@@ -99,22 +100,22 @@ Application code lands alongside these once the stack is chosen.
 | [docs/specs/06-org-report.md](docs/specs/06-org-report.md) | The operator report and its endpoint contract |
 | [docs/specs/07-flight-ingestion.md](docs/specs/07-flight-ingestion.md) | The four flight-import paths |
 | [docs/specs/08-maps.md](docs/specs/08-maps.md) | Geozone map subsystem and KML layers |
-| [docs/specs/09-roles-permissions.md](docs/specs/09-roles-permissions.md) | Role vocabulary and what remains unverified |
+| [docs/specs/09-roles-permissions.md](docs/specs/09-roles-permissions.md) | Observed role vocabulary, and the rebuild's decided permission matrix |
 | [docs/specs/10-glossary-sk-en.md](docs/specs/10-glossary-sk-en.md) | Slovak → English domain terminology |
 | [CONTEXT.md](CONTEXT.md) | Domain glossary — the vocabulary used across code, issues and prose |
 
 ## Before building
 
-Three things in the spec are marked unresolved and should be closed before implementation
-starts, because guessing at them is expensive to undo:
+Three things were expensive to guess wrong. Two are now decided, as of 15 Aug 2026:
 
-1. **The permission model.** Only a superadmin session was observed, so role boundaries are
-   inferred. Recover the real matrix from the predecessor's database, or test on a
-   non-production copy — see [09-roles-permissions.md](docs/specs/09-roles-permissions.md).
-2. **The flight-log parsers.** The DJI `.txt` parser and the agricultural XLSX layout are
-   server-side and were not observable. Get sample files and keep them as fixtures.
-3. **The user/organisation relationship.** A user carries an organisation id *and* attaches
-   to organisations through a pivot. Which one scopes data access decides a lot.
+1. **The permission model** — defined fresh rather than recovered, deny-by-default, in
+   [09-roles-permissions.md](docs/specs/09-roles-permissions.md). What the predecessor's own
+   matrix was is still unrecovered, and it is now only a migration question.
+2. **The user/organisation relationship** — decided in favour of membership, in
+   [03-data-model.md](docs/specs/03-data-model.md).
+3. **The flight-log parsers** — still open. The DJI `.txt` parser and the agricultural XLSX
+   layout are server-side and were not observable. Get sample files and keep them as
+   fixtures. This blocks ingestion, and only ingestion.
 
 ## Personal data
 

@@ -29,9 +29,9 @@ So this lands before the first line of application code, not after.
 different reason — see "Merge authority" below.
 
 `detection.primaryLanguage` also becomes `TypeScript`, with a note recording that the
-decision was taken against the recommendation still standing in `01-tech-stack.md`.
-`framework` and `packageManager` stay `null`: those are settled by the walking skeleton,
-and writing a guess into the harness config would make it look decided.
+decision was taken against the recommendation `01-tech-stack.md` used to carry.
+`framework` and `packageManager` were left `null` here and filled in later — `Next.js` and
+`npm` — once the stack decision was written up rather than guessed at.
 
 ### tier2 — application source, tests, build config
 
@@ -144,15 +144,12 @@ One consequence worth stating plainly: the loop can no longer close issue #9, wh
 the contracts regenerated. It must escalate that instead. That is the price of the
 carve-out and it is a one-off.
 
-### This protection is not yet enforced
+### This protection is enforced
 
 `check-conventions.sh` only makes a protected-file edit a hard failure when
-`HARNEXT_AGENT=1`. **No workflow sets it.** Until one does, `protected_files` is a
-convention the loop is asked to honour, not a gate that stops it — and the oracle lock is
-weaker than it reads.
-
-Fixing it means setting that variable in the harnext agent stages, which are themselves
-protected files. It needs the owner, and it should happen before the loop runs unattended.
+`HARNEXT_AGENT=1`, and the owner has since set that variable in all seven harnext agent
+stages. `protected_files` is now a gate that stops the loop rather than a convention it is
+asked to honour, and the oracle lock reads as strongly as it is.
 
 ## Applied alongside
 
@@ -162,10 +159,14 @@ places or the stricter one is decorative.
 
 ## Still needs a human
 
-**`docs/specs/01-tech-stack.md`** still recommends keeping Laravel and Filament as the
-cheapest path. That recommendation has been overridden. The document should say so — the
-fingerprint section stays as Observed fact about the predecessor, and the consequences
-section becomes a record of a decision taken against its advice, and why.
+`docs/specs/01-tech-stack.md` was the item here, and it has since been rewritten: the
+fingerprint stays as Observed fact about the predecessor, and the section after it records
+the decision taken against its advice. Two items remain, and both are edits to
+`harness.config.json`:
 
-Leaving it as-is is the more dangerous option: it is the first document anyone reads about
-the stack, and it currently argues for the opposite of what is being built.
+- **The `commands` flip**, above. Until it happens, `type-check` and `build` are required
+  checks that pass vacuously for every tier 2 and tier 3 change, so the walking skeleton's
+  own code lands with two of its four gates doing nothing.
+- **The tier 2 lockfile pattern is `pnpm-lock.yaml`, but the package manager is npm.**
+  `package-lock.json` matches no tier pattern at all, so the first lockfile to land falls
+  through to the catch-all rather than to tier 2.
