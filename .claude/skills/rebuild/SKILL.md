@@ -1,7 +1,6 @@
 ---
 name: rebuild
 description: Boot the CAMO rebuild loop - recover state, reconcile it against reality, report where the rebuild actually is, then run an orchestrator tick. The single entry point for driving the rebuild; run it cold in a fresh session with no context and it will work out where things stand. Use when the user says "/rebuild", "start the rebuild", "resume the rebuild", "where are we", or wraps it in /loop.
-disable-model-invocation: true
 ---
 
 # rebuild
