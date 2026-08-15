@@ -91,7 +91,7 @@ function routes() {
 // field names and validation attributes are interface. values are records. only the
 // former crosses. `value`, <option> text and all element text content are never read.
 // ---------------------------------------------------------------------------
-const KEEP = ['id', 'name', 'wire:model', 'type', 'required', 'min', 'max', 'minlength',
+const KEEP = ['id', 'name', 'wire:model', 'type', 'role', 'required', 'min', 'max', 'minlength',
   'maxlength', 'step', 'accept', 'pattern', 'multiple', 'disabled', 'readonly', 'rows']
 
 const ATTR = /([a-zA-Z_:][-a-zA-Z0-9_:.]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g
@@ -101,9 +101,14 @@ const VOID = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input'
   'meta', 'param', 'source', 'track', 'wbr'])
 
 // livewire carries form state through a binding, so `data.*` is the shape every identity
-// takes - as a name, as a wire:model, or as the id filament leaves on a select
+// takes - as a name, as a wire:model, as the id filament leaves on a select, or as the
+// path an alpine component entangles
 const STATE_PATH = /^data\.\w+(\.\w+)*$/
 const statePath = v => (v && STATE_PATH.test(v) ? v : undefined)
+
+// $entangle('data.x') binds an element that is not a control at all - a toggle is a
+// <button role="switch">. the quotes come through escaped, hence the alternation.
+const ENTANGLE = /\$entangle\(\s*(?:&#0?39;|&quot;|["'])([^&"']*)/g
 
 function attrs(tagText) {
   const found = {}
@@ -171,13 +176,35 @@ function enclosingPath(nodes, from) {
   }
 }
 
-function fieldsFrom(html) {
+// the contract records what the markup is, so a toggle stays a <button role="switch">
+// rather than being flattened into a checkbox
+function field(name, control, a) {
+  const f = { name: String(name).replace(HEX32, '{org}'), control }
+  if (a.type) f.type = a.type
+  for (const k of ['role', 'required', 'min', 'max', 'minlength', 'maxlength', 'step', 'accept', 'pattern', 'multiple', 'readonly', 'disabled', 'rows']) {
+    if (a[k] !== undefined) f[k] = a[k]
+  }
+  return f
+}
+
+function fieldsFrom(html, source) {
   const nodes = tags(html)
   const out = []
+  const entangled = []
   let unbound = 0
   for (let i = 0; i < nodes.length; i++) {
     const n = nodes[i]
-    if (n.close || !CONTROL.has(n.name)) continue
+    if (n.close) continue
+    if (!CONTROL.has(n.name)) {
+      // an element that is not a control still holds form state when alpine entangles it
+      const paths = new Set()
+      let m
+      while ((m = ENTANGLE.exec(n.attrs))) { const p = statePath(m[1]); if (p) paths.add(p) }
+      if (paths.size === 1) entangled.push(field([...paths][0], n.name, attrs(n.attrs)))
+      // two paths on one element name no single field - announce it rather than guess
+      else if (paths.size > 1) console.error(`AMBIG ${source} — <${n.name}> entangles ${[...paths].join(' and ')}`)
+      continue
+    }
     const a = attrs(n.attrs)
     const name = a.name || a['wire:model'] || statePath(a.id) || enclosingPath(nodes, i)
     // no binding of any kind means the control carries no form state - client-side ui
@@ -187,16 +214,13 @@ function fieldsFrom(html) {
     // a hidden input is still a field when livewire writes to it
     if (a.type === 'hidden' && !a['wire:model']) continue
 
-    const f = { name: String(name).replace(HEX32, '{org}'), control: n.name }
-    if (a.type) f.type = a.type
-    for (const k of ['required', 'min', 'max', 'minlength', 'maxlength', 'step', 'accept', 'pattern', 'multiple', 'readonly', 'disabled', 'rows']) {
-      if (a[k] !== undefined) f[k] = a[k]
-    }
-    out.push(f)
+    out.push(field(name, n.name, a))
   }
-  // one field binds many times (radio pair, checkbox group, modal + inline); collapse on name
+  // one field binds many times (radio pair, checkbox group, modal + inline); collapse on
+  // name. entangled elements come last, so a control always describes its own field - the
+  // wrapper filament entangles around a file upload never displaces the <input> inside it.
   const seen = new Map()
-  for (const f of out) if (!seen.has(f.name)) seen.set(f.name, f)
+  for (const f of [...out, ...entangled]) if (!seen.has(f.name)) seen.set(f.name, f)
   return {
     fields: [...seen.values()].sort((a, b) => a.name.localeCompare(b.name)),
     unbound,
@@ -227,7 +251,7 @@ function forms() {
       if (shape === 'index') continue
 
       const html = fs.readFileSync(full, 'utf8')
-      const { fields, unbound } = fieldsFrom(html)
+      const { fields, unbound } = fieldsFrom(html, maskPath('/' + rel.split(path.sep).join('/')))
       if (!fields.length) continue
 
       byResource[resource] ||= { resource, note: FORM_NOTE, create: null, edit: null, coverage: {}, sources: [] }

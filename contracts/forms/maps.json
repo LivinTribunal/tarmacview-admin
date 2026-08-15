@@ -3,6 +3,12 @@
   "note": "complete for the captured records, not proven exhaustive - a form branch that no captured record exercises cannot be ruled out.",
   "create": [
     {
+      "name": "data.allow_dark_basemap_toggle",
+      "control": "button",
+      "type": "button",
+      "role": "switch"
+    },
+    {
       "name": "data.name",
       "control": "input",
       "type": "text",
@@ -23,6 +29,12 @@
     }
   ],
   "edit": [
+    {
+      "name": "data.allow_dark_basemap_toggle",
+      "control": "button",
+      "type": "button",
+      "role": "switch"
+    },
     {
       "name": "data.name",
       "control": "input",
@@ -45,11 +57,11 @@
   ],
   "coverage": {
     "edit": {
-      "fields": 3,
+      "fields": 4,
       "controlsWithoutBinding": 1
     },
     "create": {
-      "fields": 3,
+      "fields": 4,
       "controlsWithoutBinding": 1
     }
   },

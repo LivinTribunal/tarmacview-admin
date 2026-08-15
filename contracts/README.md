@@ -40,11 +40,14 @@ the same thing, and it still holds.
 
 ## How far a form contract goes
 
-A field is a control bound to form state in the captured markup — by `name`, by
-`wire:model`, or by a `data.*` id on the control or on a wrapper above it, which is where
-the predecessor's form layer leaves the identity of a select or a file upload. Each
-contract's `coverage` block counts those against `controlsWithoutBinding`: controls
-carrying none of the three, which hold no form state and are interface rather than fields.
+A field is anything bound to form state in the captured markup, by one of four bindings —
+`name`, `wire:model`, a `data.*` id on the control or on a wrapper above it, or a
+`data.*` path entangled into an element that is not a control at all. The last two are how
+the predecessor's form layer carries a select, a file upload and a toggle, and the contract
+records the element as it stands: the `maps` dark-basemap toggle is a `button` with
+`role: switch`, not a checkbox. Each contract's `coverage` block counts the fields against
+`controlsWithoutBinding`: controls carrying none of the four, which hold no form state and
+are interface rather than fields.
 
 Each contract claims to be *complete for the captured records*, never proven exhaustive.
 Two things it does not cover:
@@ -52,9 +55,10 @@ Two things it does not cover:
 - **A branch no captured record exercises.** `flights` renders on `entry_mode`, and every
   captured record shows the same branch, so a second field set behind the other one cannot
   be ruled out. Deciding that needs per-record values, which do not cross the airlock.
-- **A field rendered as something other than `<input>`, `<select>` or `<textarea>`.** The
-  `maps` dark-basemap toggle is a `<button>` and is absent from the contract for that
-  reason — it is a known gap, not an observation that the field does not exist.
+- **A field bound by some mechanism other than those four.** None appears anywhere in the
+  capture, but that is absence of evidence: an extractor cannot detect a binding shape it
+  does not know. It does announce an element whose binding is ambiguous rather than
+  guessing at a name for it.
 
 Five registers have no form contract at all, which is correct rather than missing —
 `mobile-log-uploads`, `unlinked-mobile-flights` and `email-logs` are read-only,
