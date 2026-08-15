@@ -134,10 +134,17 @@ jobs:
           fi
 
           # (b) issue timeline for cross-referenced PRs.
+          #
+          # only OPEN ones. the timeline accumulates every pull request that has
+          # ever mentioned this issue, so an unfiltered `last` picks whichever
+          # merged pr happened to reference it most recently - which is how a
+          # plan run on #8 handed the implement stage to the long-merged #15 and
+          # drove stages against it while #8 itself sat parked. a closed pr can
+          # never be this run's handoff, so state is the filter that matters.
           if [ -z "$pr_num" ]; then
             pr_num=$(gh api "repos/${{ github.repository }}/issues/$NUM/timeline" \
               -H "Accept: application/vnd.github+json" \
-              --jq '[.[] | select(.event == "cross-referenced") | .source.issue | select(.pull_request != null) | .number] | last' 2>/dev/null || true)
+              --jq '[.[] | select(.event == "cross-referenced") | .source.issue | select(.pull_request != null) | select(.state == "open") | .number] | last' 2>/dev/null || true)
             if [ "$pr_num" = "null" ]; then pr_num=""; fi
           fi
 

@@ -95,7 +95,9 @@ jobs:
             AGENT_TEXT=$(jq -r '[.[] | select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text] | join("\n")' "$EXECUTION_FILE" || echo "")
             NEW_PR=$(printf '%s' "$AGENT_TEXT" | grep -oE 'https://github.com/${{ github.repository }}/pull/[0-9]+' | head -n1 | grep -oE '[0-9]+$' || true)
             if [ -z "$NEW_PR" ]; then
-              NEW_PR=$(gh api repos/${{ github.repository }}/issues/$NUM/timeline --jq '[.[] | select(.event == "cross-referenced") | .source.issue | select(.pull_request != null) | .number] | last' 2>/dev/null || echo "")
+              # open only - an unfiltered `last` resolves to a merged pr that
+              # merely mentioned the issue. see the note in harnext-plan.yml.
+              NEW_PR=$(gh api repos/${{ github.repository }}/issues/$NUM/timeline --jq '[.[] | select(.event == "cross-referenced") | .source.issue | select(.pull_request != null) | select(.state == "open") | .number] | last' 2>/dev/null || echo "")
             fi
           fi
 
