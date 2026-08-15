@@ -1,12 +1,12 @@
 # 09 — Roles and permissions
 
-**Read the caveat first.** Everything about *what each role can do* in this document is
-**inferred**. The inspection ran under a single superadmin session. No second account was
-used, so no role boundary was actually observed. Do not build a permission matrix from
-this file alone — see "Closing the gap" at the end.
+**Read the caveat first.** What each role could *do* in the predecessor was never observed.
+The inspection ran under a single superadmin session, so no role boundary was ever crossed.
+The role vocabulary, that roles are multi-valued, and that a second organisation-scoped axis
+exists — those are Observed. The scope of each role never was.
 
-What *is* observed: the role vocabulary, that roles are multi-valued, and that a second
-organisation-scoped role axis exists.
+That gap is not closed by recovery. "The rebuild's permission model" below defines the
+matrix fresh, and that is the half to build from.
 
 ## Two independent role axes
 
@@ -16,20 +16,22 @@ Assigned on the user record (`/admin/users` → `Roly`, a required multi-select)
 several at once — observed combinations include `Superadmin, Pilot`,
 `Superadmin, Admin, Zodpovedný manažér`, `Admin, User`, `Pilot` alone, and none at all.
 
-| Role | Slovak | Inferred scope |
-|---|---|---|
-| **Superadmin** | Superadmin | Full cross-tenant access. Sees every organisation, the System sidebar group, and the sync/audit resources |
-| **Admin** | Admin | Administrative access, most likely scoped to own organisation |
-| **Zodpovedný manažér** | Zodpovedný manažér | *Responsible Manager* — the accountable post in a CAMO organisation. Per the user form's own helper text: *"Organisation administrator with access to all organisation data. Responsible for operations, has access to flight statistics and …"* (truncated in the UI) |
-| **Pilot** | Pilot | Flight-log subject; may or may not have login credentials at all |
-| **User** | User | Baseline authenticated user |
+| Role | What was actually observed |
+|---|---|
+| **Superadmin** | The session used. Saw every organisation, the System sidebar group and the sync/audit resources — so cross-tenant reach is Observed for this role and this role only |
+| **Admin** | The name. No boundary observed |
+| **Zodpovedný manažér** | *Responsible Manager*, the accountable post in a CAMO organisation. The user form's own helper text: *"Organisation administrator with access to all organisation data. Responsible for operations, has access to flight statistics and …"* — truncated in the UI, so even this is partial |
+| **Pilot** | The name, and that a pilot may exist with no login credentials (the creation form's credentials toggle) |
+| **User** | The name. No boundary observed |
 
-That an account can have **no** role is worth noting — decide what that means rather than
-inheriting it.
+An account can hold **no** role at all — Observed. The rebuild answers what that means
+below rather than inheriting it.
 
 The multi-select and the naming convention are consistent with a standard Laravel
-role/permission package *(inferred)*. If so, the underlying permission set is finer than
-these five labels and should be recovered from the database, not guessed.
+role/permission package *(inferred)*. If so, the predecessor's real permission set is finer
+than these five labels. That matters for the migration, which must decide what each
+existing account becomes; it no longer matters for the build, which stopped deriving its
+matrix from here.
 
 ### 2. Organisation role (pivot)
 
@@ -73,6 +75,76 @@ Only these are facts rather than inference:
 - The superadmin session saw all nine organisations and every tenant's users, devices and
   sync records, confirming cross-tenant reach for that role.
 
+## The rebuild's permission model — decided
+
+Everything above this line is what was Observed of the predecessor. Everything from here is
+a **decision about the rebuild**, taken by the owner on 15 Aug 2026. It is defined fresh as
+a product decision rather than reconstructed: the predecessor's matrix was never
+observable, and waiting for it would block every slice downstream of authorisation.
+
+The two-axis split is kept, because "what you are in the deployment" and "what post you hold
+in this organisation" are genuinely different questions. The five combinable global roles
+are not kept — multi-valued roles make deny-by-default hard to reason about, and every
+observed combination is expressible as one system role plus a membership.
+
+### Axis A — system role, one per person
+
+| Role | Scope |
+|---|---|
+| `superadmin` | Cross-tenant. Every organisation, plus the system registers: device types, training types, e-mail logs, mobile sync devices and log uploads |
+| `member` | No cross-tenant access whatsoever. All authority derives from organisation memberships |
+
+Every person carries exactly one. It is only consulted when they authenticate, so a person
+with no credentials never exercises it.
+
+### Axis B — organisation role, one per membership
+
+| Role | Intent |
+|---|---|
+| `accountable_manager` | The CAMO accountable post. Full read/write on the organisation, including people, documents, permits and occurrences. May provision accounts |
+| `operations` | Day-to-day airworthiness work: assign flights, record maintenance, upload logs, manage aircraft and trainings. Cannot manage people or organisation-level documents |
+| `pilot` | Reads own flights, own certificate and own training status. No writes |
+| `viewer` | Read-only across the whole organisation. For auditors and regulators given temporary access |
+
+### Capability matrix
+
+| Capability | `accountable_manager` | `operations` | `pilot` | `viewer` |
+|---|---|---|---|---|
+| View organisation report | ✅ | ✅ | own rows only | ✅ |
+| Assign pilot/aircraft to flight | ✅ | ✅ | ❌ | ❌ |
+| Upload flight logs | ✅ | ✅ | ❌ | ❌ |
+| Record maintenance | ✅ | ✅ | ❌ | ❌ |
+| Manage aircraft register | ✅ | ✅ | ❌ | ❌ |
+| Manage trainings | ✅ | ✅ | ❌ | ❌ |
+| Manage permits & operations docs | ✅ | ❌ | ❌ | ❌ |
+| File occurrence report | ✅ | ✅ | ✅ | ❌ |
+| Manage people & memberships | ✅ | ❌ | ❌ | ❌ |
+| Provision or reset an account | ✅ | ❌ | ❌ | ❌ |
+| Manage geozone maps | ✅ | ✅ | ❌ | ❌ |
+
+**Anything absent from this table is denied.** Deny-by-default is the rule, not the
+fallback — a capability that needs adding is an edit to this table, never a special case in
+a controller.
+
+### Person is not account
+
+The predecessor's own split, recorded under "Account provisioning" above, is kept
+deliberately rather than inherited by accident:
+
+- A **person** may exist with no e-mail and no credentials. That is the pilot register, and
+  it is the normal case rather than an edge case.
+- **Credentials** are a separate optional concern attached to a person.
+
+### Consequences
+
+- **Detach is not delete.** Removing a membership leaves the person and their flight
+  history intact.
+- **A person with no membership sees nothing**, and remains a subject of records.
+- **`superadmin` is the only cross-tenant path.** No organisation role reaches another
+  organisation.
+- **Row-level security keys off membership**, never off a column on the person — see
+  `03-data-model.md`.
+
 ## Multi-tenancy
 
 The deployment serves multiple unrelated operator organisations from one instance. Tenant
@@ -84,22 +156,23 @@ Two things to get right in the rebuild:
    devices, documents, incidents, trainings, sync uploads, e-mail logs — must be
    tenant-scoped unless the actor is a superadmin. Enforce it globally rather than
    per-controller.
-2. **Users are not owned by one tenant.** `User.organization_id` exists *and* users attach
-   to organisations through a pivot (doc 03). Resolve that ambiguity explicitly, because
-   "which organisation's data may this user see" depends on the answer.
+2. **Users are not owned by one tenant.** The predecessor carries `User.organization_id`
+   *and* a pivot (doc 03). The rebuild resolves that in favour of membership, so "which
+   organisation's data may this person see" has exactly one answer to enforce.
 
-## Closing the gap
+## What is still open
 
-The permission model is the one part of this spec that cannot be responsibly inferred.
-Recover it directly, in rough order of value:
+The build no longer waits on the predecessor's matrix — it was replaced, not recovered. One
+question still needs the database, and it is a *migration* question rather than a build one:
+**what each existing account becomes.** Mapping five combinable global roles plus an
+un-enumerated pivot enum onto two system roles and four organisation roles is a decision per
+account, not a formula, and every existing account has to land somewhere.
+
+Recovering it, in rough order of value:
 
 1. **Read it from the database** — the roles and permissions tables, and the pivot's role
    column with its full option set. Fastest and authoritative.
 2. **Read the policies** — if the original app used framework authorisation policies,
    their names survive in the resource classes even where source is gone.
-3. **Test with real accounts** — log in as a Pilot, an Admin and a Zodpovedný manažér on a
-   **non-production** copy and record what each sees: which sidebar entries, which
-   organisations, which row actions, which report sections.
-
-Until then, treat every "inferred scope" line above as a hypothesis. Build the rebuild's
-permission layer deny-by-default, and let the recovered matrix open it up.
+3. **Test with real accounts** on a **non-production** copy. Least valuable of the three
+   now: the answer no longer sets the rebuild's boundaries, only the migration's mapping.

@@ -78,7 +78,7 @@ preserving or consciously changing.
 | `phone_number` | string(255) | | |
 | `position` | string(255) | | Job title within the organisation |
 | `note` | text | | |
-| `organization_id` | FK → Organization | nullable | "Bez organizácie" is a real state |
+| `organization_id` | FK → Organization | nullable | "Bez organizácie" is a real state. Does not survive into the rebuild — see below |
 
 **`email` is nullable and that is load-bearing.** A pilot can exist as a flight-log
 subject without ever being able to log in; the UI says so explicitly ("Pre pilotov môžete
@@ -103,11 +103,40 @@ just `organization_id`:
 | `is_primary_contact` | bool | "Hlavná kontaktná osoba" |
 | `position`, `phone_number`, `note` | | May live on the pivot or the user — not distinguishable from the UI |
 
-Note the tension: `User.organization_id` exists *and* the org workspace has both a
-"Pilots" and an "Organisation people" register with attach/detach semantics
-("Priradiť existujúceho používateľa", "Odobrať z organizácie"). That points to a
-many-to-many with `organization_id` as a denormalised primary org. **Confirm this against
-the schema before building** — getting it wrong here propagates everywhere.
+The predecessor carries a tension here: `User.organization_id` exists *and* the org
+workspace has both a "Pilots" and an "Organisation people" register with attach/detach
+semantics ("Priradiť existujúceho používateľa", "Odobrať z organizácie") — Observed. Which
+of the two actually scopes data access was never determinable from outside.
+
+**Evidence gathered on it.** Pilot identity sets were compared across all nine captured
+organisations, using `data.pilots[].id` from the operator-report payloads — ids only, since
+set membership is the question and identity is not needed to answer it. 100 distinct pilot
+ids, and **zero** appearing in more than one organisation. The largest tenant holds 76; two
+hold none.
+
+That is **Inferred, not Observed**, and the inference is potentially circular: if the report
+query itself scopes by `users.organization_id`, disjoint sets are what it would produce
+whether or not the pivot is in use. It shows the operational reality, not the schema's
+intent. The capability, meanwhile, is plainly deliberate — both registers can attach an
+*existing* user, and the pivot carries its own per-organisation role and primary-contact
+flag (doc 09). The pivot is not vestigial; it is simply unused in the current dataset.
+
+### Membership in the rebuild — decided
+
+A **decision about the rebuild**, taken by the owner on 15 Aug 2026. Membership is a
+first-class table, `(person, organisation, role, is_primary_contact)`. `organization_id` on
+the person does not survive.
+
+Today every person has exactly one membership row, so this gives one-organisation semantics
+now at no cost, and multi-organisation later without a redesign. The multi-organisation
+product question is deferred rather than answered, which is safe precisely because the
+schema supports either.
+
+**Row-level security keys off membership, never off a column on the person.** A
+`person.organization_id` would have to be kept in sync with the membership table, and the
+two disagreeing is a tenant-isolation bug — exactly the class RLS is here to make
+impossible. Primary organisation, needed for the `/` redirect, derives from the
+primary-contact flag.
 
 ---
 
