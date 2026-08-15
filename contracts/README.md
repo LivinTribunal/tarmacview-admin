@@ -38,21 +38,33 @@ sets, equal types, equal nesting, and that totals reconcile against their own ro
 floor for the real server-side validation, not a ceiling. `docs/specs/00-index.md` says
 the same thing, and it still holds.
 
-## Known coverage gaps
+## How far a form contract goes
 
-Each form contract carries a `coverage` block with the named fields found against the raw
-control count in the markup. Where the ratio is poor it is flagged
-`partial-form-is-lazy-loaded`: the predecessor defers those forms to a client-side call, so
-the captured HTML holds the page but not the fields.
+A field is anything bound to form state in the captured markup, by one of four bindings —
+`name`, `wire:model`, a `data.*` id on the control or on a wrapper above it, or a
+`data.*` path entangled into an element that is not a control at all. The last two are how
+the predecessor's form layer carries a select, a file upload and a toggle, and the contract
+records the element as it stands: the `maps` dark-basemap toggle is a `button` with
+`role: switch`, not a checkbox. Each contract's `coverage` block counts the fields against
+`controlsWithoutBinding`: controls carrying none of the four, which hold no form state and
+are interface rather than fields.
 
-Currently partial: **flights**, **maps**, **trainings**. Closing them means replaying the
-app's own component-load calls against the mirror, which is a second extraction pass.
+Each contract claims to be *complete for the captured records*, never proven exhaustive.
+Two things it does not cover:
+
+- **A branch no captured record exercises.** `flights` renders on `entry_mode`, and every
+  captured record shows the same branch, so a second field set behind the other one cannot
+  be ruled out. Deciding that needs per-record values, which do not cross the airlock.
+- **A field bound by some mechanism other than those four.** None appears anywhere in the
+  capture, but that is absence of evidence: an extractor cannot detect a binding shape it
+  does not know. It does announce an element whose binding is ambiguous rather than
+  guessing at a name for it.
 
 Five registers have no form contract at all, which is correct rather than missing —
 `mobile-log-uploads`, `unlinked-mobile-flights` and `email-logs` are read-only,
 `mobile-sync-devices` has no create route because records appear by device pairing, and
 `microservices-page` is a custom page rather than a resource.
 
-**Treat a partial contract as an open question, never as a complete one.** A form contract
-that silently under-describes its form is worse than no contract, because the tests
-generated from it would pass.
+**Treat a known gap as an open question, never as a settled absence.** A form contract that
+silently under-describes its form is worse than no contract, because the tests generated
+from it would pass.

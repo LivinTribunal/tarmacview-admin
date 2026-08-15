@@ -1,5 +1,6 @@
 {
   "resource": "trainings",
+  "note": "complete for the captured records, not proven exhaustive - a form branch that no captured record exercises cannot be ruled out.",
   "create": [
     {
       "name": "data.date_end",
@@ -12,11 +13,24 @@
       "type": "date"
     },
     {
+      "name": "data.devices",
+      "control": "select",
+      "multiple": "multiple"
+    },
+    {
       "name": "data.name",
       "control": "input",
       "type": "text",
       "required": "required",
       "maxlength": "255"
+    },
+    {
+      "name": "data.pilot_id",
+      "control": "select"
+    },
+    {
+      "name": "data.training_type_id",
+      "control": "select"
     }
   ],
   "edit": [
@@ -31,23 +45,34 @@
       "type": "date"
     },
     {
+      "name": "data.devices",
+      "control": "select",
+      "multiple": "multiple"
+    },
+    {
       "name": "data.name",
       "control": "input",
       "type": "text",
       "required": "required",
       "maxlength": "255"
+    },
+    {
+      "name": "data.pilot_id",
+      "control": "select"
+    },
+    {
+      "name": "data.training_type_id",
+      "control": "select"
     }
   ],
   "coverage": {
     "edit": {
-      "namedFields": 3,
-      "rawControlsInMarkup": 7,
-      "status": "partial-form-is-lazy-loaded"
+      "fields": 6,
+      "controlsWithoutBinding": 0
     },
     "create": {
-      "namedFields": 3,
-      "rawControlsInMarkup": 7,
-      "status": "partial-form-is-lazy-loaded"
+      "fields": 6,
+      "controlsWithoutBinding": 0
     }
   },
   "sources": [

@@ -1,6 +1,12 @@
 {
   "resource": "general-documents",
+  "note": "complete for the captured records, not proven exhaustive - a form branch that no captured record exercises cannot be ruled out.",
   "create": [
+    {
+      "name": "data.file_path",
+      "control": "input",
+      "type": "file"
+    },
     {
       "name": "data.name",
       "control": "input",
@@ -16,6 +22,11 @@
   ],
   "edit": [
     {
+      "name": "data.file_path",
+      "control": "input",
+      "type": "file"
+    },
+    {
       "name": "data.name",
       "control": "input",
       "type": "text",
@@ -30,14 +41,12 @@
   ],
   "coverage": {
     "edit": {
-      "namedFields": 2,
-      "rawControlsInMarkup": 4,
-      "status": "complete"
+      "fields": 3,
+      "controlsWithoutBinding": 0
     },
     "create": {
-      "namedFields": 2,
-      "rawControlsInMarkup": 4,
-      "status": "complete"
+      "fields": 3,
+      "controlsWithoutBinding": 0
     }
   },
   "sources": [

@@ -91,10 +91,24 @@ function routes() {
 // field names and validation attributes are interface. values are records. only the
 // former crosses. `value`, <option> text and all element text content are never read.
 // ---------------------------------------------------------------------------
-const KEEP = ['name', 'wire:model', 'type', 'required', 'min', 'max', 'minlength',
+const KEEP = ['id', 'name', 'wire:model', 'type', 'role', 'required', 'min', 'max', 'minlength',
   'maxlength', 'step', 'accept', 'pattern', 'multiple', 'disabled', 'readonly', 'rows']
 
 const ATTR = /([a-zA-Z_:][-a-zA-Z0-9_:.]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g
+
+const CONTROL = new Set(['input', 'select', 'textarea'])
+const VOID = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link',
+  'meta', 'param', 'source', 'track', 'wbr'])
+
+// livewire carries form state through a binding, so `data.*` is the shape every identity
+// takes - as a name, as a wire:model, as the id filament leaves on a select, or as the
+// path an alpine component entangles
+const STATE_PATH = /^data\.\w+(\.\w+)*$/
+const statePath = v => (v && STATE_PATH.test(v) ? v : undefined)
+
+// $entangle('data.x') binds an element that is not a control at all - a toggle is a
+// <button role="switch">. the quotes come through escaped, hence the alternation.
+const ENTANGLE = /\$entangle\(\s*(?:&#0?39;|&quot;|["'])([^&"']*)/g
 
 function attrs(tagText) {
   const found = {}
@@ -111,34 +125,112 @@ function attrs(tagText) {
   return found
 }
 
-function fieldsFrom(html) {
+// alpine attributes hold arrow functions, so a tag does not end at the first '>' and
+// cannot be matched with [^>]*. scan for the first unquoted one instead.
+function tags(html) {
+  const lower = html.toLowerCase()
+  const open = /<(\/?)([a-zA-Z][-a-zA-Z0-9]*)/g
   const out = []
-  const tag = /<(input|select|textarea)\b([^>]*)>/gi
   let m
-  while ((m = tag.exec(html))) {
-    const kind = m[1].toLowerCase()
-    const a = attrs(m[2])
-    const name = a.name || a['wire:model']
-    if (!name) continue
+  while ((m = open.exec(html))) {
+    if (html.startsWith('<!--', m.index)) {
+      const end = html.indexOf('-->', m.index)
+      if (end < 0) break
+      open.lastIndex = end + 3
+      continue
+    }
+    let i = open.lastIndex
+    let quote = ''
+    for (; i < html.length; i++) {
+      const c = html[i]
+      if (quote) { if (c === quote) quote = '' }
+      else if (c === '"' || c === "'") quote = c
+      else if (c === '>') break
+    }
+    const inner = html.slice(open.lastIndex, i)
+    const name = m[2].toLowerCase()
+    out.push({ name, close: !!m[1], selfClosing: inner.trimEnd().endsWith('/'), attrs: inner })
+    open.lastIndex = i + 1
+    // script and style bodies are not markup
+    if (!m[1] && (name === 'script' || name === 'style')) {
+      const end = lower.indexOf(`</${name}`, i)
+      open.lastIndex = end < 0 ? html.length : end
+    }
+  }
+  return out
+}
+
+// a filament file upload puts the state path on a wrapper several levels above its
+// <input type="file">, so identity has to be looked for outward as well as on the tag
+function enclosingPath(nodes, from) {
+  let depth = 0
+  for (let i = from - 1; i >= 0; i--) {
+    const n = nodes[i]
+    if (n.close) { depth++; continue }
+    if (n.selfClosing || VOID.has(n.name)) continue
+    if (depth) { depth--; continue }
+    // a section's id is a slug of its heading, not a state path, so it never names a field
+    if (n.name === 'section') continue
+    const p = statePath(attrs(n.attrs).id)
+    if (p) return p
+  }
+}
+
+// the contract records what the markup is, so a toggle stays a <button role="switch">
+// rather than being flattened into a checkbox
+function field(name, control, a) {
+  const f = { name: String(name).replace(HEX32, '{org}'), control }
+  if (a.type) f.type = a.type
+  for (const k of ['role', 'required', 'min', 'max', 'minlength', 'maxlength', 'step', 'accept', 'pattern', 'multiple', 'readonly', 'disabled', 'rows']) {
+    if (a[k] !== undefined) f[k] = a[k]
+  }
+  return f
+}
+
+function fieldsFrom(html, source) {
+  const nodes = tags(html)
+  const out = []
+  const entangled = []
+  let unbound = 0
+  for (let i = 0; i < nodes.length; i++) {
+    const n = nodes[i]
+    if (n.close) continue
+    if (!CONTROL.has(n.name)) {
+      // an element that is not a control still holds form state when alpine entangles it
+      const paths = new Set()
+      let m
+      while ((m = ENTANGLE.exec(n.attrs))) { const p = statePath(m[1]); if (p) paths.add(p) }
+      if (paths.size === 1) entangled.push(field([...paths][0], n.name, attrs(n.attrs)))
+      // two paths on one element name no single field - announce it rather than guess
+      else if (paths.size > 1) console.error(`AMBIG ${source} — <${n.name}> entangles ${[...paths].join(' and ')}`)
+      continue
+    }
+    const a = attrs(n.attrs)
+    const name = a.name || a['wire:model'] || statePath(a.id) || enclosingPath(nodes, i)
+    // no binding of any kind means the control carries no form state - client-side ui
+    if (!name) { unbound++; continue }
     // framework plumbing, not domain fields
     if (/^(_token|_method)$/.test(name)) continue
-    if (a.type === 'hidden') continue
+    // a hidden input is still a field when livewire writes to it
+    if (a.type === 'hidden' && !a['wire:model']) continue
 
-    const f = { name: String(name).replace(HEX32, '{org}'), control: kind }
-    if (a.type) f.type = a.type
-    for (const k of ['required', 'min', 'max', 'minlength', 'maxlength', 'step', 'accept', 'pattern', 'multiple', 'readonly', 'disabled', 'rows']) {
-      if (a[k] !== undefined) f[k] = a[k]
-    }
-    out.push(f)
+    out.push(field(name, n.name, a))
   }
-  // same field can render more than once (modal + inline); collapse on name+control
+  // one field binds many times (radio pair, checkbox group, modal + inline); collapse on
+  // name. entangled elements come last, so a control always describes its own field - the
+  // wrapper filament entangles around a file upload never displaces the <input> inside it.
   const seen = new Map()
-  for (const f of out) {
-    const k = f.name + '|' + f.control
-    if (!seen.has(k)) seen.set(k, f)
+  for (const f of [...out, ...entangled]) if (!seen.has(f.name)) seen.set(f.name, f)
+  return {
+    fields: [...seen.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    unbound,
   }
-  return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name))
 }
+
+// how far the claim goes, stated where it is read. the label this replaces asserted the
+// forms were lazy-loaded, which was never observed - all it measured was how many controls
+// the extractor had failed to name. contracts/README.md carries what is not covered.
+const FORM_NOTE = 'complete for the captured records, not proven exhaustive - a form branch that no captured record exercises cannot be ruled out.'
 
 function forms() {
   const pagesRoot = path.join(MIRROR, 'pages', 'admin')
@@ -159,23 +251,17 @@ function forms() {
       if (shape === 'index') continue
 
       const html = fs.readFileSync(full, 'utf8')
-      const fields = fieldsFrom(html)
+      const { fields, unbound } = fieldsFrom(html, maskPath('/' + rel.split(path.sep).join('/')))
       if (!fields.length) continue
 
-      // filament defers some forms to a livewire call, so the captured html carries the
-      // page chrome but not the fields. a thin extraction must announce itself - a
-      // contract that silently under-describes a form is worse than no contract.
-      const rawControls = (html.match(/<(input|select|textarea)\b/gi) || []).length
-      byResource[resource] ||= { resource, create: null, edit: null, coverage: {}, sources: [] }
-      byResource[resource].coverage[shape] = {
-        namedFields: fields.length,
-        rawControlsInMarkup: rawControls,
-        status: fields.length * 2 < rawControls ? 'partial-form-is-lazy-loaded' : 'complete',
-      }
+      byResource[resource] ||= { resource, note: FORM_NOTE, create: null, edit: null, coverage: {}, sources: [] }
       byResource[resource].sources.push(maskPath('/' + rel.split(path.sep).join('/')))
       // first sample wins; later ones only fill gaps, so one record's shape does not
-      // become the contract for all of them
-      if (!byResource[resource][shape]) byResource[resource][shape] = fields
+      // become the contract for all of them. coverage is read off that same sample.
+      if (!byResource[resource][shape]) {
+        byResource[resource][shape] = fields
+        byResource[resource].coverage[shape] = { fields: fields.length, controlsWithoutBinding: unbound }
+      }
     }
   }
   walk(pagesRoot)

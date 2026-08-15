@@ -1,6 +1,13 @@
 {
   "resource": "maps",
+  "note": "complete for the captured records, not proven exhaustive - a form branch that no captured record exercises cannot be ruled out.",
   "create": [
+    {
+      "name": "data.allow_dark_basemap_toggle",
+      "control": "button",
+      "type": "button",
+      "role": "switch"
+    },
     {
       "name": "data.name",
       "control": "input",
@@ -23,6 +30,12 @@
   ],
   "edit": [
     {
+      "name": "data.allow_dark_basemap_toggle",
+      "control": "button",
+      "type": "button",
+      "role": "switch"
+    },
+    {
       "name": "data.name",
       "control": "input",
       "type": "text",
@@ -44,14 +57,12 @@
   ],
   "coverage": {
     "edit": {
-      "namedFields": 3,
-      "rawControlsInMarkup": 13,
-      "status": "partial-form-is-lazy-loaded"
+      "fields": 4,
+      "controlsWithoutBinding": 1
     },
     "create": {
-      "namedFields": 3,
-      "rawControlsInMarkup": 13,
-      "status": "partial-form-is-lazy-loaded"
+      "fields": 4,
+      "controlsWithoutBinding": 1
     }
   },
   "sources": [
