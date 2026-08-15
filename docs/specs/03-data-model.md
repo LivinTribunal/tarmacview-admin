@@ -175,6 +175,21 @@ reached first triggers the warning.** The baseline fields exist so that logging
 maintenance resets the count — `service_baseline_cycles` is the cycle count at last
 service, and `service_lifetime_cycles` is the all-time total.
 
+**What the captured payloads actually serialise — Observed.** Across 27 captured report
+payloads and their 216 airframe rows, five of these keys carry the type `null` and nothing
+else: `service_interval_months`, `service_calendar_baseline_date`, `next_service_date`,
+`service_remaining_days` and `service_overdue_days`. `max_vlos_meters` is served as a
+**string**, not a number. `service_due_reasons` is an array in every row, non-empty in six.
+
+*Why* the calendar keys are null is *(inferred)*: a null in a payload does not distinguish
+"no captured organisation configured a calendar interval" from "the report never populates
+those keys at all", and no captured record separates the two. Under either reading the
+calendar half of the dual interval has **no parity subject** — the rule above is unaffected
+and stays Observed on the helper text in `04-admin-resources.md`, but a test of
+whichever-comes-first tests the rebuild's own implementation of that rule, never agreement
+with the predecessor. Name it so; a green test otherwise implies coverage that does not
+exist.
+
 ---
 
 ## DeviceType

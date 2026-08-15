@@ -122,7 +122,13 @@ behaviour. Extract to `contracts/routes.json`: path pattern, method, auth expect
 Test the rebuild against it — anonymous requests to session routes redirect, the three
 public map routes stay public, and `/register`, `/forgot-password`, `/password/reset` stay
 404. That last one is a deliberate product decision worth locking in a test so nobody
-restores it by accident.
+restores it by accident. Two ceilings, both in the file's own note: the capture was
+**GET-only**, so a generated suite can assert nothing about POST, PUT or DELETE; and the
+oracle is not the whole route table — `/map/{slug}/embed` is documented public in specs 02,
+06 and 08 but has no entry, so a suite generated from the file silently omits it, and one
+captured public KML path carries a 404 in `observedStatuses`, which a generator reading that
+field straight would lock in as intended behaviour for a route that should serve. Name each
+test for what it covers.
 
 **Form contract.** Every mirrored create and edit page carries its field set in the markup:
 input names, types, `required`, `min`, `max`, `maxlength`, `step`, `accept`. Extract to
@@ -137,7 +143,13 @@ entire contract. Twenty-seven captured payloads (nine organisations × three per
 become `contracts/report-schema.json` plus a set of aggregate invariants. Parity here is
 **schema parity, not value parity** — the rebuild has its own database and its own records,
 so asserting equal numbers is meaningless. Assert equal shape, equal key sets, equal types,
-equal nesting, and that totals reconcile against their rows.
+equal nesting, and that totals reconcile against their rows. There is a second ceiling under
+that one: a key serialised as `null` in every captured row has no type to assert, so parity
+on it claims only that the key exists. The derived service block is where that bites — the
+calendar half of the dual service interval has no parity subject at all, and
+`max_vlos_meters` is a string, so a rebuild that "corrects" it to a number fails parity and
+the oracle is right. `docs/specs/03-data-model.md` §Device carries which keys and how many
+rows.
 
 **Domain invariants.** The "domain rules that are easy to get wrong" list in `CLAUDE.md`
 is already a test plan; it just needs to be written as one. One named suite each:
@@ -174,8 +186,11 @@ nothing before it. So:
    without a test to write against. **Done** — `contracts/` is committed and protected.
 2. **Walking skeleton.** One vertical slice end to end — auth, tenancy, one resource,
    one test of each of the five layers. This is where the TypeScript stack proves itself.
-   **In progress.** The `01-tech-stack.md` rewrite, from a fingerprint of the predecessor
-   into a decision about the rebuild, has landed ahead of the code.
+   **In progress, docs half only.** Three things have landed ahead of the code: the
+   `01-tech-stack.md` rewrite from a fingerprint of the predecessor into a decision about
+   the rebuild, the reconciliation of the documents that decision and the two closed gaps
+   made stale, and the oracle ceilings recorded in §5 above. No application code exists yet
+   — no `package.json`, no schema, no tenancy, and none of the five suites.
 3. **The register resources.** Thirteen admin surfaces, contract-tested, parallelisable
    across runner slots because each is independent once the skeleton exists.
 4. **Ingestion.** Blocked on real sample files. Three import paths and the sync pipeline.
@@ -198,3 +213,9 @@ Carried from `CLAUDE.md` because these are the ones an autonomous loop erodes fi
   protected-file edit a hard failure when `HARNEXT_AGENT=1`, and all seven agent stages set
   it. The oracle lock is a gate that stops the loop, not a convention it is asked to honour.
 - Root-cause over workaround. `--no-verify` is never the answer.
+- **Never put a closing keyword next to an issue number in a PR body, not even to negate
+  one.** GitHub's linked-issue parser does not read negation: it matches the keyword and
+  the number and ignores the sentence around them. A PR body written specifically to
+  disclaim closing its parent issue is what closed that issue on merge, and the work had to
+  be reopened. Write `refs #N` for a partial slice, and put the scoping reasoning in a form
+  no parser can misread.
