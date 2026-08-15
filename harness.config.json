@@ -2,12 +2,12 @@
   "version": "1.0.0",
   "repoRoot": ".",
   "detection": {
-    "primaryLanguage": null,
+    "primaryLanguage": "TypeScript",
     "framework": null,
     "packageManager": null,
     "ciProvider": "GitHub Actions",
     "monorepo": false,
-    "note": "Stack not yet chosen. See docs/specs/01-tech-stack.md. Re-run `harnext setup` once application code lands."
+    "note": "TypeScript rebuild, decided against the Laravel-and-Filament recommendation still standing in docs/specs/01-tech-stack.md; that document records the predecessor's fingerprint, not this decision. Framework and package manager are settled by the walking skeleton. Risk-tier patterns are already TypeScript-shaped so that authorisation and tenant-scoping code cannot land as tier 1. The lint and test commands still point at the shell gates only: pointing them at npm scripts before a package.json exists would break the pipeline, so they flip when the skeleton lands."
   },
   "riskTiers": {
     "tier1": {
@@ -40,15 +40,21 @@
       "name": "medium",
       "description": "Application source, tests, and build configuration",
       "patterns": [
-        "app/**",
         "src/**",
+        "app/**",
+        "lib/**",
+        "components/**",
+        "server/**",
         "tests/**",
-        "database/**",
-        "routes/**",
-        "resources/**",
-        "config/**",
-        "composer.json",
-        "package.json"
+        "e2e/**",
+        "package.json",
+        "pnpm-lock.yaml",
+        "tsconfig.json",
+        "next.config.*",
+        "vite.config.*",
+        "vitest.config.*",
+        "playwright.config.*",
+        "tailwind.config.*"
       ],
       "requiredChecks": [
         "lint",
@@ -69,18 +75,23 @@
     },
     "tier3": {
       "name": "high",
-      "description": "Tenant isolation, authorisation, flight-log parsing, and schema migrations. Getting these wrong is either a cross-tenant data breach or a corruption of the airworthiness record.",
+      "description": "Tenant isolation, authorisation, flight-log parsing, schema migrations, and the extracted contracts. Getting the first four wrong is either a cross-tenant data breach or a corruption of the airworthiness record. The contracts are the test oracle: anything that can weaken an assertion can make every gate report green while the behaviour is wrong.",
       "patterns": [
         "**/*polic*",
         "**/*permission*",
         "**/*authoriz*",
         "**/*authoris*",
+        "**/auth/**",
         "**/*tenant*",
         "**/*scope*",
         "**/*parser*",
         "**/*import*",
+        "**/middleware.ts",
         "**/migrations/**",
-        "database/migrations/**"
+        "drizzle/**",
+        "prisma/migrations/**",
+        "prisma/schema.prisma",
+        "contracts/**"
       ],
       "requiredChecks": [
         "lint",

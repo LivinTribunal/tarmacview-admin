@@ -1,7 +1,12 @@
 # 01 — Risk tiers for the TypeScript stack
 
-`harness.config.json` is a protected file: agents must not modify it. This document is the
-proposed replacement for its `riskTiers` patterns and `commands`, for a human to apply.
+`harness.config.json` is a protected file: agents must not modify it unasked. The tier
+patterns below were **applied on explicit instruction from the repository owner**, which is
+what the protection is for — a human authorising a change, rather than an agent deciding to
+make one. `check-conventions.sh` records it as a warning on the diff, and that warning is
+the intended signal, not noise to be cleared.
+
+This document is the record of what changed and why.
 
 ## Why it has to change before anything is built
 
@@ -18,10 +23,15 @@ prevent, and an autonomous loop would exploit it without ever intending to.
 
 So this lands before the first line of application code, not after.
 
-## Proposed `riskTiers`
+## Applied `riskTiers`
 
-Only `patterns` and `commands` change. `mergePolicy` and `evidenceRequirements` stay as
-they are — the thresholds were right, they were just pointed at the wrong files.
+Only `patterns` changed. `mergePolicy` and `evidenceRequirements` stay exactly as they
+were — the thresholds were right, they were just pointed at the wrong files.
+
+`detection.primaryLanguage` also becomes `TypeScript`, with a note recording that the
+decision was taken against the recommendation still standing in `01-tech-stack.md`.
+`framework` and `packageManager` stay `null`: those are settled by the walking skeleton,
+and writing a guess into the harness config would make it look decided.
 
 ### tier2 — application source, tests, build config
 
@@ -82,10 +92,12 @@ human decision. This is the single most important addition on the list.
 and it will also catch unrelated files with "import" in the name. Over-matching into tier 3
 costs an approval; under-matching costs an airworthiness record.
 
-## Proposed `commands`
+## `commands` — deliberately not changed yet
 
-Currently `build` and `typeCheck` are `null`, so those required checks silently pass. That
-is fine while the repo is documentation-only and wrong the moment code lands.
+`build` and `typeCheck` are still `null`, so those required checks still silently pass.
+That is wrong the moment application code lands, and it is correct until then.
+
+The target is:
 
 ```json
 "commands": {
@@ -96,17 +108,28 @@ is fine while the repo is documentation-only and wrong the moment code lands.
 }
 ```
 
-The two existing shell gates stay in front. They check things no TypeScript toolchain
-knows about — personal data, AI attribution, confidence marking, spec reachability — and
-they must not be displaced by the language toolchain arriving.
+It was not applied with the tier patterns because there is no `package.json` yet. Pointing
+a live pipeline at `npm run lint` in a repository with no npm project does not make the
+gate stricter, it makes every stage fail for a reason that has nothing to do with the
+change under review — and a gate that always fails gets ignored, which is how gates die.
 
-## Also needs a human
+This flips with the walking skeleton. The two shell gates stay in front of the npm scripts
+when it does: they check things no TypeScript toolchain knows about — personal data, AI
+attribution, confidence marking, spec reachability — and must not be displaced by the
+language toolchain arriving.
 
-- **`.harnext/contract.json`** carries a parallel `riskTierRules` map with only `high` and
-  `low`. Its `high` list is path-based and still correct (workflows, specs, scripts,
-  `CLAUDE.md`), but `contracts/**` should be added there too.
-- **`docs/specs/01-tech-stack.md`** currently recommends keeping Laravel and Filament as
-  the cheapest path. That recommendation has been overridden by a decision to rebuild in
-  TypeScript. The document should say so — the fingerprint section stays as Observed fact
-  about the predecessor, the consequences section becomes a record of a decision taken
-  against its advice, and why.
+## Applied alongside
+
+**`.harnext/contract.json`** gains `contracts/**` in its `high` list. It carries a parallel
+`riskTierRules` map with only `high` and `low`, and the oracle needs protecting in both
+places or the stricter one is decorative.
+
+## Still needs a human
+
+**`docs/specs/01-tech-stack.md`** still recommends keeping Laravel and Filament as the
+cheapest path. That recommendation has been overridden. The document should say so — the
+fingerprint section stays as Observed fact about the predecessor, and the consequences
+section becomes a record of a decision taken against its advice, and why.
+
+Leaving it as-is is the more dangerous option: it is the first document anyone reads about
+the stack, and it currently argues for the opposite of what is being built.
