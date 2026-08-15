@@ -33,12 +33,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # PAT_TOKEN so the agent's `git push` is authored by the user.
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # PAT_TOKEN so the agent's `git push` carries the `workflow` OAuth
+          # scope - GITHUB_TOKEN cannot push changes under .github/workflows/**.
+          github_token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
           prompt: |
             You are the triage stage of the harnext pipeline for LivinTribunal/tarmacview-admin.
 
@@ -63,7 +68,7 @@ jobs:
       - name: Transition labels on success
         if: success()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
           NUM: ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
         run: |
           gh api -X DELETE repos/${{ github.repository }}/issues/$NUM/labels/harnext:triage || true
@@ -75,7 +80,7 @@ jobs:
       - name: Park on needs-judgment on failure
         if: failure()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
           NUM: ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
         run: |
           gh api -X DELETE repos/${{ github.repository }}/issues/$NUM/labels/harnext:triage || true

@@ -37,6 +37,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # PAT_TOKEN so the agent's `git push` is authored by the user.
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Run Claude Code
         id: claude
@@ -46,6 +48,9 @@ jobs:
           # Claude subscription (Pro/Max), not metered API billing. Do not
           # swap to anthropic_api_key.
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # PAT_TOKEN so the agent's `git push` carries the `workflow` OAuth
+          # scope - GITHUB_TOKEN cannot push changes under .github/workflows/**.
+          github_token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
           prompt: |
             You are running the `harnext:implement` stage on issue or PR #${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }} in ${{ github.repository }}.
 
@@ -80,7 +85,7 @@ jobs:
       - name: Hand off on success
         if: success()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           NUM: ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
           EVENT_NAME: ${{ github.event_name }}
@@ -146,7 +151,7 @@ jobs:
       - name: Park on needs-judgment on failure
         if: failure()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           NUM: ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
         run: |

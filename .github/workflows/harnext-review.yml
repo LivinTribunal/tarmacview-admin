@@ -37,6 +37,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # PAT_TOKEN so the agent's `git push` is authored by the user.
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Run Claude Code (reviewer)
         id: claude
@@ -45,6 +47,9 @@ jobs:
           # OAuth via the Claude Code GitHub App — usage counts against the
           # user's Claude subscription (Pro/Max), not metered API billing.
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # PAT_TOKEN so the agent's `git push` carries the `workflow` OAuth
+          # scope - GITHUB_TOKEN cannot push changes under .github/workflows/**.
+          github_token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
           prompt: |
             You are the reviewer stage of a harnext pipeline. The PR number is ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}.
 
@@ -78,7 +83,7 @@ jobs:
       - name: Loop control (decide next step)
         if: success()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
           NUM: ${{ github.event.pull_request.number || inputs.issue_number }}
         run: |
           set -euo pipefail
@@ -117,7 +122,7 @@ jobs:
       - name: Park on needs-judgment on failure
         if: failure()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
           NUM: ${{ github.event.pull_request.number || inputs.issue_number }}
         run: |
           set -eu
