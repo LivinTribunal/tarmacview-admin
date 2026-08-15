@@ -22,7 +22,9 @@ jobs:
     # cap the stage: an uncapped job runs to github's 6h ceiling, and on a
     # self-hosted runner it holds a slot for all of it.
     timeout-minutes: 45
-    runs-on: ['self-hosted', 'harnext', 'harnext-tarmacview-admin']
+    # github-hosted while the repo is public. set the HARNEXT_RUNNER repo variable
+    # to a JSON array of labels to put this back on the self-hosted runner.
+    runs-on: ${{ fromJSON(vars.HARNEXT_RUNNER || '"ubuntu-latest"') }}
 
     # agent stage: protected-file edits are a hard failure here,
     # not the warning a human edit gets. see harness.config.json protected_files.
