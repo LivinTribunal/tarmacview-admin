@@ -1,0 +1,895 @@
+{
+  "note": "shape only, derived from captured payloads. parity target is schema parity - equal key sets, types and nesting - never equal values; the rebuild has its own records.",
+  "sampledPayloads": 27,
+  "keys": [
+    {
+      "path": "$",
+      "types": [
+        "object"
+      ],
+      "nullable": false,
+      "occurrences": 27
+    },
+    {
+      "path": "data",
+      "types": [
+        "object"
+      ],
+      "nullable": false,
+      "occurrences": 27
+    },
+    {
+      "path": "data.active_pilots",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 27
+    },
+    {
+      "path": "data.devices",
+      "types": [
+        "array"
+      ],
+      "nullable": false,
+      "occurrences": 27
+    },
+    {
+      "path": "data.devices[]",
+      "types": [
+        "object"
+      ],
+      "nullable": false,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].id",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].last_flight_date",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].lifetime_flights_count",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].maintenance_instructions",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].maintenance_logs",
+      "types": [
+        "array"
+      ],
+      "nullable": false,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].manufacturer",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].max_vlos_meters",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].model",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].name",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].next_service_at_cycles",
+      "types": [
+        "null",
+        "number"
+      ],
+      "nullable": true,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].next_service_date",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].notes",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].serial_number",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].service_baseline_cycles",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].service_calendar_baseline_date",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].service_due",
+      "types": [
+        "boolean"
+      ],
+      "nullable": false,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].service_due_reasons",
+      "types": [
+        "array"
+      ],
+      "nullable": false,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].service_due_reasons[]",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 6
+    },
+    {
+      "path": "data.devices[].service_interval_cycles",
+      "types": [
+        "null",
+        "number"
+      ],
+      "nullable": true,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].service_interval_months",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].service_is_configured",
+      "types": [
+        "boolean"
+      ],
+      "nullable": false,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].service_lifetime_cycles",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].service_overdue_cycles",
+      "types": [
+        "null",
+        "number"
+      ],
+      "nullable": true,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].service_overdue_days",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].service_remaining_cycles",
+      "types": [
+        "null",
+        "number"
+      ],
+      "nullable": true,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].service_remaining_days",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].service_warning",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].status",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].total_flight_hours",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].total_flights",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 216
+    },
+    {
+      "path": "data.devices[].type",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 216
+    },
+    {
+      "path": "data.flights",
+      "types": [
+        "array"
+      ],
+      "nullable": false,
+      "occurrences": 27
+    },
+    {
+      "path": "data.flights[]",
+      "types": [
+        "object"
+      ],
+      "nullable": false,
+      "occurrences": 247
+    },
+    {
+      "path": "data.flights[].device_id",
+      "types": [
+        "null",
+        "number"
+      ],
+      "nullable": true,
+      "occurrences": 247
+    },
+    {
+      "path": "data.flights[].device_model",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 247
+    },
+    {
+      "path": "data.flights[].device_serial_number",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 247
+    },
+    {
+      "path": "data.flights[].flight_date",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 247
+    },
+    {
+      "path": "data.flights[].flight_date_display",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 247
+    },
+    {
+      "path": "data.flights[].flight_date_sort",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 247
+    },
+    {
+      "path": "data.flights[].flight_hours",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 247
+    },
+    {
+      "path": "data.flights[].has_vlos_violation",
+      "types": [
+        "boolean"
+      ],
+      "nullable": false,
+      "occurrences": 247
+    },
+    {
+      "path": "data.flights[].id",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 247
+    },
+    {
+      "path": "data.flights[].max_altitude",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 247
+    },
+    {
+      "path": "data.flights[].max_distance",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 247
+    },
+    {
+      "path": "data.flights[].parsing_errors",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 247
+    },
+    {
+      "path": "data.flights[].parsing_status",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 247
+    },
+    {
+      "path": "data.flights[].pilot_id",
+      "types": [
+        "null",
+        "number"
+      ],
+      "nullable": true,
+      "occurrences": 247
+    },
+    {
+      "path": "data.flights[].pilot_name",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 247
+    },
+    {
+      "path": "data.period_dates",
+      "types": [
+        "object"
+      ],
+      "nullable": false,
+      "occurrences": 27
+    },
+    {
+      "path": "data.period_dates.from",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 27
+    },
+    {
+      "path": "data.period_dates.to",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 27
+    },
+    {
+      "path": "data.pilots",
+      "types": [
+        "array"
+      ],
+      "nullable": false,
+      "occurrences": 27
+    },
+    {
+      "path": "data.pilots[]",
+      "types": [
+        "object"
+      ],
+      "nullable": false,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].avg_hours",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].avg_minutes",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].email",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].filtered_flights",
+      "types": [
+        "array"
+      ],
+      "nullable": false,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].filtered_flights[]",
+      "types": [
+        "object"
+      ],
+      "nullable": false,
+      "occurrences": 318
+    },
+    {
+      "path": "data.pilots[].filtered_flights[].device_model",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 318
+    },
+    {
+      "path": "data.pilots[].filtered_flights[].device_serial_number",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 318
+    },
+    {
+      "path": "data.pilots[].filtered_flights[].flight_date_display",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 318
+    },
+    {
+      "path": "data.pilots[].filtered_flights[].flight_date_sort",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 318
+    },
+    {
+      "path": "data.pilots[].filtered_flights[].flight_hours",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 318
+    },
+    {
+      "path": "data.pilots[].filtered_flights[].id",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 318
+    },
+    {
+      "path": "data.pilots[].flights_by_device",
+      "types": [
+        "array"
+      ],
+      "nullable": false,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].flights_by_device[]",
+      "types": [
+        "object"
+      ],
+      "nullable": false,
+      "occurrences": 28
+    },
+    {
+      "path": "data.pilots[].flights_by_device[].device_model",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 28
+    },
+    {
+      "path": "data.pilots[].flights_by_device[].device_serial_number",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 28
+    },
+    {
+      "path": "data.pilots[].flights_by_device[].flights",
+      "types": [
+        "array"
+      ],
+      "nullable": false,
+      "occurrences": 28
+    },
+    {
+      "path": "data.pilots[].flights_by_device[].flights[]",
+      "types": [
+        "object"
+      ],
+      "nullable": false,
+      "occurrences": 368
+    },
+    {
+      "path": "data.pilots[].flights_by_device[].flights[].device_model",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 368
+    },
+    {
+      "path": "data.pilots[].flights_by_device[].flights[].device_serial_number",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 368
+    },
+    {
+      "path": "data.pilots[].flights_by_device[].flights[].flight_date_display",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 368
+    },
+    {
+      "path": "data.pilots[].flights_by_device[].flights[].flight_date_sort",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 368
+    },
+    {
+      "path": "data.pilots[].flights_by_device[].flights[].flight_hours",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 368
+    },
+    {
+      "path": "data.pilots[].flights_by_device[].flights[].id",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 368
+    },
+    {
+      "path": "data.pilots[].flights_by_device[].total_flight_hours",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 28
+    },
+    {
+      "path": "data.pilots[].flights_by_device[].total_flights",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 28
+    },
+    {
+      "path": "data.pilots[].flights_count",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].id",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].licence_date",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].licence_number",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].licence_status",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].licence_types",
+      "types": [
+        "array"
+      ],
+      "nullable": false,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].licence_types[]",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 258
+    },
+    {
+      "path": "data.pilots[].name",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].total_hours",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].total_minutes",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].training_date",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].training_name",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].training_status",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].trainings",
+      "types": [
+        "array"
+      ],
+      "nullable": false,
+      "occurrences": 222
+    },
+    {
+      "path": "data.pilots[].trainings[]",
+      "types": [
+        "object"
+      ],
+      "nullable": false,
+      "occurrences": 326
+    },
+    {
+      "path": "data.pilots[].trainings[].date_end",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "occurrences": 326
+    },
+    {
+      "path": "data.pilots[].trainings[].date_start",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 326
+    },
+    {
+      "path": "data.pilots[].trainings[].devices",
+      "types": [
+        "array"
+      ],
+      "nullable": false,
+      "occurrences": 326
+    },
+    {
+      "path": "data.pilots[].trainings[].devices[]",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 3
+    },
+    {
+      "path": "data.pilots[].trainings[].name",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 326
+    },
+    {
+      "path": "data.pilots[].trainings[].status",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 326
+    },
+    {
+      "path": "data.pilots[].trainings[].training_type",
+      "types": [
+        "string"
+      ],
+      "nullable": false,
+      "occurrences": 326
+    },
+    {
+      "path": "data.total_flight_hours",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 27
+    },
+    {
+      "path": "data.total_flight_minutes",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 27
+    },
+    {
+      "path": "data.total_flights",
+      "types": [
+        "number"
+      ],
+      "nullable": false,
+      "occurrences": 27
+    },
+    {
+      "path": "success",
+      "types": [
+        "boolean"
+      ],
+      "nullable": false,
+      "occurrences": 27
+    }
+  ]
+}

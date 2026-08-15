@@ -1,0 +1,61 @@
+{
+  "resource": "training-types",
+  "create": [
+    {
+      "name": "data.code",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.description",
+      "control": "textarea",
+      "rows": "3"
+    },
+    {
+      "name": "data.name",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    }
+  ],
+  "edit": [
+    {
+      "name": "data.code",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.description",
+      "control": "textarea",
+      "rows": "3"
+    },
+    {
+      "name": "data.name",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    }
+  ],
+  "coverage": {
+    "edit": {
+      "namedFields": 3,
+      "rawControlsInMarkup": 4,
+      "status": "complete"
+    },
+    "create": {
+      "namedFields": 3,
+      "rawControlsInMarkup": 4,
+      "status": "complete"
+    }
+  },
+  "sources": [
+    "/training-types/create.html",
+    "/training-types/{id}/edit.html"
+  ]
+}
