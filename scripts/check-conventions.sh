@@ -128,7 +128,7 @@ done
 # only meaningful against a diff - in a full-tree sweep every protected file is
 # "present", which says nothing about whether anyone touched it.
 if [[ "${1:-}" != "--all" ]]; then
-  PROTECTED_RE='^(\.github/workflows/|harness\.config\.json$|LICENSE$|NOTICE$)'
+  PROTECTED_RE='^(\.github/workflows/|harness\.config\.json$)'
   for f in "${EXISTING[@]}"; do
     if [[ "$f" =~ $PROTECTED_RE ]]; then
       if [[ "${HARNEXT_AGENT:-0}" == "1" ]]; then

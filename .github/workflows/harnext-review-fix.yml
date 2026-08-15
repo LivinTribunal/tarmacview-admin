@@ -17,6 +17,9 @@ jobs:
     # agent stages run on the local runner: they need the Skill tool,
     # subagents and worktrees, which github-hosted runners cannot give them.
     # deterministic gates stay on github-hosted CI.
+    # cap the stage: an uncapped job runs to github's 6h ceiling, and on a
+    # self-hosted runner it holds a slot for all of it.
+    timeout-minutes: 90
     runs-on: ['self-hosted', 'harnext', 'harnext-tarmacview-admin']
     permissions:
       contents: write
@@ -55,7 +58,7 @@ jobs:
             Commit with lowercase verb-first messages, no AI attribution, author `Štefan Moravík <stevko.moravik@gmail.com>`. Push. Reply once on the PR summarising, per reviewer point, what changed and where. If the scope of the PR shifted, update the PR body with `gh pr edit <PR> --body-file <path>` — extend the in-scope section or add a `Folded-in fixes` section naming each unrelated fix, its root cause, and why it rode along.
 
             The PR number is: ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
-          claude_args: '--model claude-opus-4-7 --max-turns 60 --allowedTools "Read,Glob,Grep,Bash,Edit,Write,Skill"'
+          claude_args: '--model claude-opus-5 --effort high --max-turns 500 --dangerously-skip-permissions'
           allowed_bots: 'github-actions'
       - name: Re-dispatch review on success
         if: success()

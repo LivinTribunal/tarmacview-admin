@@ -25,7 +25,6 @@ grounded in what actually exists on disk right now.
 README.md                    project overview, status, roadmap of the specs
 CLAUDE.md                    conventions agents/contributors must follow
 CONTEXT.md                   domain glossary (canonical vocabulary)
-LICENSE, NOTICE              Apache 2.0 + attribution (protected)
 harness.config.json          risk-tier + protected-file config (protected)
 docs/specs/                  the rebuild specification (11 files, 00..10)
 scripts/check-conventions.sh the lint gate
@@ -96,8 +95,7 @@ block an unrelated PR. Sections in order:
    whose `](target)` links don't resolve on disk. Skips `http*`,
    `mailto:` and pure anchors.
 4. **Protected files** (`:107-122`, diff-scoped only) — warns on humans
-   editing `.github/workflows/**`, `harness.config.json`, `LICENSE` or
-   `NOTICE`; **fails hard when `HARNEXT_AGENT=1`** (i.e. when the caller
+   editing `.github/workflows/**`, `harness.config.json`; **fails hard when `HARNEXT_AGENT=1`** (i.e. when the caller
    is an agent). Note: `CLAUDE.md` is listed as protected in
    `harness.config.json` but is not enforced by the script — treat it as
    protected anyway.
@@ -152,7 +150,7 @@ Defined in `harness.config.json:12-90`. Summary for orientation:
 
 | Tier | Patterns | Required checks | Approvals |
 |------|----------|-----------------|-----------|
-| T1 low | `docs/**`, `**/*.md`, `**/*.txt`, `CHANGELOG*`, `LICENSE*`, `NOTICE`, `.editorconfig`, `.gitignore` | `lint` | 0, self-merge |
+| T1 low | `docs/**`, `**/*.md`, `**/*.txt`, `CHANGELOG*`, `.editorconfig`, `.gitignore` | `lint` | 0, self-merge |
 | T2 medium | `app/**`, `src/**`, `tests/**`, `database/**`, `routes/**`, `resources/**`, `config/**`, `composer.json`, `package.json` | `lint`, `type-check`, `test`, `build` | 1, review agent |
 | T3 high | `**/*polic*`, `**/*permission*`, `**/*authoriz*`, `**/*authoris*`, `**/*tenant*`, `**/*scope*`, `**/*parser*`, `**/*import*`, `**/migrations/**`, `database/migrations/**` | all T2 + manual-approval | 2, review agent |
 
@@ -166,8 +164,6 @@ Per `harness.config.json:122-128`:
 - `.github/workflows/**`
 - `harness.config.json`
 - `CLAUDE.md`
-- `LICENSE`
-- `NOTICE`
 
 The lint script additionally hard-fails when `HARNEXT_AGENT=1` on
 protected-file edits (excluding `CLAUDE.md`, which is enforced by

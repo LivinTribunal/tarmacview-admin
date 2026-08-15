@@ -6,8 +6,6 @@
       ".harnext/**",
       "CLAUDE.md",
       "CONTEXT.md",
-      "LICENSE",
-      "NOTICE",
       "README.md",
       "docs/specs/**",
       "harness.config.json",

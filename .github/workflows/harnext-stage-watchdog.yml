@@ -1,0 +1,49 @@
+name: harnext stage-watchdog
+# reconciles stage labels against reality from outside the stages.
+#
+# every stage workflow parks itself on harnext:needs-judgment from a step guarded
+# by `if: failure() || cancelled()`, which covers the agent step dying. it cannot
+# cover the job dying before its first step runs: if `Set up job` fails, no step
+# in the job executes, including the park step, so the issue keeps its stage
+# label and nothing signals a human. there is nothing to retry from either - the
+# failure is in the runner's bootstrap, ahead of any `run:` or `uses:` this repo
+# controls. only an outside observer can notice.
+#
+# scheduled rather than triggered: the events that would trigger it (a run that
+# never started, a dispatch that never landed) are precisely the ones that emit
+# nothing. ubuntu-latest, so it stays up when the self-hosted fleet is asleep.
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'report verdicts without parking anything'
+        type: boolean
+        default: false
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      # actions:read to list runs per stage, issues+pull-requests:write to move
+      # the labels and post the explanatory comment. nothing else.
+      actions: read
+      contents: read
+      issues: write
+      pull-requests: write
+    # one tick at a time: two overlapping ticks would both see the same stalled
+    # issue and race on the same label swap.
+    concurrency:
+      group: harnext-stage-watchdog
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Reconcile stage labels
+        env:
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: bash scripts/harnext-stage-watchdog.sh

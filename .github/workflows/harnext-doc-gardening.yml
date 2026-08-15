@@ -1,19 +1,29 @@
 name: harnext doc-gardening
 on:
-  pull_request:
-    types: [closed]
+  # batched, not per-merge. the generated `pull_request: [closed]` trigger fires on
+  # every merged PR including gardening's own, so each gardening merge starts another
+  # gardening run. the sibling tarmacview repo hit exactly that: 264 gardening PRs,
+  # 62% of them triggered by another gardening PR, one unbroken chain 51 deep, all
+  # rewriting the same doc lines. a batch sees a whole window of commits at once, so
+  # it edits a bullet once instead of appending a clause to it six runs in a row.
+  schedule:
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
 
 jobs:
   claude:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    # backstop ttl: an uncapped job runs until github's own 6h ceiling, and a hung
+    # agent that never reports is indistinguishable from a slow one.
+    timeout-minutes: 240
     permissions:
       contents: write
       pull-requests: write
       issues: write
       id-token: write
     concurrency:
-      group: harnext-doc-gardening-${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
+      # one gardening run at a time, repo-wide - these runs write to the same files
+      group: harnext-doc-gardening
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -21,8 +31,52 @@ jobs:
           fetch-depth: 0
           # PAT_TOKEN so the agent's `git push` is authored by the user.
           token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+
+      # the mark tag is what bounds a run and what stops it feeding on its own
+      # output: gardening only ever writes markdown, so a range holding nothing but
+      # markdown is a range this job produced.
+      - name: Resolve gardening range
+        id: range
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --quiet
+
+          if ! git rev-parse -q --verify refs/tags/docs-gardening-mark >/dev/null; then
+            echo "no mark tag yet - planting it at HEAD, nothing to garden on this run"
+            git tag docs-gardening-mark HEAD
+            git push origin docs-gardening-mark
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          BASE=$(git rev-parse docs-gardening-mark)
+          HEAD_SHA=$(git rev-parse HEAD)
+          echo "base=$BASE"     >> "$GITHUB_OUTPUT"
+          echo "head=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+
+          if [ "$BASE" = "$HEAD_SHA" ]; then
+            echo "nothing merged since the last run"
+            echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          CHANGED=$(git diff --name-only "$BASE".."$HEAD_SHA")
+          echo "changed files in range:"; echo "$CHANGED" | sed 's/^/  /'
+
+          # only markdown in the window -> this is gardening's own output
+          if [ -z "$(echo "$CHANGED" | grep -v '\.md$' || true)" ]; then
+            echo "range holds only markdown - advancing the mark without gardening"
+            git tag -f docs-gardening-mark "$HEAD_SHA"
+            git push -f origin docs-gardening-mark
+            echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
       - name: Run Claude Code
         id: claude
+        if: steps.range.outputs.skip == 'false'
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -30,25 +84,48 @@ jobs:
           # scope - GITHUB_TOKEN cannot push changes under .github/workflows/**.
           github_token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
           prompt: |
-            Sweep the docs for drift introduced by recent merges. Read `docs/specs/00-index.md`, then walk the spec tree and `CONTEXT.md`.
+            Garden the docs for drift introduced by everything merged in this window:
+            `${{ steps.range.outputs.base }}..${{ steps.range.outputs.head }}`.
+
+            Read the range first (`git diff --stat <base>..<head>`, then the PR bodies it
+            contains) so you garden against what actually changed, not against a hunch.
+            Then read `docs/specs/00-index.md` and walk the spec tree and `CONTEXT.md`.
 
             Create a branch `docs/gardening-<yyyy-mm-dd>` from `main` and make edits limited to:
               - Fixing broken cross-references between spec files.
               - Removing duplicated facts so each lives in exactly one file, replacing the duplicate with a cross-reference.
               - Adding to `CONTEXT.md` any domain concept that now appears in two or more spec files without an entry.
-              - Correcting Observed/Inferred markers where a claim's provenance has become clearer (only when the change is documented in the PR body — never guess).
+              - Correcting Observed/Inferred markers where a claim's provenance has become clearer (only when the change is documented in a PR body in this range — never guess).
               - Enforcing markdown conventions from `CLAUDE.md`: sparse lowercase comments, dashes not em-dashes, short section labels.
               - Scrubbing any personal data (real names, e-mails, licence numbers, tenant names, device serials, org access tokens) that slipped in — replace with placeholders.
 
-            Out of scope: rewriting spec content, resolving any of the three open questions in `CLAUDE.md`, editing protected files (`.github/workflows/**`, `harness.config.json`, `LICENSE`, `NOTICE`), scaffolding application code.
+            Out of scope: rewriting spec content, resolving any of the three open questions in `CLAUDE.md`, editing protected files (`.github/workflows/**`, `harness.config.json`), scaffolding application code.
 
-            Run `bash scripts/check-conventions.sh`. Commit with lowercase verb-first messages, no AI attribution, author `Štefan Moravík <stevko.moravik@gmail.com>`. Open a DRAFT PR with `gh pr create --draft --base main` whose body lists each edit and its reason. Do not merge.
-          claude_args: '--model claude-opus-4-7 --max-turns 60 --allowedTools "Read,Glob,Grep,Bash"'
+            If nothing in the range falsified a doc, say so and open no PR. An empty gardening run is a good outcome, not a failure.
+
+            Run `bash scripts/check-conventions.sh` and `bash scripts/structural-tests.sh`. Commit with lowercase verb-first messages, no AI attribution, author `Štefan Moravík <stevko.moravik@gmail.com>`. Open a DRAFT PR with `gh pr create --draft --base main` whose body lists each edit and its reason. Do not merge.
+          claude_args: '--model claude-opus-5 --effort high --max-turns 200 --allowedTools "Read,Glob,Grep,Bash,Edit,Write"'
           allowed_bots: 'github-actions'
-      - name: Comment on failure
+
+      # advance the mark even when the agent opened nothing, or the next run
+      # re-gardens the same window forever.
+      - name: Advance the mark
+        if: always() && steps.range.outputs.skip == 'false' && steps.claude.conclusion == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git tag -f docs-gardening-mark "${{ steps.range.outputs.head }}"
+          git push -f origin docs-gardening-mark
+
+      - name: Report failure
         if: failure()
         env:
           GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
-          NUM: ${{ github.event.pull_request.number }}
         run: |
-          gh pr comment "$NUM" --body "harnext:doc-gardening failed: see workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          # no PR context on a scheduled run, so the failure goes to an issue
+          gh issue create \
+            --title "doc-gardening failed on $(date -u +%Y-%m-%d)" \
+            --label "harnext:needs-judgment" \
+            --body "harnext doc-gardening failed. Range: \`${{ steps.range.outputs.base }}..${{ steps.range.outputs.head }}\`. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            || true
