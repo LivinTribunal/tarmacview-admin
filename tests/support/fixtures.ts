@@ -18,12 +18,21 @@ const people = [
   // register, not an edge case, and a unique-not-null e-mail would make it impossible.
   { key: 'alphaPilot', name: 'Alpha Pilot', email: null },
 
+  // the only cross-tenant reach there is. it comes from the system role and not from a
+  // membership, so this one holds none.
   { key: 'systemAdmin', name: 'System Administrator', email: 'admin@example.invalid' },
+] as const
+
+const airframes = [
+  { key: 'alphaOne', organization: 'alpha', serialNumber: 'SN-ALPHA-0001', typed: true },
+  // no device type: no VLOS limit and no service interval, which must read as a gap
+  { key: 'alphaTwo', organization: 'alpha', serialNumber: 'SN-ALPHA-0002', typed: false },
+  { key: 'bravoOne', organization: 'bravo', serialNumber: 'SN-BRAVO-0001', typed: true },
 ] as const
 
 export type OrganizationKey = (typeof organizations)[number]['key']
 export type PersonKey = (typeof people)[number]['key']
-export type AirframeKey = 'alphaOne' | 'alphaTwo' | 'bravoOne'
+export type AirframeKey = (typeof airframes)[number]['key']
 
 export type SeededIds = {
   organizations: Record<OrganizationKey, number>
@@ -32,118 +41,88 @@ export type SeededIds = {
   deviceType: number
 }
 
-// seeded through a connection that is exempt from row-level security, because policies
-// deny writes to a session with no tenant context - which is the correct behaviour, and
-// makes seeding a deployment concern rather than an application one.
+async function insertOne<T extends { id: number }>(inserted: Promise<T[]>): Promise<number> {
+  const [row] = await inserted
+  if (!row) throw new Error('fixture row was not inserted')
+  return row.id
+}
+
+// seeded through a connection that is exempt from row-level security, because the
+// policies deny a write from a session with no tenant context - which is the correct
+// behaviour, and makes seeding a deployment concern rather than an application one.
 export async function seedFixtures(db: Database): Promise<SeededIds> {
-  const insertedOrganizations = await db
-    .insert(organization)
-    .values(organizations.map(({ name, reportToken }) => ({ name, reportToken })))
-    .returning({ id: organization.id, name: organization.name })
-
-  const organizationId = (key: OrganizationKey): number => {
-    const wanted = organizations.find((entry) => entry.key === key)
-    const row = insertedOrganizations.find((candidate) => candidate.name === wanted?.name)
-    if (!row) throw new Error(`fixture organisation ${key} was not inserted`)
-    return row.id
-  }
-
-  const insertedPeople = await db
-    .insert(person)
-    .values(
-      people.map(({ name, email, key }) => ({
-        name,
-        email,
-        systemRole: key === 'systemAdmin' ? ('superadmin' as const) : ('member' as const),
-      })),
+  const organizationIds = {} as Record<OrganizationKey, number>
+  for (const entry of organizations) {
+    organizationIds[entry.key] = await insertOne(
+      db
+        .insert(organization)
+        .values({ name: entry.name, reportToken: entry.reportToken })
+        .returning({ id: organization.id }),
     )
-    .returning({ id: person.id, name: person.name })
-
-  const personId = (key: PersonKey): number => {
-    const wanted = people.find((entry) => entry.key === key)
-    const row = insertedPeople.find((candidate) => candidate.name === wanted?.name)
-    if (!row) throw new Error(`fixture person ${key} was not inserted`)
-    return row.id
   }
 
-  // the superadmin holds no membership: cross-tenant reach is the system role, never a
-  // membership somewhere
+  const personIds = {} as Record<PersonKey, number>
+  for (const entry of people) {
+    personIds[entry.key] = await insertOne(
+      db
+        .insert(person)
+        .values({
+          name: entry.name,
+          email: entry.email,
+          systemRole: entry.key === 'systemAdmin' ? 'superadmin' : 'member',
+        })
+        .returning({ id: person.id }),
+    )
+  }
+
   await db.insert(membership).values([
     {
-      personId: personId('alphaManager'),
-      organizationId: organizationId('alpha'),
+      personId: personIds.alphaManager,
+      organizationId: organizationIds.alpha,
       role: 'accountable_manager',
       isPrimaryContact: true,
     },
+    { personId: personIds.alphaPilot, organizationId: organizationIds.alpha, role: 'pilot' },
     {
-      personId: personId('alphaPilot'),
-      organizationId: organizationId('alpha'),
-      role: 'pilot',
-    },
-    {
-      personId: personId('bravoManager'),
-      organizationId: organizationId('bravo'),
+      personId: personIds.bravoManager,
+      organizationId: organizationIds.bravo,
       role: 'accountable_manager',
       isPrimaryContact: true,
     },
   ])
 
-  const [type] = await db
-    .insert(deviceType)
-    .values({
-      name: 'Placeholder Quadcopter',
-      maxVlos: '500',
-      serviceInterval: 50,
-      serviceIntervalMonths: 12,
-      batteryServiceInterval: 100,
-      maintenanceInstructions: 'Placeholder maintenance instructions.',
-    })
-    .returning({ id: deviceType.id })
-  if (!type) throw new Error('fixture device type was not inserted')
+  const deviceTypeId = await insertOne(
+    db
+      .insert(deviceType)
+      .values({
+        name: 'Placeholder Quadcopter',
+        maxVlos: '500',
+        serviceInterval: 50,
+        serviceIntervalMonths: 12,
+        batteryServiceInterval: 100,
+        maintenanceInstructions: 'Placeholder maintenance instructions.',
+      })
+      .returning({ id: deviceType.id }),
+  )
 
-  const insertedAirframes = await db
-    .insert(device)
-    .values([
-      {
-        organizationId: organizationId('alpha'),
-        serialNumber: 'SN-ALPHA-0001',
-        name: 'Alpha One',
-        deviceTypeId: type.id,
-      },
-      // no device type: no VLOS limit and no service interval, which must read as a gap
-      {
-        organizationId: organizationId('alpha'),
-        serialNumber: 'SN-ALPHA-0002',
-        name: 'Alpha Two',
-      },
-      {
-        organizationId: organizationId('bravo'),
-        serialNumber: 'SN-BRAVO-0001',
-        name: 'Bravo One',
-        deviceTypeId: type.id,
-      },
-    ])
-    .returning({ id: device.id, serialNumber: device.serialNumber })
-
-  const airframeId = (serialNumber: string): number => {
-    const row = insertedAirframes.find((candidate) => candidate.serialNumber === serialNumber)
-    if (!row) throw new Error(`fixture airframe ${serialNumber} was not inserted`)
-    return row.id
+  const airframeIds = {} as Record<AirframeKey, number>
+  for (const entry of airframes) {
+    airframeIds[entry.key] = await insertOne(
+      db
+        .insert(device)
+        .values({
+          organizationId: organizationIds[entry.organization],
+          serialNumber: entry.serialNumber,
+          deviceTypeId: entry.typed ? deviceTypeId : null,
+        })
+        .returning({ id: device.id }),
+    )
   }
 
   return {
-    organizations: { alpha: organizationId('alpha'), bravo: organizationId('bravo') },
-    people: {
-      alphaManager: personId('alphaManager'),
-      alphaPilot: personId('alphaPilot'),
-      bravoManager: personId('bravoManager'),
-      systemAdmin: personId('systemAdmin'),
-    },
-    airframes: {
-      alphaOne: airframeId('SN-ALPHA-0001'),
-      alphaTwo: airframeId('SN-ALPHA-0002'),
-      bravoOne: airframeId('SN-BRAVO-0001'),
-    },
-    deviceType: type.id,
+    organizations: organizationIds,
+    people: personIds,
+    airframes: airframeIds,
+    deviceType: deviceTypeId,
   }
 }
