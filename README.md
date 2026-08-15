@@ -15,10 +15,11 @@ record around them.
 
 ## Status
 
-**The rebuild specification, and the first slice of the application on top of it.** That
-slice is the walking skeleton's shell — the device-type register's routes and form, and the
-route and form contract suites that test them against `contracts/`. Schema, tenancy and auth
-are the slice after it.
+**The rebuild specification, and the walking skeleton of the application on top of it.**
+The skeleton is one vertical slice: the device-type register's routes and form, the schema
+behind them, tenant isolation carried by Postgres row-level security, admin-provisioned
+authentication, and one test from each of the five layers the rebuild is verified against.
+The other twelve registers, flight ingestion and the operator report come next.
 
 The predecessor system exists and runs in production, but its source repository was lost.
 This repo starts from a clean-room behavioural specification reconstructed by black-box
@@ -84,7 +85,8 @@ docs/
   rebuild/        how the rebuild is driven: operating model, risk tiers
 contracts/        machine-readable route, form and report contracts — the test oracle
 src/              application source: app/ routes, components/, lib/
-tests/            the contract suites, asserted against contracts/
+drizzle/          schema migrations, including the row-level security policies
+tests/            the contract, domain and tenancy suites
 CONTEXT.md        domain glossary — the canonical vocabulary
 CLAUDE.md         conventions for agents and contributors
 harness.config.json  risk-tier configuration
@@ -92,10 +94,14 @@ harness.config.json  risk-tier configuration
 
 ```bash
 npm install
-npm run test        # the contract suites
+cp .env.example .env.local   # DATABASE_URL, and Better Auth's secret and origin
+npm run test                 # contract, domain and tenancy suites
 npm run typecheck
 npm run build
 ```
+
+The tenancy suite starts a real Postgres through Testcontainers, so it needs a container
+engine running. It fails rather than skips without one, deliberately.
 
 ## Documentation
 

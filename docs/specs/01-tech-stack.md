@@ -46,6 +46,7 @@ deliberately against the recommendation this document used to carry.
 | Auth | **Better Auth** — admin-provisioned accounts, admin-initiated reset, no public signup |
 | Hosting | **AWS**, app and database on one small instance, direct connections |
 | Test runner | **Vitest** |
+| Test database | **Testcontainers** — a real Postgres per run |
 
 Row-level security was chosen because `CLAUDE.md` calls tenant scoping a security property
 enforced globally rather than per-controller. RLS is the only option on the table where
@@ -66,6 +67,12 @@ domain rules, and none of them needs a browser. **Playwright is deliberately not
 `harness.config.json` tier 2 lists `playwright.config.*`, which anticipates a browser runner
 without committing to one, and a pattern list is not a decision — if end-to-end coverage is
 ever wanted, choosing the runner is a separate decision made here.
+
+The tenant-isolation layer is the exception to "contract- and unit-shaped": what it asserts
+is Postgres role and policy behaviour, so it runs against a real Postgres started by
+Testcontainers rather than an in-process stand-in, which would be testing the stand-in. That
+costs a container engine on whatever runs the suite, and it is deliberately not optional —
+a tenant-isolation test that quietly skips is a green run proving nothing.
 
 ### What this costs, honestly
 

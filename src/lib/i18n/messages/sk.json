@@ -8,5 +8,15 @@
   "deviceType.field.service_interval": "Servisný interval (cykly)",
   "deviceType.field.service_interval_months": "Servisný interval (mesiace)",
   "deviceType.field.battery_service_interval": "Servisný interval batérie (cykly)",
-  "deviceType.field.maintenance_instructions": "Pokyny na údržbu"
+  "deviceType.field.maintenance_instructions": "Pokyny na údržbu",
+  "device.type.unassigned": "Bez typu zariadenia",
+  "device.status.active": "Aktívne",
+  "device.status.inactive": "Neaktívne",
+  "device.status.maintenance": "Údržba",
+  "device.status.retired": "Vyradené",
+  "device.warning.noDeviceType": "Bez typu zariadenia: nie je nastavený limit VLOS ani servisný interval",
+  "device.warning.noServiceInterval": "Typ zariadenia nemá nastavený servisný interval",
+  "device.warning.serviceDue": "Servis je potrebný",
+  "device.serviceLimit.cycles": "Dosiahnutý limit cyklov",
+  "device.serviceLimit.months": "Dosiahnutý kalendárny limit"
 }

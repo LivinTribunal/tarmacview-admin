@@ -28,8 +28,10 @@ function Control({ field }: { field: FormField }) {
   )
 }
 
-// no submit handler: the write path needs a schema and a tenancy boundary, which are the
-// next slice. this renders the field set the form contract is asserted against.
+// still no submit handler, now deliberately rather than for want of a schema: the
+// capture was GET-only, so contracts/routes.json can assert nothing about a write, and
+// the catalogue is a superadmin-maintained deployment-wide register. this renders the
+// field set the form contract is asserted against.
 export function DeviceTypeForm() {
   return (
     <form>

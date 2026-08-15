@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1786803179773,
+      "tag": "0000_walking_skeleton",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786803195318,
+      "tag": "0001_force_rls_and_app_role",
+      "breakpoints": true
+    }
+  ]
+}
