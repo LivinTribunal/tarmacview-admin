@@ -1,0 +1,12 @@
+{
+  "deviceType.index.title": "Typy zariadení",
+  "deviceType.index.empty": "Žiadne typy zariadení",
+  "deviceType.create.title": "Nový typ zariadenia",
+  "deviceType.edit.title": "Upraviť typ zariadenia",
+  "deviceType.field.name": "Názov",
+  "deviceType.field.max_vlos": "Maximálny VLOS (m)",
+  "deviceType.field.service_interval": "Servisný interval (cykly)",
+  "deviceType.field.service_interval_months": "Servisný interval (mesiace)",
+  "deviceType.field.battery_service_interval": "Servisný interval batérie (cykly)",
+  "deviceType.field.maintenance_instructions": "Pokyny na údržbu"
+}

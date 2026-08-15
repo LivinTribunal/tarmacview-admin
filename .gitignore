@@ -18,6 +18,9 @@ dist/
 .vite/
 *.tsbuildinfo
 
+# Next.js build output
+.next/
+
 # Python
 __pycache__/
 *.pyc
