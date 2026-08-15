@@ -25,8 +25,8 @@ So this lands before the first line of application code, not after.
 
 ## Applied `riskTiers`
 
-Only `patterns` changed. `mergePolicy` and `evidenceRequirements` stay exactly as they
-were — the thresholds were right, they were just pointed at the wrong files.
+`patterns` changed to match the TypeScript tree. `mergePolicy` changed separately and for a
+different reason — see "Merge authority" below.
 
 `detection.primaryLanguage` also becomes `TypeScript`, with a note recording that the
 decision was taken against the recommendation still standing in `01-tech-stack.md`.
@@ -117,6 +117,42 @@ This flips with the walking skeleton. The two shell gates stay in front of the n
 when it does: they check things no TypeScript toolchain knows about — personal data, AI
 attribution, confidence marking, spec reachability — and must not be displaced by the
 language toolchain arriving.
+
+## Merge authority
+
+The owner granted the agent loop **full merge authority across all three tiers**. Applied:
+
+- tier 2 and tier 3 `mergePolicy` → `minApprovals: 0`, `allowSelfMerge: true`
+- tier 3 `requiredChecks` → `manual-approval` removed
+- tier 3 `evidenceRequirements` → `manual-review` removed
+
+The two removals are not a weakening on top of the grant, they are a consequence of it.
+Leaving a required check named `manual-approval` in place when no human is going to supply
+one produces a pipeline that blocks forever on a signal that will never arrive — and the
+repair for that, under pressure, is someone disabling the check. Better that the config
+says what is true.
+
+`requireReviewAgent` stays `true` at both tiers. With nobody reading diffs before they
+land, the review agent and the check set are the only control left, so removing it would
+leave nothing.
+
+**The carve-out:** `contracts/**` is added to `protected_files`. It is the test oracle. An
+agent that can weaken an assertion can make every gate report green while the behaviour is
+wrong, and that failure is invisible exactly because everything looks fine.
+
+One consequence worth stating plainly: the loop can no longer close issue #9, which needs
+the contracts regenerated. It must escalate that instead. That is the price of the
+carve-out and it is a one-off.
+
+### This protection is not yet enforced
+
+`check-conventions.sh` only makes a protected-file edit a hard failure when
+`HARNEXT_AGENT=1`. **No workflow sets it.** Until one does, `protected_files` is a
+convention the loop is asked to honour, not a gate that stops it — and the oracle lock is
+weaker than it reads.
+
+Fixing it means setting that variable in the harnext agent stages, which are themselves
+protected files. It needs the owner, and it should happen before the loop runs unattended.
 
 ## Applied alongside
 

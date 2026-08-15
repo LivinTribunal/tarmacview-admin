@@ -3,11 +3,11 @@
   "repoRoot": ".",
   "detection": {
     "primaryLanguage": "TypeScript",
-    "framework": null,
-    "packageManager": null,
+    "framework": "Next.js",
+    "packageManager": "npm",
     "ciProvider": "GitHub Actions",
     "monorepo": false,
-    "note": "TypeScript rebuild, decided against the Laravel-and-Filament recommendation still standing in docs/specs/01-tech-stack.md; that document records the predecessor's fingerprint, not this decision. Framework and package manager are settled by the walking skeleton. Risk-tier patterns are already TypeScript-shaped so that authorisation and tenant-scoping code cannot land as tier 1. The lint and test commands still point at the shell gates only: pointing them at npm scripts before a package.json exists would break the pipeline, so they flip when the skeleton lands."
+    "note": "TypeScript rebuild on Next.js App Router, Postgres with Drizzle, tenant isolation by Postgres row-level security, Better Auth with admin-provisioned accounts, deployed as app-and-database on one small AWS instance with direct connections so RLS session variables behave. Decided against the Laravel-and-Filament recommendation still standing in docs/specs/01-tech-stack.md; that document records the predecessor's fingerprint, not this decision. The lint and test commands still point at the shell gates only: aiming them at npm scripts before a package.json exists would fail every stage for reasons unrelated to the change under review, so they flip when the walking skeleton lands."
   },
   "riskTiers": {
     "tier1": {
@@ -63,9 +63,9 @@
         "build"
       ],
       "mergePolicy": {
-        "minApprovals": 1,
+        "minApprovals": 0,
         "requireReviewAgent": true,
-        "allowSelfMerge": false
+        "allowSelfMerge": true
       },
       "evidenceRequirements": [
         "tests-pass",
@@ -75,7 +75,7 @@
     },
     "tier3": {
       "name": "high",
-      "description": "Tenant isolation, authorisation, flight-log parsing, schema migrations, and the extracted contracts. Getting the first four wrong is either a cross-tenant data breach or a corruption of the airworthiness record. The contracts are the test oracle: anything that can weaken an assertion can make every gate report green while the behaviour is wrong.",
+      "description": "Tenant isolation, authorisation, flight-log parsing, schema migrations, and the extracted contracts. Getting these wrong is either a cross-tenant data breach or a corruption of the airworthiness record. Tier 3 no longer gates on human approval - the owner granted the agent loop full merge authority - so the review agent and the full check set are the only things standing here. The one exception is contracts/**: it is the test oracle, it is listed in protected_files, and an agent that can weaken an assertion can make every gate report green while the behaviour is wrong.",
       "patterns": [
         "**/*polic*",
         "**/*permission*",
@@ -97,19 +97,17 @@
         "lint",
         "type-check",
         "test",
-        "build",
-        "manual-approval"
+        "build"
       ],
       "mergePolicy": {
-        "minApprovals": 2,
+        "minApprovals": 0,
         "requireReviewAgent": true,
-        "allowSelfMerge": false
+        "allowSelfMerge": true
       },
       "evidenceRequirements": [
         "tests-pass",
         "lint-clean",
-        "type-check-clean",
-        "manual-review"
+        "type-check-clean"
       ]
     }
   },
@@ -153,7 +151,8 @@
   "protected_files": [
     ".github/workflows/**",
     "harness.config.json",
-    "CLAUDE.md"
+    "CLAUDE.md",
+    "contracts/**"
   ],
   "aiPlatform": "claude"
 }

@@ -97,9 +97,16 @@ An issue is done when **all** of the following hold. No exceptions, no partial c
 3. Its spec claims are marked Observed or Inferred, and nothing was promoted silently.
 4. Both review lenses have run on the diff: `ponytail-review`, `grain-review`.
 5. The PR body matches what the code actually does.
-6. For anything in tier 3 — tenant scoping, authorisation, parsers, migrations — a human
-   approved it. Two approvals, per `harness.config.json`. The orchestrator cannot self-merge
-   these and must not try.
+6. Nothing in the change touches `contracts/**` or any other protected file.
+
+The owner has granted the loop full merge authority across all three tiers, including
+tenant scoping, authorisation, parsers and migrations. That removes the human approval that
+used to sit at tier 3, which means points 1–5 are no longer a formality — they are the
+entire control. Nobody is reading these diffs before they land.
+
+The single carve-out is the test oracle. `contracts/**` is a protected file: an agent that
+can weaken an assertion can make every gate report green while the behaviour is wrong, and
+that failure is invisible precisely because everything looks fine.
 
 ## 5. The quality system
 
@@ -180,5 +187,11 @@ Carried from `CLAUDE.md` because these are the ones an autonomous loop erodes fi
 - Never promote an Inferred claim to settled without saying what changed it.
 - No personal data in the repo, on every edit, fixtures included.
 - No AI attribution anywhere.
-- Protected files stay untouched by agents: `.github/workflows/**`, `harness.config.json`.
+- Protected files stay untouched by agents: `.github/workflows/**`, `harness.config.json`,
+  `CLAUDE.md`, `contracts/**`.
+- **That protection is currently advisory in CI.** `check-conventions.sh` only makes a
+  protected-file edit a hard failure when `HARNEXT_AGENT=1`, and no workflow sets it. Until
+  one does, the oracle lock is a convention the loop is asked to honour rather than a gate
+  that stops it. Setting that variable in the agent stages is the fix, and it means editing
+  a protected workflow file, so it needs the owner.
 - Root-cause over workaround. `--no-verify` is never the answer.
