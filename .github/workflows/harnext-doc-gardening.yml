@@ -13,6 +13,11 @@ on:
 jobs:
   claude:
     runs-on: ubuntu-latest
+
+    # agent stage: protected-file edits are a hard failure here,
+    # not the warning a human edit gets. see harness.config.json protected_files.
+    env:
+      HARNEXT_AGENT: '1'
     # backstop ttl: an uncapped job runs until github's own 6h ceiling, and a hung
     # agent that never reports is indistinguishable from a slow one.
     timeout-minutes: 240

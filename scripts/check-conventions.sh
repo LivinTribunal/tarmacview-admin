@@ -128,7 +128,29 @@ done
 # only meaningful against a diff - in a full-tree sweep every protected file is
 # "present", which says nothing about whether anyone touched it.
 if [[ "${1:-}" != "--all" ]]; then
-  PROTECTED_RE='^(\.github/workflows/|harness\.config\.json$)'
+  # read the list from harness.config.json rather than hardcoding it. a second copy of
+  # the list here drifts silently, and the failure mode is the worst kind: the config
+  # says a file is protected, the gate never checks it, and everything reports green.
+  PROTECTED_RE="$(python3 -c '
+import json, re, sys
+try:
+    pats = json.load(open("harness.config.json")).get("protected_files") or []
+except Exception:
+    sys.exit(1)
+parts = []
+for p in pats:
+    # glob -> regex: ** spans directories, * stays within a segment
+    rx = re.escape(p).replace(r"\*\*/", "@@ANY@@").replace(r"\*\*", "@@ANY@@").replace(r"\*", "[^/]*")
+    rx = rx.replace("@@ANY@@", ".*")
+    parts.append(rx if rx.endswith(".*") else rx + "$")
+print("^(" + "|".join(parts) + ")" if parts else "")
+' 2>/dev/null)"
+
+  if [[ -z "$PROTECTED_RE" ]]; then
+    fail "could not read protected_files from harness.config.json — the protected-file gate is not running"
+    PROTECTED_RE='^(\.github/workflows/|harness\.config\.json$)'
+  fi
+
   for f in "${EXISTING[@]}"; do
     if [[ "$f" =~ $PROTECTED_RE ]]; then
       if [[ "${HARNEXT_AGENT:-0}" == "1" ]]; then
