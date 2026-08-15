@@ -27,6 +27,11 @@ jobs:
     # self-hosted runner it holds a slot for all of it.
     timeout-minutes: 90
     runs-on: ['self-hosted', 'harnext', 'harnext-tarmacview-admin']
+
+    # agent stage: protected-file edits are a hard failure here,
+    # not the warning a human edit gets. see harness.config.json protected_files.
+    env:
+      HARNEXT_AGENT: '1'
     permissions:
       contents: read
       pull-requests: write
