@@ -63,6 +63,7 @@ Three gaps block real implementation and are already known: the permission matri
 flight-log parser formats, and whether `User.organization_id` or the pivot scopes data
 access. These become blocking spec-gap issues on day one. The orchestrator must not design
 around them — the index says so, and guessing wrong on the third one propagates everywhere.
+Section 6 records where each one now stands.
 
 ## 3. The two loops
 
@@ -162,15 +163,19 @@ not confirm the record exists.
 ## 6. Sequence
 
 Nothing above starts until the three blocking gaps are closed or explicitly deferred with
-a decision recorded. After that:
+a decision recorded. Two were closed on 15 Aug 2026 — the permission matrix and the
+user↔organisation relationship were **decided** rather than recovered, in
+`docs/specs/09-roles-permissions.md` and `docs/specs/03-data-model.md`. The third, the
+flight-log parser formats, is still open and still needs sample files; it blocks step 4 and
+nothing before it. So:
 
 1. **Airlock first.** Extract `contracts/` from the mirror. Cheap, mechanical, and it is
    what every later slice is tested against. Doing it first means no slice is ever written
-   without a test to write against.
+   without a test to write against. **Done** — `contracts/` is committed and protected.
 2. **Walking skeleton.** One vertical slice end to end — auth, tenancy, one resource,
-   one test of each of the five layers. This is where the TypeScript stack proves itself,
-   and where `01-tech-stack.md` gets rewritten from a fingerprint of the predecessor into
-   a decision about the rebuild.
+   one test of each of the five layers. This is where the TypeScript stack proves itself.
+   **In progress.** The `01-tech-stack.md` rewrite, from a fingerprint of the predecessor
+   into a decision about the rebuild, has landed ahead of the code.
 3. **The register resources.** Thirteen admin surfaces, contract-tested, parallelisable
    across runner slots because each is independent once the skeleton exists.
 4. **Ingestion.** Blocked on real sample files. Three import paths and the sync pipeline.
@@ -189,9 +194,7 @@ Carried from `CLAUDE.md` because these are the ones an autonomous loop erodes fi
 - No AI attribution anywhere.
 - Protected files stay untouched by agents: `.github/workflows/**`, `harness.config.json`,
   `CLAUDE.md`, `contracts/**`.
-- **That protection is currently advisory in CI.** `check-conventions.sh` only makes a
-  protected-file edit a hard failure when `HARNEXT_AGENT=1`, and no workflow sets it. Until
-  one does, the oracle lock is a convention the loop is asked to honour rather than a gate
-  that stops it. Setting that variable in the agent stages is the fix, and it means editing
-  a protected workflow file, so it needs the owner.
+- **That protection is enforced**, not advisory: `check-conventions.sh` makes a
+  protected-file edit a hard failure when `HARNEXT_AGENT=1`, and all seven agent stages set
+  it. The oracle lock is a gate that stops the loop, not a convention it is asked to honour.
 - Root-cause over workaround. `--no-verify` is never the answer.

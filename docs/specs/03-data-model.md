@@ -188,6 +188,22 @@ service, and `service_lifetime_cycles` is the all-time total.
 | `battery_service_interval` | int | ≥0 | Battery cycles/flights |
 | `maintenance_instructions` | text(65535) | | Shown to whoever performs the service |
 
+Neither the create nor the edit form carries an organisation field, and `/admin/device-types`
+has no organisation segment — Observed, from a GET-only capture. That the table itself has no
+`organization_id` is *(inferred)*: a column absent from a form is not a column absent from a
+table, and no write path was ever exercised.
+
+### Device types in the rebuild — decided
+
+A **decision about the rebuild**, taken by the owner on 15 Aug 2026. The device-type
+catalogue is deployment-wide and maintained by `superadmin`, which is where
+`09-roles-permissions.md` Axis A already lists it among the system registers.
+
+So a device type is not tenant-owned and carries no tenant scoping. The tenant-scoped entity
+in this chain is **Device**, which holds `organization_id` and inherits its VLOS limit and
+service intervals from a type — which is also why the missing-device-type gap is a statement
+about an airframe rather than about the catalogue.
+
 ---
 
 ## MaintenanceLog

@@ -22,7 +22,7 @@ separately.
 | [06-org-report.md](06-org-report.md) | The operator-facing report screen and its endpoints |
 | [07-flight-ingestion.md](07-flight-ingestion.md) | The three flight-import paths + mobile sync pipeline |
 | [08-maps.md](08-maps.md) | Geozone map subsystem, KML layers, public access |
-| [09-roles-permissions.md](09-roles-permissions.md) | Role vocabulary and observed access behaviour |
+| [09-roles-permissions.md](09-roles-permissions.md) | Observed role vocabulary and access behaviour, plus the rebuild's decided matrix |
 | [10-glossary-sk-en.md](10-glossary-sk-en.md) | Slovak → English domain terminology |
 
 ## What this app is
@@ -71,9 +71,10 @@ These were left unverified on purpose, and should be closed before build:
    client code that would send them; the actual server responses are not.
 2. **Role differences were not tested.** The session used was a superadmin. Everything in
    `09-roles-permissions.md` about what a Pilot or Zodpovedný manažér sees is inferred
-   from role names, UI helper text and route guards — not observed. Rebuilding the
-   permission matrix from this document alone is not safe. See that file for the
-   suggested way to close it.
+   from role names, UI helper text and route guards — not observed, and still unrecovered.
+   The gap no longer blocks the build: that file now also carries the **rebuild's own**
+   permission matrix, defined fresh as a decision on 15 Aug 2026 rather than reconstructed
+   from here. What the predecessor's matrix was remains an open *migration* question.
 3. **The mobile/device API was not enumerated.** The system clearly has one (token auth
    is installed, and there are registered controller devices, sync logs and an
    unlinked-flight queue). Its route prefix was not found by probing, and it should not

@@ -81,7 +81,8 @@ predecessor system, which is the source of most of these terms, is in
 - **Device type** — the airframe catalogue entry that drives service scheduling and the
   VLOS limit. An airframe with **no device type has no service intervals and no VLOS
   limit**, so service tracking and violation detection silently do nothing for it. Surface
-  that gap; never let it read as a pass.
+  that gap; never let it read as a pass. The catalogue is deployment-wide rather than
+  per-organisation, maintained by `superadmin` — see `docs/specs/03-data-model.md`.
 - **Cycle** — one recorded flight. The unit of cycle-based service intervals.
 - **Service interval** — the maintenance period, expressible two ways at once: in cycles
   and in calendar months. When both are set, **whichever limit is reached first** triggers
