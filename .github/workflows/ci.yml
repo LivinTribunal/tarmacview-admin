@@ -35,6 +35,19 @@ jobs:
       - name: Check conventions
         run: bash scripts/check-conventions.sh
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # the shell gate runs first and stays first: it checks things no
+      # TypeScript toolchain knows about - personal data, AI attribution,
+      # confidence marking - and must not be displaced by eslint arriving.
+      - name: Lint sources
+        run: npm run lint
+
   # ============================================================================
   # Structural invariants. Whole-tree by nature and cheap, so unlike the sweep
   # it runs on pull requests too: it asks whether the repo still hangs together
@@ -53,6 +66,53 @@ jobs:
 
       - name: Structural tests
         run: bash scripts/structural-tests.sh
+
+  # ============================================================================
+  # Application checks. tier2 and tier3 in harness.config.json have required
+  # `type-check`, `test` and `build` since the tiers were written, and nothing
+  # produced them - so a TypeScript change could go green having never been
+  # compiled, tested or built. They arrive now rather than earlier because
+  # pointing a gate at `npm run build` in a repo with no package.json fails for
+  # reasons unrelated to the change under review, and a gate that always fails
+  # gets ignored.
+  #
+  # job ids are spelled exactly as harness.config.json requires them.
+  # ============================================================================
+  type-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run test
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
 
   # ============================================================================
   # Full-tree sweep. The conventions check is diff-scoped on PRs so that

@@ -48,7 +48,7 @@
         "tests/**",
         "e2e/**",
         "package.json",
-        "pnpm-lock.yaml",
+        "package-lock.json",
         "tsconfig.json",
         "next.config.*",
         "vite.config.*",
@@ -112,10 +112,10 @@
     }
   },
   "commands": {
-    "lint": "bash scripts/check-conventions.sh",
-    "test": "bash scripts/structural-tests.sh",
-    "build": null,
-    "typeCheck": null
+    "lint": "bash scripts/check-conventions.sh && npm run lint",
+    "test": "bash scripts/structural-tests.sh && npm run test",
+    "build": "npm run build",
+    "typeCheck": "npm run typecheck"
   },
   "shaDiscipline": {
     "enabled": true,
