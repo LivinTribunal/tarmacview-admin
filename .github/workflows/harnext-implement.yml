@@ -134,10 +134,13 @@ jobs:
             fi
           fi
 
-          # (b) fall back to the issue timeline for cross-referenced PRs.
+          # (b) fall back to the issue timeline for cross-referenced PRs - open only.
+          # the timeline keeps every pr that ever mentioned this issue, so an
+          # unfiltered `last` resolves to a merged one. see the note in
+          # harnext-plan.yml.
           if [ -z "$PR_NUM" ]; then
             PR_NUM="$(gh api "repos/$REPO/issues/$NUM/timeline" -H "Accept: application/vnd.github+json" \
-              --jq '[.[] | select(.event == "cross-referenced") | .source.issue | select(.pull_request != null) | .number] | last // empty' || true)"
+              --jq '[.[] | select(.event == "cross-referenced") | .source.issue | select(.pull_request != null) | select(.state == "open") | .number] | last // empty' || true)"
           fi
 
           # (c) fall back to a branch named issue/<num>-* with an open PR.
