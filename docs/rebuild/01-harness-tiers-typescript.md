@@ -140,9 +140,13 @@ leave nothing.
 agent that can weaken an assertion can make every gate report green while the behaviour is
 wrong, and that failure is invisible exactly because everything looks fine.
 
-One consequence worth stating plainly: the loop can no longer close issue #9, which needs
-the contracts regenerated. It must escalate that instead. That is the price of the
-carve-out and it is a one-off.
+The consequence played out on issue #9, which needed the contracts regenerated: the loop had
+to escalate rather than close it. The owner authorised that one change, and #9 closed in
+#19 — after the returned diff was checked field by field against `main` to confirm it only
+ever *added* fields and weakened no existing assertion.
+
+That is the shape the carve-out is meant to force. Not "agents never touch the oracle", but
+"a change to the oracle is a decision someone makes, and a diff someone reads."
 
 ### This protection is enforced
 
