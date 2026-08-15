@@ -6,7 +6,7 @@ marked *(inferred)* are deduced from column labels or framework convention and n
 confirming against the database.
 
 Types are the logical type. Constraints listed are those enforced client-side; server
-rules are stricter and were not visible (see README).
+rules are stricter and were not visible (see `00-index.md`).
 
 ## Entity relationship overview
 
