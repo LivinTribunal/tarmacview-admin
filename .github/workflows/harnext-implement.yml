@@ -20,7 +20,10 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event.label.name == 'harnext:implement'
-    runs-on: ubuntu-latest
+    # agent stages run on the local runner: they need the Skill tool,
+    # subagents and worktrees, which github-hosted runners cannot give them.
+    # deterministic gates stay on github-hosted CI.
+    runs-on: ['self-hosted', 'harnext', 'harnext-e0a63828d882']
     permissions:
       contents: write
       pull-requests: write

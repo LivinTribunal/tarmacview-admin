@@ -14,7 +14,10 @@ on:
 jobs:
   claude:
     if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    # agent stages run on the local runner: they need the Skill tool,
+    # subagents and worktrees, which github-hosted runners cannot give them.
+    # deterministic gates stay on github-hosted CI.
+    runs-on: ['self-hosted', 'harnext', 'harnext-e0a63828d882']
     permissions:
       contents: write
       pull-requests: write
@@ -40,12 +43,14 @@ jobs:
 
             Check out the PR branch. Address every requested change at the root cause — do not paper over with hedging language or by moving the violation elsewhere. Same hard rules as implement: no personal data, no transcribed predecessor content, mark Observed vs Inferred, `CONTEXT.md` vocabulary, no edits to protected files, no gate silencing.
 
-            Run `bash scripts/check-conventions.sh` and fix any failures at their root.
+            Run `bash scripts/check-conventions.sh` and `bash scripts/structural-tests.sh`, and fix any failures at their root.
+
+            Before pushing, invoke the `pr-ready` skill (this stage runs on the self-hosted runner, so the `Skill` tool is available). It re-runs both gates and the two quality lenses — `ponytail-review` for excess, `grain-review` for structural fit — against your own fix, and syncs the PR body. Where the lenses disagree, consistency beats cuts. Fix the finding the reviewer named; do not refactor anything they did not.
 
             Commit with lowercase verb-first messages, no AI attribution, author `Štefan Moravík <stevko.moravik@gmail.com>`. Push. Reply once on the PR summarising, per reviewer point, what changed and where. If the scope of the PR shifted, update the PR body with `gh pr edit <PR> --body-file <path>` — extend the in-scope section or add a `Folded-in fixes` section naming each unrelated fix, its root cause, and why it rode along.
 
             The PR number is: ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
-          claude_args: '--model claude-opus-4-7 --max-turns 60 --allowedTools "Read,Glob,Grep,Bash,Edit,Write"'
+          claude_args: '--model claude-opus-4-7 --max-turns 60 --allowedTools "Read,Glob,Grep,Bash,Edit,Write,Skill"'
           allowed_bots: 'github-actions'
       - name: Re-dispatch review on success
         if: success()

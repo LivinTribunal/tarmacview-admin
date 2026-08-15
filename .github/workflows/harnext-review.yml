@@ -20,7 +20,10 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event.label.name == 'harnext:review'
-    runs-on: ubuntu-latest
+    # agent stages run on the local runner: they need the Skill tool,
+    # subagents and worktrees, which github-hosted runners cannot give them.
+    # deterministic gates stay on github-hosted CI.
+    runs-on: ['self-hosted', 'harnext', 'harnext-e0a63828d882']
     permissions:
       contents: read
       pull-requests: write
@@ -54,13 +57,19 @@ jobs:
               4. **Domain vocabulary** — matches `CONTEXT.md` (UAS, occurrence, licence, certificate); no reintroduced synonyms.
               5. **Domain rules from `CLAUDE.md`** — nullable email, unassigned flights, failed-parse retention, duplicate sync, dual service intervals, stated maintenance readings, missing device-type semantics, detach ≠ delete, tenant scoping as security property. Any spec text that contradicts these?
               6. **Structural hygiene** — facts in one place with cross-refs, `docs/specs/00-index.md` updated when new files land, markdown/comment conventions followed, no changes to protected files.
-              7. **Gate** — `bash scripts/check-conventions.sh` clean.
+              7. **Gates** — `bash scripts/check-conventions.sh` and `bash scripts/structural-tests.sh`, both clean. Report what the scripts say; do not hand-judge what they already decide.
 
-            Post one review with `gh pr review <PR>` — `--approve`, `--request-changes`, or `--comment`. In `--request-changes`, list each required change with the file, the line if possible, and the specific rule it violates.
+            Then the two quality lenses. This stage runs on the self-hosted runner, so the `Skill` tool is available — use it, do not paraphrase these from memory:
+
+              8. **Excess.** Invoke the `ponytail-review` skill on the diff. Findings are tagged `dupe:` / `delete:` / `yagni:` / `shrink:`. It never flags Observed/Inferred markings, the reasoning under a domain rule, or a documented open question — if it does, drop that finding.
+              9. **Structure.** Invoke the `grain-review` skill on the same diff. Findings are tagged `misfiled:` / `unmarked:` / `vocab:` / `shape:` / `reinvent:` / `orphan:`. It must compare against sibling sections before judging; a first-of-its-kind section has no grain to go against.
+              10. **Reconcile.** Where the two disagree, **consistency beats cuts** — if `ponytail-review` wants to delete something `grain-review` says matches its siblings, keep it and note `keep: matches <N> siblings`.
+
+            Post one review with `gh pr review <PR>` — `--approve`, `--request-changes`, or `--comment`. In `--request-changes`, list each required change with the file, the line if possible, and the specific rule or lens tag it violates.
           # --allowedTools is REQUIRED. The action denies ALL tool calls by
           # default; any Bash call without this allowlist is silently
           # permission-denied.
-          claude_args: '--model claude-opus-4-7 --max-turns 60 --allowedTools "Read,Glob,Grep,Bash"'
+          claude_args: '--model claude-opus-4-7 --max-turns 60 --allowedTools "Read,Glob,Grep,Bash,Skill"'
           # Needed when another workflow dispatches this one via
           # `gh workflow run` — the actor becomes github-actions[bot] and
           # the action rejects bot actors unless listed here.

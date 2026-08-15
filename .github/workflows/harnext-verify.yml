@@ -16,10 +16,10 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event.label.name == 'harnext:verify'
-    # github-hosted, matching every other stage and the saved harnext config. the
-    # generator defaulted this stage to a self-hosted label; no such runner is
-    # registered for this repo, so the job would queue forever.
-    runs-on: ubuntu-latest
+    # agent stages run on the local runner: they need the Skill tool,
+    # subagents and worktrees, which github-hosted runners cannot give them.
+    # deterministic gates stay on github-hosted CI.
+    runs-on: ['self-hosted', 'harnext', 'harnext-e0a63828d882']
     permissions:
       contents: write
       pull-requests: write
@@ -47,10 +47,11 @@ jobs:
 
             Step 2 — check out the branch: `gh pr checkout <PR>`.
 
-            Step 3 — run the sole gate for this docs-only repo:
-              `bash scripts/check-conventions.sh` — capture stdout+stderr and the exit code.
+            Step 3 — run both gates for this docs-only repo, capturing stdout+stderr and the exit code of each:
+              `bash scripts/check-conventions.sh`   — diff-scoped: is this change well-formed
+              `bash scripts/structural-tests.sh`    — whole-tree: is the repo still internally consistent
 
-            No test / typecheck / build commands are configured (see `harness.config.json`, TechStack). Do not invent them.
+            No typecheck or build commands are configured (see `harness.config.json`, commands). Do not invent them.
 
             UI verification: this repo has no UI package (`hasUI: false` at root, no packages). Skip browser work entirely.
 
@@ -60,7 +61,7 @@ jobs:
               gh api -X PATCH repos/:owner/:repo/issues/comments/$ID --field body=@<path>
             Body must include: gate name, command, exit code, and (on failure) the last ~30 lines of output in a fenced block. Do NOT create a second comment.
 
-            Fail the stage iff `bash scripts/check-conventions.sh` exited non-zero after any mechanical fixes.
+            Fail the stage iff either gate exited non-zero after any mechanical fixes.
 
             The number for this run is ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}.
           claude_args: '--model claude-opus-4-7 --max-turns 60 --allowedTools "Read,Glob,Grep,Bash,Edit,Write"'

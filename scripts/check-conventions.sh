@@ -72,12 +72,31 @@ for f in "${EXISTING[@]}"; do
   fi
 done
 
+# blank out fenced code blocks and inline code spans, preserving line numbers.
+# documentation *about* a rule quotes the thing the rule forbids; that is not a
+# violation of it. personal data is deliberately NOT filtered this way - a real
+# address is leaked whether or not it sits in a code block.
+strip_code() {
+  case "$1" in
+    *.md) python3 -c '
+import re, sys
+fence = False
+for line in open(sys.argv[1], encoding="utf8", errors="replace").read().split("\n"):
+    if re.match(r"\s*(```|~~~)", line):
+        fence = not fence
+        print(); continue
+    print("" if fence else re.sub(r"`[^`]*`", "", line))
+' "$1" ;;
+    *) cat "$1" ;;
+  esac
+}
+
 # ---------------------------------------------------------------------------
 # 2. AI attribution — forbidden in commits, PRs and code alike
 # ---------------------------------------------------------------------------
 for f in "${EXISTING[@]}"; do
   case "$f" in scripts/check-conventions.sh) continue ;; esac
-  if grep -nEi 'co-authored-by:[[:space:]]*claude|generated with \[?claude|🤖 generated' "$f" >/dev/null 2>&1; then
+  if strip_code "$f" | grep -nEi 'co-authored-by:[[:space:]]*claude|generated with \[?claude|🤖 generated' >/dev/null 2>&1; then
     fail "$f — AI attribution"
   fi
 done
@@ -100,7 +119,7 @@ for f in "${EXISTING[@]}"; do
     if [[ ! -e "$dir/$clean" && ! -e "$clean" ]]; then
       fail "$f — dead relative link: $target"
     fi
-  done < <(grep -oE '\]\([^)]+\)' "$f" 2>/dev/null | sed 's/^](\(.*\))$/\1/')
+  done < <(strip_code "$f" | grep -oE '\]\([^)]+\)' 2>/dev/null | sed 's/^](\(.*\))$/\1/')
 done
 
 # ---------------------------------------------------------------------------

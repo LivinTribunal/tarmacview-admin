@@ -2,13 +2,16 @@
   "version": "1",
   "riskTierRules": {
     "high": [
-      "docs/specs/**",
-      "CONTEXT.md",
-      "CLAUDE.md",
-      "harness.config.json",
       ".github/workflows/**",
+      ".harnext/**",
+      "CLAUDE.md",
+      "CONTEXT.md",
       "LICENSE",
-      "NOTICE"
+      "NOTICE",
+      "README.md",
+      "docs/specs/**",
+      "harness.config.json",
+      "scripts/**"
     ],
     "low": [
       "**"
@@ -18,12 +21,15 @@
     "high": {
       "requiredChecks": [
         "risk-policy-gate",
+        "conventions-check",
+        "structural-tests",
         "CI Pipeline"
       ]
     },
     "low": {
       "requiredChecks": [
         "risk-policy-gate",
+        "conventions-check",
         "CI Pipeline"
       ]
     }
