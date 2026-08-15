@@ -192,16 +192,17 @@ nothing before it. So:
    The slice itself is split in two, because the second half is tier 3 and the first is not:
 
    - **2a — the shell.** `package.json`, `tsconfig.json`, the Vitest config, the
-     device-type routes and form, and the *Route contract* and *Form contract* layers. It
-     must not merge until the `harness.config.json` `commands` flip lands with it: while
-     `build` and `typeCheck` are `null` and `test` runs the spec gate, the slice's own
-     suites never execute in CI and a green check set proves nothing.
+     device-type routes and form, and the *Route contract* and *Form contract* layers.
+     **Done** — the `harness.config.json` `commands` flip landed with it, so `lint`,
+     `type-check`, `test` and `build` all execute rather than passing vacuously.
    - **2b — the tier-3 slice.** Schema, tenancy, auth, and the three remaining layers.
      *Domain invariants* — an airframe with no device type reports "no limit configured",
      never a pass, and a service interval fires on cycles or calendar months, whichever
      comes first. *Tenant isolation* — a property over the **airframe**, not the device
      type: the catalogue is deployment-wide and carries no organisation binding, so it has
      no subject to scope. *Report schema parity* — over the `data.devices[]` block.
+     Tenancy is Postgres row-level security keyed off membership, so the isolation layer
+     needs a real database and runs against one.
 3. **The register resources.** Thirteen admin surfaces, contract-tested, parallelisable
    across runner slots because each is independent once the skeleton exists.
 4. **Ingestion.** Blocked on real sample files. Three import paths and the sync pipeline.

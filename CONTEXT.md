@@ -86,7 +86,7 @@ predecessor system, which is the source of most of these terms, is in
 - **Cycle** — one recorded flight. The unit of cycle-based service intervals.
 - **Service interval** — the maintenance period, expressible two ways at once: in cycles
   and in calendar months. When both are set, **whichever limit is reached first** triggers
-  the warning.
+  the warning. In code: `serviceState()` in `src/lib/devices/service-schedule.ts`.
 - **Service baseline** — the cycle count and date at last maintenance, from which the next
   service is measured. Logging maintenance resets it.
 - **Maintenance log** — a record of service performed, capturing the flight hours and
