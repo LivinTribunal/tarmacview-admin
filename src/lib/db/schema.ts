@@ -168,6 +168,36 @@ export const device = pgTable(
   ],
 )
 
+// the training taxonomy an operator holds. tenant-owned, unlike the catalogue above -
+// docs/specs/03-data-model.md §"Training types in the rebuild". a syllabus entry is an
+// operator's own record, so `code` is unique per organisation and two operators may both
+// hold `A1`.
+export const trainingType = pgTable(
+  'training_type',
+  {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    code: text('code').notNull(),
+    description: text('description'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('training_type_organization_code_key').on(table.organizationId, table.code),
+    index('training_type_organization_idx').on(table.organizationId),
+
+    // shaped like device_tenant_isolation, and tenant-scoped on withCheck as well rather
+    // than superadmin-only: a member maintains their own syllabus.
+    pgPolicy('training_type_tenant_isolation', {
+      for: 'all',
+      using: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
+      withCheck: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
+    }),
+  ],
+)
+
 // auth tables
 //
 // credentials are a separate optional concern attached to a person, so the account
@@ -242,3 +272,4 @@ export type SystemRole = (typeof systemRole.enumValues)[number]
 export type OrganizationRole = (typeof organizationRole.enumValues)[number]
 export type Device = typeof device.$inferSelect
 export type DeviceType = typeof deviceType.$inferSelect
+export type TrainingType = typeof trainingType.$inferSelect

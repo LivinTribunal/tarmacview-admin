@@ -46,13 +46,18 @@ function servedPaths(dir: string, prefix = ''): string[] {
 
 const served = servedPaths(join(repoRoot, 'src/app'))
 
-describe('route contract: device-type paths, path shapes only, GET-only capture', () => {
+// the registers the rebuild serves today. the oracle carries path shapes for resources
+// nobody has built yet, and those are not failures - so the filter is the built set, and a
+// register joins it when its slice lands.
+const registers = ['/admin/device-types', '/admin/training-types']
+
+describe('route contract: register paths, path shapes only, GET-only capture', () => {
   const captured = oracle.routes
-    .filter((route) => route.path.startsWith('/admin/device-types'))
+    .filter((route) => registers.some((register) => route.path.startsWith(register)))
     .map((route) => route.path)
     .sort()
 
-  it('the oracle carries device-type paths to assert against', () => {
+  it('the oracle carries register paths to assert against', () => {
     expect(captured.length).toBeGreaterThan(0)
   })
 

@@ -72,7 +72,9 @@ predecessor system, which is the source of most of these terms, is in
   scoped to specific airframes. May carry no expiry, which is a real state, not a missing
   value.
 - **Training type** — the training taxonomy (initial, operational training, ERP, and the
-  certificate-shaped types). Carries a unique code.
+  certificate-shaped types). Carries a code, unique **per organisation**: the taxonomy is
+  an operator's own syllabus rather than a deployment-wide catalogue, so two operators may
+  hold the same code — see `docs/specs/03-data-model.md`.
 - **Expiry warning window** — the per-organisation number of days before a certificate or
   training lapses at which the report raises an amber warning. Defaults to 40.
 

@@ -15,6 +15,13 @@
       "when": 1786803195318,
       "tag": "0001_force_rls_and_app_role",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786832972123,
+      "tag": "0002_training_type",
+      "breakpoints": true
     }
   ]
 }

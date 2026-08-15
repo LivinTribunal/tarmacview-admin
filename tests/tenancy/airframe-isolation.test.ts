@@ -36,10 +36,10 @@ describe('tenant isolation: the boundary is actually in force', () => {
   it('every tenant-owned table forces row-level security, so not even its owner escapes', async () => {
     const rows = await harness.owner.execute(
       sql`select relname, relrowsecurity, relforcerowsecurity from pg_class
-          where relname in ('organization', 'person', 'membership', 'device')
+          where relname in ('organization', 'person', 'membership', 'device', 'training_type')
           order by relname`,
     )
-    expect(rows).toHaveLength(4)
+    expect(rows).toHaveLength(5)
     for (const row of rows) {
       expect(row, `${row.relname} is not fully protected`).toMatchObject({
         relrowsecurity: true,
