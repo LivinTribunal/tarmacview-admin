@@ -91,11 +91,15 @@ observed combination is expressible as one system role plus a membership.
 
 | Role | Scope |
 |---|---|
-| `superadmin` | Cross-tenant. Every organisation, plus the system registers: device types, training types, e-mail logs, mobile sync devices and log uploads |
+| `superadmin` | Cross-tenant. Every organisation, plus the system registers: device types, e-mail logs, mobile sync devices and log uploads |
 | `member` | No cross-tenant access whatsoever. All authority derives from organisation memberships |
 
 Every person carries exactly one. It is only consulted when they authenticate, so a person
 with no credentials never exercises it.
+
+Training types were a system register here until 15 Aug 2026. They are tenant-owned in the
+rebuild and sit on the organisation surface under *Manage trainings* below — see
+`03-data-model.md` §"Training types in the rebuild".
 
 ### Axis B — organisation role, one per membership
 

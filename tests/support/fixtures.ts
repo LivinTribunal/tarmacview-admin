@@ -1,5 +1,12 @@
 import type { Database } from '@/lib/db/client'
-import { device, deviceType, membership, organization, person } from '@/lib/db/schema'
+import {
+  device,
+  deviceType,
+  membership,
+  organization,
+  person,
+  trainingType,
+} from '@/lib/db/schema'
 
 // every value here is invented. no pilot name, e-mail address, licence number, airframe
 // serial or organisation token from the predecessor belongs in this repo, and a
@@ -30,14 +37,30 @@ const airframes = [
   { key: 'bravoOne', organization: 'bravo', serialNumber: 'SN-BRAVO-0001', typed: true },
 ] as const
 
+const trainingTypes = [
+  { key: 'alphaInitial', organization: 'alpha', name: 'Alpha Initial Training', code: 'A1' },
+  {
+    key: 'alphaOperational',
+    organization: 'alpha',
+    name: 'Alpha Operational Training',
+    code: 'OPS',
+  },
+
+  // the same code under the other operator. `code` is unique per organisation, never
+  // deployment-wide, so this row is the fixture that pins that decision.
+  { key: 'bravoInitial', organization: 'bravo', name: 'Bravo Initial Training', code: 'A1' },
+] as const
+
 export type OrganizationKey = (typeof organizations)[number]['key']
 export type PersonKey = (typeof people)[number]['key']
 export type AirframeKey = (typeof airframes)[number]['key']
+export type TrainingTypeKey = (typeof trainingTypes)[number]['key']
 
 export type SeededIds = {
   organizations: Record<OrganizationKey, number>
   people: Record<PersonKey, number>
   airframes: Record<AirframeKey, number>
+  trainingTypes: Record<TrainingTypeKey, number>
   deviceType: number
 }
 
@@ -119,10 +142,25 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
     )
   }
 
+  const trainingTypeIds = {} as Record<TrainingTypeKey, number>
+  for (const entry of trainingTypes) {
+    trainingTypeIds[entry.key] = await insertOne(
+      db
+        .insert(trainingType)
+        .values({
+          organizationId: organizationIds[entry.organization],
+          name: entry.name,
+          code: entry.code,
+        })
+        .returning({ id: trainingType.id }),
+    )
+  }
+
   return {
     organizations: organizationIds,
     people: personIds,
     airframes: airframeIds,
+    trainingTypes: trainingTypeIds,
     deviceType: deviceTypeId,
   }
 }

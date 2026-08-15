@@ -1,19 +1,6 @@
 import type { CatalogueEntry } from '@/lib/device-types/catalogue'
-import type { MessageKey } from '@/lib/i18n'
+import type { FormField } from '@/lib/form/fields'
 import type { TableDeclaration, TableRow } from '@/lib/table/view'
-
-export type FormField = {
-  name: string
-  control: 'input' | 'textarea'
-  labelKey: MessageKey
-  type?: 'text' | 'number'
-  required?: boolean
-  min?: number
-  max?: number
-  maxlength?: number
-  step?: number
-  rows?: number
-}
 
 // the device-type form declared once, rendered by both create and edit.
 // contracts/forms/device-types.json is the oracle for this list - the constraints are a

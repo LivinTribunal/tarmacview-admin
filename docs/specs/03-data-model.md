@@ -299,7 +299,27 @@ record, a flight log is a leg or sampling window within it.
 
 **TrainingType**: `name` (required), `code` (required, unique), `description`.
 Observed instances include `A1/A3`, `Prevádzkový výcvik` (operational training), `ERP`
-(emergency response procedures).
+(emergency response procedures). The uniqueness is Observed from the form; *unique against
+what* was not — the crawl reached a single tenant, in which a deployment-wide code and a
+per-organisation one look identical.
+
+### Training types in the rebuild — decided
+
+A **decision about the rebuild**, taken on 15 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #37. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. A training type is **tenant-owned**: the table
+carries `organization_id`, row-level security scopes it in the shape of the airframe's
+policy, and `code` is unique **per organisation** — two operators may both hold a code `A1`.
+
+A syllabus entry is an operator's own record of what it trains its pilots on, not a
+deployment-wide fact like the device-type catalogue above. So the register sits on the
+organisation surface rather than among the system registers, and the capability that
+governs it is the existing *Manage trainings* (`09-roles-permissions.md`).
+
+Delete is a **hard delete**, unlike the organisation register: a training type with no
+trainings attached carries no airworthiness evidence. That needs revisiting once Training
+rows exist and can point at one — a soft delete is not pre-built for a relation that does
+not yet exist.
 
 ---
 
