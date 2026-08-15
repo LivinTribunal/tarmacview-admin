@@ -1,17 +1,60 @@
 {
   "resource": "flights",
+  "note": "complete for the captured records, not proven exhaustive - a form branch that no captured record exercises cannot be ruled out.",
   "create": [
+    {
+      "name": "data.device_id",
+      "control": "select"
+    },
     {
       "name": "data.entry_mode",
       "control": "input",
       "type": "radio"
+    },
+    {
+      "name": "data.file_hash",
+      "control": "input",
+      "type": "hidden"
+    },
+    {
+      "name": "data.file_name",
+      "control": "input",
+      "type": "hidden"
+    },
+    {
+      "name": "data.file_path",
+      "control": "input",
+      "type": "file"
+    },
+    {
+      "name": "data.pilot_id",
+      "control": "select"
     }
   ],
   "edit": [
     {
+      "name": "data.device_id",
+      "control": "select"
+    },
+    {
       "name": "data.entry_mode",
       "control": "input",
       "type": "radio"
+    },
+    {
+      "name": "data.file_hash",
+      "control": "input",
+      "type": "hidden"
+    },
+    {
+      "name": "data.file_name",
+      "control": "input",
+      "type": "hidden"
+    },
+    {
+      "name": "data.file_path",
+      "control": "input",
+      "type": "file"
     },
     {
       "name": "data.max_altitude_meters",
@@ -19,6 +62,10 @@
       "type": "number",
       "min": "0",
       "step": "0.01"
+    },
+    {
+      "name": "data.pilot_id",
+      "control": "select"
     },
     {
       "name": "data.total_distance_meters",
@@ -35,14 +82,12 @@
   ],
   "coverage": {
     "edit": {
-      "namedFields": 4,
-      "rawControlsInMarkup": 11,
-      "status": "partial-form-is-lazy-loaded"
+      "fields": 9,
+      "controlsWithoutBinding": 0
     },
     "create": {
-      "namedFields": 1,
-      "rawControlsInMarkup": 8,
-      "status": "partial-form-is-lazy-loaded"
+      "fields": 6,
+      "controlsWithoutBinding": 0
     }
   },
   "sources": [

@@ -1,5 +1,6 @@
 {
   "resource": "organizations",
+  "note": "complete for the captured records, not proven exhaustive - a form branch that no captured record exercises cannot be ruled out.",
   "create": [
     {
       "name": "data.insurance_valid_until",
@@ -14,6 +15,11 @@
       "min": "1",
       "max": "730",
       "step": "any"
+    },
+    {
+      "name": "data.logo_path",
+      "control": "input",
+      "type": "file"
     },
     {
       "name": "data.max_allowed_altitude",
@@ -61,6 +67,11 @@
       "step": "any"
     },
     {
+      "name": "data.logo_path",
+      "control": "input",
+      "type": "file"
+    },
+    {
       "name": "data.max_allowed_altitude",
       "control": "input",
       "type": "number",
@@ -92,14 +103,12 @@
   ],
   "coverage": {
     "edit": {
-      "namedFields": 7,
-      "rawControlsInMarkup": 9,
-      "status": "complete"
+      "fields": 8,
+      "controlsWithoutBinding": 0
     },
     "create": {
-      "namedFields": 7,
-      "rawControlsInMarkup": 9,
-      "status": "complete"
+      "fields": 8,
+      "controlsWithoutBinding": 0
     }
   },
   "sources": [

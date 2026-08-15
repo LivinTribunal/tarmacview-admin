@@ -1,11 +1,17 @@
 {
   "resource": "users",
+  "note": "complete for the captured records, not proven exhaustive - a form branch that no captured record exercises cannot be ruled out.",
   "create": [
     {
       "name": "data.email",
       "control": "input",
       "type": "email",
       "maxlength": "255"
+    },
+    {
+      "name": "data.licence_type_ids",
+      "control": "select",
+      "multiple": "multiple"
     },
     {
       "name": "data.licence_valid_to",
@@ -25,6 +31,10 @@
       "maxlength": "255"
     },
     {
+      "name": "data.organization_id",
+      "control": "select"
+    },
+    {
       "name": "data.password",
       "control": "input",
       "type": "password",
@@ -37,6 +47,11 @@
       "type": "password",
       "minlength": "8",
       "maxlength": "255"
+    },
+    {
+      "name": "data.roles",
+      "control": "select",
+      "multiple": "multiple"
     }
   ],
   "edit": [
@@ -47,6 +62,11 @@
       "maxlength": "255"
     },
     {
+      "name": "data.licence_type_ids",
+      "control": "select",
+      "multiple": "multiple"
+    },
+    {
       "name": "data.licence_valid_to",
       "control": "input",
       "type": "date"
@@ -64,6 +84,10 @@
       "maxlength": "255"
     },
     {
+      "name": "data.organization_id",
+      "control": "select"
+    },
+    {
       "name": "data.password",
       "control": "input",
       "type": "password",
@@ -76,18 +100,21 @@
       "type": "password",
       "minlength": "8",
       "maxlength": "255"
+    },
+    {
+      "name": "data.roles",
+      "control": "select",
+      "multiple": "multiple"
     }
   ],
   "coverage": {
     "edit": {
-      "namedFields": 6,
-      "rawControlsInMarkup": 10,
-      "status": "complete"
+      "fields": 9,
+      "controlsWithoutBinding": 0
     },
     "create": {
-      "namedFields": 6,
-      "rawControlsInMarkup": 10,
-      "status": "complete"
+      "fields": 9,
+      "controlsWithoutBinding": 0
     }
   },
   "sources": [
