@@ -78,7 +78,12 @@ jobs:
       - name: Transition labels on success
         if: success()
         env:
-          GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          # GITHUB_TOKEN deliberately, NOT the PAT: a label added by a PAT fires
+          # the `labeled` event, which re-triggers the next stage on top of the
+          # explicit `gh workflow run` below - firing it twice. GITHUB_TOKEN adds
+          # labels without emitting the event, leaving the dispatch as the single
+          # trigger. `actions: write` on this job is what lets it dispatch. See #21.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NUM: ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
         run: |
           gh api -X DELETE repos/${{ github.repository }}/issues/$NUM/labels/harnext:triage || true
@@ -90,7 +95,12 @@ jobs:
       - name: Park on needs-judgment on failure
         if: failure()
         env:
-          GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          # GITHUB_TOKEN deliberately, NOT the PAT: a label added by a PAT fires
+          # the `labeled` event, which re-triggers the next stage on top of the
+          # explicit `gh workflow run` below - firing it twice. GITHUB_TOKEN adds
+          # labels without emitting the event, leaving the dispatch as the single
+          # trigger. `actions: write` on this job is what lets it dispatch. See #21.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NUM: ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}
         run: |
           gh api -X DELETE repos/${{ github.repository }}/issues/$NUM/labels/harnext:triage || true
