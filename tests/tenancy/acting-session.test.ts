@@ -42,8 +42,8 @@ describe('the acting session, resolved from the person row', () => {
     // the read runs under `{ systemRole: 'member' }`, so only the own-row half of
     // `person_self_or_superadmin` admits it. drop that half and every non-superadmin
     // sign-in resolves to null, which reads as a rejected credential rather than as a
-    // broken policy. the other organisation's manager, because that reach is a property
-    // of the policy and not of one tenant.
+    // broken policy. the subject is the other organisation's manager on purpose: the
+    // reach is a property of the policy, not of one tenant.
     const session = await resolveActingSession(harness.app, ids.people.bravoManager)
     expect(session).toEqual({ personId: ids.people.bravoManager, systemRole: 'member' })
   })
