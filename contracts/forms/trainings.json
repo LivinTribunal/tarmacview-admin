@@ -1,0 +1,57 @@
+{
+  "resource": "trainings",
+  "create": [
+    {
+      "name": "data.date_end",
+      "control": "input",
+      "type": "date"
+    },
+    {
+      "name": "data.date_start",
+      "control": "input",
+      "type": "date"
+    },
+    {
+      "name": "data.name",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    }
+  ],
+  "edit": [
+    {
+      "name": "data.date_end",
+      "control": "input",
+      "type": "date"
+    },
+    {
+      "name": "data.date_start",
+      "control": "input",
+      "type": "date"
+    },
+    {
+      "name": "data.name",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    }
+  ],
+  "coverage": {
+    "edit": {
+      "namedFields": 3,
+      "rawControlsInMarkup": 7,
+      "status": "partial-form-is-lazy-loaded"
+    },
+    "create": {
+      "namedFields": 3,
+      "rawControlsInMarkup": 7,
+      "status": "partial-form-is-lazy-loaded"
+    }
+  },
+  "sources": [
+    "/trainings/create.html",
+    "/trainings/{id}/edit.html"
+  ]
+}

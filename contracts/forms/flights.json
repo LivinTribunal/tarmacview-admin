@@ -1,0 +1,52 @@
+{
+  "resource": "flights",
+  "create": [
+    {
+      "name": "data.entry_mode",
+      "control": "input",
+      "type": "radio"
+    }
+  ],
+  "edit": [
+    {
+      "name": "data.entry_mode",
+      "control": "input",
+      "type": "radio"
+    },
+    {
+      "name": "data.max_altitude_meters",
+      "control": "input",
+      "type": "number",
+      "min": "0",
+      "step": "0.01"
+    },
+    {
+      "name": "data.total_distance_meters",
+      "control": "input",
+      "type": "number",
+      "min": "0",
+      "step": "0.01"
+    },
+    {
+      "name": "data.total_flight_time_seconds",
+      "control": "input",
+      "type": "text"
+    }
+  ],
+  "coverage": {
+    "edit": {
+      "namedFields": 4,
+      "rawControlsInMarkup": 11,
+      "status": "partial-form-is-lazy-loaded"
+    },
+    "create": {
+      "namedFields": 1,
+      "rawControlsInMarkup": 8,
+      "status": "partial-form-is-lazy-loaded"
+    }
+  },
+  "sources": [
+    "/flights/create.html",
+    "/flights/{id}/edit.html"
+  ]
+}

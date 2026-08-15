@@ -1,0 +1,117 @@
+{
+  "resource": "organizations",
+  "create": [
+    {
+      "name": "data.insurance_valid_until",
+      "control": "input",
+      "type": "date"
+    },
+    {
+      "name": "data.licence_expiry_warning_days",
+      "control": "input",
+      "type": "number",
+      "required": "required",
+      "min": "1",
+      "max": "730",
+      "step": "any"
+    },
+    {
+      "name": "data.max_allowed_altitude",
+      "control": "input",
+      "type": "number",
+      "step": "any"
+    },
+    {
+      "name": "data.name",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.specific_operation_type",
+      "control": "select"
+    },
+    {
+      "name": "data.specific_permit_number",
+      "control": "input",
+      "type": "text",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.uas_registration_number",
+      "control": "input",
+      "type": "text",
+      "maxlength": "255"
+    }
+  ],
+  "edit": [
+    {
+      "name": "data.insurance_valid_until",
+      "control": "input",
+      "type": "date"
+    },
+    {
+      "name": "data.licence_expiry_warning_days",
+      "control": "input",
+      "type": "number",
+      "required": "required",
+      "min": "1",
+      "max": "730",
+      "step": "any"
+    },
+    {
+      "name": "data.max_allowed_altitude",
+      "control": "input",
+      "type": "number",
+      "step": "any"
+    },
+    {
+      "name": "data.name",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.specific_operation_type",
+      "control": "select"
+    },
+    {
+      "name": "data.specific_permit_number",
+      "control": "input",
+      "type": "text",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.uas_registration_number",
+      "control": "input",
+      "type": "text",
+      "maxlength": "255"
+    }
+  ],
+  "coverage": {
+    "edit": {
+      "namedFields": 7,
+      "rawControlsInMarkup": 9,
+      "status": "complete"
+    },
+    "create": {
+      "namedFields": 7,
+      "rawControlsInMarkup": 9,
+      "status": "complete"
+    }
+  },
+  "sources": [
+    "/organizations/create.html",
+    "/organizations/{org}/edit.html",
+    "/organizations/{org}/edit__activeRelationManager=0.html",
+    "/organizations/{org}/edit__activeRelationManager=1.html",
+    "/organizations/{org}/edit__activeRelationManager=2.html",
+    "/organizations/{org}/edit__activeRelationManager=3.html",
+    "/organizations/{org}/edit__activeRelationManager=4.html",
+    "/organizations/{org}/edit__activeRelationManager=5.html",
+    "/organizations/{org}/edit__activeRelationManager=6.html",
+    "/organizations/{org}/edit__activeRelationManager=7.html"
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "resource": "users",
+  "create": [
+    {
+      "name": "data.email",
+      "control": "input",
+      "type": "email",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.licence_valid_to",
+      "control": "input",
+      "type": "date"
+    },
+    {
+      "name": "data.license_number",
+      "control": "input",
+      "type": "text"
+    },
+    {
+      "name": "data.name",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.password",
+      "control": "input",
+      "type": "password",
+      "minlength": "8",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.password_confirmation",
+      "control": "input",
+      "type": "password",
+      "minlength": "8",
+      "maxlength": "255"
+    }
+  ],
+  "edit": [
+    {
+      "name": "data.email",
+      "control": "input",
+      "type": "email",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.licence_valid_to",
+      "control": "input",
+      "type": "date"
+    },
+    {
+      "name": "data.license_number",
+      "control": "input",
+      "type": "text"
+    },
+    {
+      "name": "data.name",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.password",
+      "control": "input",
+      "type": "password",
+      "minlength": "8",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.password_confirmation",
+      "control": "input",
+      "type": "password",
+      "minlength": "8",
+      "maxlength": "255"
+    }
+  ],
+  "coverage": {
+    "edit": {
+      "namedFields": 6,
+      "rawControlsInMarkup": 10,
+      "status": "complete"
+    },
+    "create": {
+      "namedFields": 6,
+      "rawControlsInMarkup": 10,
+      "status": "complete"
+    }
+  },
+  "sources": [
+    "/users/create.html",
+    "/users/{id}/edit.html"
+  ]
+}

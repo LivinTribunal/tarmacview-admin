@@ -1,0 +1,1000 @@
+{
+  "note": "observed by GET-only capture of an authenticated session. methods other than GET were not exercised.",
+  "absent": {
+    "note": "confirmed 404 in doc 02 - no self-service registration or password reset. locked here so it is not restored by accident.",
+    "paths": [
+      "/register",
+      "/forgot-password",
+      "/password/reset"
+    ]
+  },
+  "routes": [
+    {
+      "path": "/",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/device-types",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/device-types/{id}/edit",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 10
+    },
+    {
+      "path": "/admin/device-types/create",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/email-logs",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/flights",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/flights/{id}",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 14
+    },
+    {
+      "path": "/admin/flights/{id}/edit",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 14
+    },
+    {
+      "path": "/admin/flights/create",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/general-documents",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/general-documents/{id}/edit",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 10
+    },
+    {
+      "path": "/admin/general-documents/create",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/maps",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/maps/{id}/edit",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 5
+    },
+    {
+      "path": "/admin/maps/create",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/microservices-page",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/mobile-log-uploads",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/mobile-sync-devices",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/mobile-sync-devices/{id}",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 4
+    },
+    {
+      "path": "/admin/organizations",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/organizations/{org}/edit",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [
+        "activeRelationManager"
+      ],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 80
+    },
+    {
+      "path": "/admin/organizations/create",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/training-types",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/training-types/{id}/edit",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 9
+    },
+    {
+      "path": "/admin/training-types/create",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/trainings",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/trainings/{id}/edit",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 10
+    },
+    {
+      "path": "/admin/trainings/create",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/unlinked-mobile-flights",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/users",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/admin/users/{id}/edit",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 10
+    },
+    {
+      "path": "/admin/users/create",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/css/filament/filament/app.css",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [
+        "v"
+      ],
+      "contentTypes": [
+        "text/css"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/css/filament/forms/forms.css",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [
+        "v"
+      ],
+      "contentTypes": [
+        "text/css"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/css/filament/support/support.css",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [
+        "v"
+      ],
+      "contentTypes": [
+        "text/css"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/dashboard",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/demo/kml",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/favicon.ico",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "image/x-icon"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/images/zephyr-logo-biela.svg",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "image/svg+xml"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/images/zephyr-logo-black.svg",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "image/svg+xml"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/js/filament/filament/app.js",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [
+        "v"
+      ],
+      "contentTypes": [
+        "application/javascript"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/js/filament/filament/echo.js",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [
+        "v"
+      ],
+      "contentTypes": [
+        "application/javascript"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/js/filament/notifications/notifications.js",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [
+        "v"
+      ],
+      "contentTypes": [
+        "application/javascript"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/js/filament/support/async-alpine.js",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [
+        "v"
+      ],
+      "contentTypes": [
+        "application/javascript"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/js/filament/support/support.js",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [
+        "v"
+      ],
+      "contentTypes": [
+        "application/javascript"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/map/uas-oblasti",
+      "methods": [
+        "GET"
+      ],
+      "auth": "public",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/map/uas-oblasti-copy-8wm7yn-copy-boylsy",
+      "methods": [
+        "GET"
+      ],
+      "auth": "public",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/map/uas-oblasti-copy-8wm7yn-copy-boylsy/kml",
+      "methods": [
+        "GET"
+      ],
+      "auth": "public",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "application/vnd.google-earth.kml+xml"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/map/uas-oblasti-copy-ciksis",
+      "methods": [
+        "GET"
+      ],
+      "auth": "public",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/map/uas-oblasti-copy-ciksis/kml",
+      "methods": [
+        "GET"
+      ],
+      "auth": "public",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "application/vnd.google-earth.kml+xml"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/map/uas-oblasti-copy-cyfzo9",
+      "methods": [
+        "GET"
+      ],
+      "auth": "public",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/map/uas-oblasti-copy-cyfzo9/kml",
+      "methods": [
+        "GET"
+      ],
+      "auth": "public",
+      "observedStatuses": [
+        404
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/map/uas-oblasti-copy-yzftuk",
+      "methods": [
+        "GET"
+      ],
+      "auth": "public",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/map/uas-oblasti-copy-yzftuk/kml",
+      "methods": [
+        "GET"
+      ],
+      "auth": "public",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "application/vnd.google-earth.kml+xml"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/map/uas-oblasti/kml",
+      "methods": [
+        "GET"
+      ],
+      "auth": "public",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "application/vnd.google-earth.kml+xml"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/organization-reports/{org}",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200,
+        500
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 9
+    },
+    {
+      "path": "/organization-reports/{org}/data",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [
+        "period"
+      ],
+      "contentTypes": [
+        "application/json"
+      ],
+      "samples": 27
+    },
+    {
+      "path": "/organization-reports/{org}/documents/{id}/download",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ],
+      "samples": 29
+    },
+    {
+      "path": "/organization-reports/{org}/forms/{id}/download",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ],
+      "samples": 7
+    },
+    {
+      "path": "/organization-reports/{org}/permits/{id}/download",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200,
+        404
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "application/pdf",
+        "text/html"
+      ],
+      "samples": 89
+    },
+    {
+      "path": "/organization-reports/{org}/print",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "text/html"
+      ],
+      "samples": 9
+    },
+    {
+      "path": "/storage/organization-logos/01KZ62HZA8DH57AXCZA39HH2Z7.png",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "image/png"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/storage/organization-logos/01KZ6CPHTDETNYBD4P50BYR6BP.png",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [],
+      "contentTypes": [
+        "image/png"
+      ],
+      "samples": 1
+    },
+    {
+      "path": "/vendor/livewire/livewire.min.js",
+      "methods": [
+        "GET"
+      ],
+      "auth": "session",
+      "observedStatuses": [
+        200
+      ],
+      "queryParams": [
+        "id"
+      ],
+      "contentTypes": [
+        "application/javascript"
+      ],
+      "samples": 1
+    }
+  ]
+}

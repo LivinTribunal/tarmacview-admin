@@ -1,0 +1,47 @@
+{
+  "resource": "general-documents",
+  "create": [
+    {
+      "name": "data.name",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.note",
+      "control": "textarea",
+      "rows": "3"
+    }
+  ],
+  "edit": [
+    {
+      "name": "data.name",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.note",
+      "control": "textarea",
+      "rows": "3"
+    }
+  ],
+  "coverage": {
+    "edit": {
+      "namedFields": 2,
+      "rawControlsInMarkup": 4,
+      "status": "complete"
+    },
+    "create": {
+      "namedFields": 2,
+      "rawControlsInMarkup": 4,
+      "status": "complete"
+    }
+  },
+  "sources": [
+    "/general-documents/create.html",
+    "/general-documents/{id}/edit.html"
+  ]
+}

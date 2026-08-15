@@ -1,0 +1,103 @@
+{
+  "resource": "device-types",
+  "create": [
+    {
+      "name": "data.battery_service_interval",
+      "control": "input",
+      "type": "number",
+      "min": "0",
+      "step": "1"
+    },
+    {
+      "name": "data.maintenance_instructions",
+      "control": "textarea",
+      "maxlength": "65535",
+      "rows": "5"
+    },
+    {
+      "name": "data.max_vlos",
+      "control": "input",
+      "type": "number",
+      "step": "0.01"
+    },
+    {
+      "name": "data.name",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.service_interval",
+      "control": "input",
+      "type": "number",
+      "min": "0",
+      "step": "1"
+    },
+    {
+      "name": "data.service_interval_months",
+      "control": "input",
+      "type": "number",
+      "min": "1",
+      "step": "1"
+    }
+  ],
+  "edit": [
+    {
+      "name": "data.battery_service_interval",
+      "control": "input",
+      "type": "number",
+      "min": "0",
+      "step": "1"
+    },
+    {
+      "name": "data.maintenance_instructions",
+      "control": "textarea",
+      "maxlength": "65535",
+      "rows": "5"
+    },
+    {
+      "name": "data.max_vlos",
+      "control": "input",
+      "type": "number",
+      "step": "0.01"
+    },
+    {
+      "name": "data.name",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.service_interval",
+      "control": "input",
+      "type": "number",
+      "min": "0",
+      "step": "1"
+    },
+    {
+      "name": "data.service_interval_months",
+      "control": "input",
+      "type": "number",
+      "min": "1",
+      "step": "1"
+    }
+  ],
+  "coverage": {
+    "edit": {
+      "namedFields": 6,
+      "rawControlsInMarkup": 7,
+      "status": "complete"
+    },
+    "create": {
+      "namedFields": 6,
+      "rawControlsInMarkup": 7,
+      "status": "complete"
+    }
+  },
+  "sources": [
+    "/device-types/create.html",
+    "/device-types/{id}/edit.html"
+  ]
+}

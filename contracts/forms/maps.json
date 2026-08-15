@@ -1,0 +1,61 @@
+{
+  "resource": "maps",
+  "create": [
+    {
+      "name": "data.name",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.organizations",
+      "control": "input",
+      "type": "checkbox"
+    },
+    {
+      "name": "data.slug",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    }
+  ],
+  "edit": [
+    {
+      "name": "data.name",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    },
+    {
+      "name": "data.organizations",
+      "control": "input",
+      "type": "checkbox"
+    },
+    {
+      "name": "data.slug",
+      "control": "input",
+      "type": "text",
+      "required": "required",
+      "maxlength": "255"
+    }
+  ],
+  "coverage": {
+    "edit": {
+      "namedFields": 3,
+      "rawControlsInMarkup": 13,
+      "status": "partial-form-is-lazy-loaded"
+    },
+    "create": {
+      "namedFields": 3,
+      "rawControlsInMarkup": 13,
+      "status": "partial-form-is-lazy-loaded"
+    }
+  },
+  "sources": [
+    "/maps/create.html",
+    "/maps/{id}/edit.html"
+  ]
+}
