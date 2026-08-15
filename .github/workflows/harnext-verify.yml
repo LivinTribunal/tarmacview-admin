@@ -62,13 +62,24 @@ jobs:
 
             Step 2 — check out the branch: `gh pr checkout <PR>`.
 
-            Step 3 — run both gates for this docs-only repo, capturing stdout+stderr and the exit code of each:
-              `bash scripts/check-conventions.sh`   — diff-scoped: is this change well-formed
-              `bash scripts/structural-tests.sh`    — whole-tree: is the repo still internally consistent
+            Step 3 — run every gate `harness.config.json` configures, capturing stdout+stderr and the
+            exit code of each. Read them from the file rather than from this prompt:
 
-            No typecheck or build commands are configured (see `harness.config.json`, commands). Do not invent them.
+              jq -r '.commands | to_entries[] | "\(.key)\t\(.value)"' harness.config.json
 
-            UI verification: this repo has no UI package (`hasUI: false` at root, no packages). Skip browser work entirely.
+            Run each value as written. `npm ci` first — the commands need the dependency tree.
+            At the time of writing that resolves to `lint`, `test`, `typeCheck` and `build`, and
+            the first two each chain a shell script ahead of the npm script, so running the bare
+            script instead of the configured command silently skips half the gate.
+
+            **Do not decide a gate is inapplicable and skip it.** If a configured command cannot
+            run at all, that is a stage failure to report, not a gate to drop. This prompt used to
+            assert the repo was docs-only with no typecheck or build; application code landed in
+            #25 and the assertion silently cost every PR four of its six gates.
+
+            UI verification: the repo has a Next.js UI as of #25, but this stage provisions no
+            running app and no database, so browser work stays out of scope here. The `test`
+            command covers the rendered-markup assertions.
 
             Step 4 — mechanical fixes only. If the lint failure is a trivial formatting / whitespace / obvious typo issue introduced by the PR, fix it, re-run the gate, and commit with a lowercase verb-first message, no AI attribution, author `Štefan Moravík <stevko.moravik@gmail.com>`. Anything requiring judgement (spec wording, Observed/Inferred classification, domain vocabulary choices, clean-room concerns) is out of scope — report it and let review handle it.
 
@@ -76,7 +87,7 @@ jobs:
               gh api -X PATCH repos/:owner/:repo/issues/comments/$ID --field body=@<path>
             Body must include: gate name, command, exit code, and (on failure) the last ~30 lines of output in a fenced block. Do NOT create a second comment.
 
-            Fail the stage iff either gate exited non-zero after any mechanical fixes.
+            Fail the stage iff any gate exited non-zero after any mechanical fixes.
 
             The number for this run is ${{ github.event.issue.number || github.event.pull_request.number || inputs.issue_number }}.
           claude_args: '--model claude-opus-5 --effort high --max-turns 500 --dangerously-skip-permissions'

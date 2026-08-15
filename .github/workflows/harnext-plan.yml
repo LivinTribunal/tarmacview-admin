@@ -75,13 +75,31 @@ jobs:
           prompt: |
             Read the issue with `gh issue view <num>`. Read `docs/specs/00-index.md` first, then any spec files the issue touches, plus `CONTEXT.md` and `CLAUDE.md`.
 
-            Produce an implementation plan for a docs-only change (no application code exists yet). Post exactly one comment via `gh issue comment <num> --body-file <path>` containing:
+            First decide what kind of change this is. **Application code exists** — `src/`, `tests/`
+            and `drizzle/` landed with #25 and #26 — so an issue may be a docs change, a code change,
+            or both. Say which in the first line of the plan and shape the rest accordingly. Do not
+            assume docs-only; this prompt asserted that until it was false for months of issues.
+
+            Post exactly one comment via `gh issue comment <num> --body-file <path>` containing:
               - **Summary** — one paragraph, in `CONTEXT.md` vocabulary.
-              - **Files to change** — each path with a one-line reason. Call out any new spec file needed and where it slots into `docs/specs/00-index.md`.
-              - **Approach** — how the edits fit the existing spec structure. Every predecessor claim must be marked Observed or Inferred; state which category any new claim falls into and why.
-              - **Cross-references** — which existing spec sections or `CONTEXT.md` entries must be updated in the same PR so a fact still lives in one place.
-              - **Risks** — clean-room (transcribing predecessor source/assets), personal-data leakage in examples, silently promoting inferred → observed, breaking one of the domain rules in `CLAUDE.md`.
-              - **Test plan** — the only gate is `bash scripts/check-conventions.sh`; list any manual reviewer checks (e.g. "verify no real pilot names in the new fixture snippet").
+              - **Files to change** — each path with a one-line reason. For a spec file, say where it
+                slots into `docs/specs/00-index.md`. For code, name the risk tier each path falls in
+                per `harness.config.json` and flag any tier-3 touch explicitly — auth, tenant scoping,
+                flight-log parsers and migrations are tier 3 and need a human in the loop.
+              - **Approach** — how the change fits what is already there. For specs, the existing
+                structure and the Observed/Inferred marking on every predecessor claim. For code, the
+                established patterns: scoped reads through row-level security rather than a `WHERE`
+                (`src/lib/tenant/`), forms declared once and asserted against `contracts/forms/`,
+                every user-facing string through `src/lib/i18n`.
+              - **Cross-references** — what else must change in the same PR so a fact still lives in
+                one place: spec sections, `CONTEXT.md` entries, or the callers of a changed module.
+              - **Risks** — clean-room (transcribing predecessor source/assets), personal-data leakage
+                in examples or fixtures, silently promoting inferred → observed, breaking one of the
+                domain rules in `CLAUDE.md`.
+              - **Test plan** — which of the five layers in `docs/rebuild/00-operating-model.md` §5 the
+                change needs, and the gates it must pass. Read the gates from `harness.config.json`
+                `commands` rather than naming them from memory. A tier-3 path ships with a test that
+                would fail if the property it claims were broken; say what that test asserts.
 
             Do not edit any files. Do not create a branch. One comment only.
 
