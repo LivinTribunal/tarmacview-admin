@@ -230,6 +230,15 @@ Carried from `CLAUDE.md` because these are the ones an autonomous loop erodes fi
   folded into it.** The bias list here is `land > unblock > verify > build > plan > file`,
   and *build* loses every time, because documentation is what this repo currently is and a
   planning pass over any issue will always find more of it to fix.
+- **Say who took a decision, and never credit the owner for one they have not seen.** A
+  section marked *decided* records an authority as well as a choice, and "taken by the owner"
+  reads as settled and unchallengeable. Most decisions in `docs/specs/` are the loop's, taken
+  under the standing autonomy grant; those say so, and say the owner has not reviewed them —
+  the phrasing at `docs/specs/09-roles-permissions.md` §"Sign-in and sign-out" is the
+  pattern to copy. This is the same provenance discipline the spec applies to claims about
+  the predecessor, turned inward, and it is the one no gate can check. It has gone wrong
+  twice, both times by an agent copying the majority phrasing in neighbouring sections
+  rather than by anyone deciding to misattribute.
 - **Never put a closing keyword next to an issue number in a PR body, not even to negate
   one.** GitHub's linked-issue parser does not read negation: it matches the keyword and
   the number and ignores the sentence around them. A PR body written specifically to
