@@ -80,7 +80,9 @@ The `/login` and `/logout` rows above come from the crawl's route table rather t
 fetched page — the capture ran as an authenticated session and never visited a sign-in
 form, so the paths and their auth are Observed and nothing about the form itself is. What
 the rebuild does at `/login`, and why it has **no `/logout` path** (sign-out is a POST
-server action), is decided in `09-roles-permissions.md` §"Sign-in and sign-out".
+server action), is decided in `09-roles-permissions.md` §"Sign-in and sign-out". The `/`
+row is Observed as written; where the rebuild redirects it to instead, until the operator
+report exists, is decided in that same section.
 
 **Confirmed absent** (all 404): `/register`, `/forgot-password`, `/password/reset`.
 There is no self-service registration or password reset — accounts are provisioned by an

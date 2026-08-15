@@ -2,8 +2,15 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { NextRequest } from 'next/server'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import RootPage from '@/app/page'
+import { safeNext } from '@/lib/auth/next-path'
 import { middleware, requiresSession } from '@/middleware'
+
+// the real redirect() throws to unwind the render, so the root page's target is only
+// readable with it captured. nothing else in this file navigates.
+const { redirect } = vi.hoisted(() => ({ redirect: vi.fn() }))
+vi.mock('next/navigation', () => ({ redirect }))
 
 // what this suite can and cannot claim is recorded once, in
 // docs/rebuild/00-operating-model.md §5 "Route contract". In short: the capture was
@@ -96,7 +103,7 @@ describe('route contract: the session gate covers the application paths, not ass
 // sign-in page and contracts/routes.json holds no entry for one. What is asserted here
 // is internal consistency - the place the gate sends people is a place this application
 // serves, and it is not itself gated.
-describe('the sign-in redirect, a decision recorded in docs/specs/09-roles-permissions.md', () => {
+describe('the sign-in round trip, a decision recorded in docs/specs/09-roles-permissions.md', () => {
   const turnedAway = middleware(new NextRequest('http://localhost/admin/device-types'))
   const target = new URL(turnedAway.headers.get('location') ?? '', 'http://localhost')
 
@@ -110,5 +117,17 @@ describe('the sign-in redirect, a decision recorded in docs/specs/09-roles-permi
 
   it('does not gate the page it redirects to, which would be a loop', () => {
     expect(requiresSession(target.pathname)).toBe(false)
+  })
+
+  // the return leg. a rejected next falls back to the site root, so the root has to be
+  // a path this application serves - it was not, which is issue #35.
+  it('sends someone whose next was rejected to a path the app router serves', () => {
+    expect(served).toContain(safeNext('//evil.example'))
+  })
+
+  it('forwards the root to a path the app router serves', () => {
+    redirect.mockClear()
+    RootPage()
+    expect(served).toContain(redirect.mock.calls[0]?.[0])
   })
 })

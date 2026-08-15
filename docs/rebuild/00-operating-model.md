@@ -208,7 +208,8 @@ nothing before it. So:
 4. **Ingestion.** Blocked on real sample files. Three import paths and the sync pipeline.
 5. **The operator report.** Last, deliberately. It is the screen users live in, it has the
    cleanest contract of anything in the system, and it deserves to be designed rather than
-   ported.
+   ported. One caller waits on it: `/` redirects to `/admin/device-types` only until this
+   step lands (`docs/specs/09-roles-permissions.md` §"Sign-in and sign-out").
 
 ## 7. Standing constraints
 
