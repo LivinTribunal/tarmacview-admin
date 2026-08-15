@@ -19,7 +19,7 @@ export type FormField = {
 export const deviceTypeFormFields: readonly FormField[] = [
   {
     name: 'name',
-    control: 'input',
+    control: 'not-a-control',
     labelKey: 'deviceType.field.name',
     type: 'text',
     required: true,
