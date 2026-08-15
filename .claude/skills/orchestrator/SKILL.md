@@ -80,11 +80,16 @@ cannot be answered from it — escalate to the user. Do not infer and promote.
 
 **Dispatching implementation.** Write the issue so a clean-side agent can finish it without
 the mirror: the spec sections it implements, the contracts it is tested against, the
-acceptance criteria, the tier. Then dispatch:
+acceptance criteria, the tier. Then dispatch at the **plan** stage, so the implementer is
+handed a plan instead of designing from the issue text:
 
 ```bash
-gh workflow run harnext-implement.yml -f issue=<n>
+gh workflow run harnext-plan.yml -f issue_number=<n>
 ```
+
+For work that is not issue-shaped, delegate to an in-session agent instead. The rule for
+choosing between the two, and the brief template, are in
+`.claude/skills/rebuild/delegation.md`.
 
 **Filing work.** Use the existing templates. Parent issues carry acceptance criteria;
 children are tracer bullets, each one a single PR. Use the `to-issues` skill for
