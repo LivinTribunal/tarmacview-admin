@@ -31,19 +31,49 @@ the admin panel.
 
 Everything else (`/map/*`, `/dashboard`) is plain Blade.
 
-## Consequences for the rebuild
+## The rebuild's own stack — decided
 
-**Keeping Laravel + Filament is the cheapest path.** The admin panel is ~13 near-vanilla
-Filament resources. Rebuilding those in Filament is largely declarative: a resource class
-per entity, a form schema, a table schema, and relation managers. Documents 04 and 05 are
-written to map onto that structure directly. If you keep the stack, the admin panel is
-mostly transcription, not design work.
+Everything above this line is **Observed** fact about the predecessor. Everything in this
+section is a **decision about the rebuild**, taken by the owner on 15 Aug 2026, and it goes
+deliberately against the recommendation this document used to carry.
 
-**If you move off Filament**, budget realistically. The admin panel is not just CRUD
-forms — you would be reimplementing per-column sorting and visibility toggles, deferred
-table loading, filter panels with reset, bulk selection with bulk actions, modal action
-forms with their own validation, and relation-manager tabs. That is the bulk of the
-framework's value, and it is a lot of UI surface to rewrite by hand.
+| Layer | Choice |
+|---|---|
+| Framework | **Next.js**, App Router |
+| Database | **Postgres** |
+| Data layer | **Drizzle** |
+| Tenant isolation | **Postgres row-level security** |
+| Auth | **Better Auth** — admin-provisioned accounts, admin-initiated reset, no public signup |
+| Hosting | **AWS**, app and database on one small instance, direct connections |
+
+Row-level security was chosen because `CLAUDE.md` calls tenant scoping a security property
+enforced globally rather than per-controller. RLS is the only option on the table where
+forgetting a `WHERE` clause is impossible rather than merely reviewed against. It also
+drives the hosting choice: RLS sets a per-session variable, which behaves unpredictably
+under transaction-mode connection pooling, so direct connections were preferred over a
+serverless database tier.
+
+A NoSQL store was considered and rejected. It has no row-level security, so tenant
+isolation would fall back to application code — the option explicitly rejected above — and
+the workload is the wrong shape for it: the operator report filters on any combination of
+period, pilot and device, and unassigned flights carry no value for the very attributes a
+key-value store would index on.
+
+### What this costs, honestly
+
+This document previously recommended keeping Laravel and Filament, on the grounds that the
+admin panel is ~13 near-vanilla Filament resources and rebuilding them in Filament is
+largely declarative. That reasoning was not wrong and the cost it warned about is real.
+
+Moving off Filament means reimplementing, by hand: per-column sorting and visibility
+toggles, deferred table loading, filter panels with reset, bulk selection with bulk
+actions, modal action forms with their own validation, and relation-manager tabs. That is
+the bulk of what the framework was providing, and it is a large amount of UI surface.
+
+The decision accepts that cost in exchange for a stack the owner intends to maintain, a
+tenancy model enforced by the database, and a front-end that is not inherited from the
+system being replaced. Documents 04 and 05 still describe the admin surface accurately —
+they simply no longer map onto a resource class one-for-one.
 
 **The operator report should be rebuilt deliberately, not ported.** It is the product's
 actual face and the most valuable screen to get right. It is currently plain JS against a

@@ -55,11 +55,19 @@ pile. The bias list is the corrective.
 ### 3. Act
 
 **Landing a PR.** Confirm the definition of done in the operating model §4 — all six, not
-the ones that are convenient. Then check the tier. Tier 1 (`docs/**`, `*.md`) may
-self-merge. Tier 2 needs the review agent. **Tier 3 — tenant scoping, authorisation,
-parsers, migrations — needs two human approvals and you may not merge it.** Comment what
-is ready and leave it. Do not relabel a change to lower its tier; if you are tempted, that
-is the signal it belongs in tier 3.
+the ones that are convenient. Then merge. The owner has granted full merge authority
+across all three tiers, so nothing here waits on a human approval.
+
+That authority is the reason to be *more* careful, not less. Nobody is reading these
+diffs before they land, so the review agent and the check set are the only thing between a
+mistake and `main`. Two rules keep that honest:
+
+- **Never modify `contracts/**`.** It is the test oracle and it is a protected file. An
+  agent that can weaken an assertion can make every gate report green while the behaviour
+  is wrong. A contract that needs changing is an escalation, always — including for
+  issue #9, which you must hand back rather than do.
+- **Never relabel a change to lower its tier.** If you are tempted, that is the signal it
+  belongs in the higher one.
 
 **Fixing a red PR.** Read the actual failure before touching anything. A gate that fails is
 information. Never silence it — no suppression comment, no lowered threshold, no CI edit.
@@ -93,9 +101,12 @@ Then report to the user in three lines: what you found, what you did, what is ne
 
 Stop and ask the user when:
 
-- A tier 3 change is ready to merge.
-- A spec gap needs a product decision — the permission matrix, whether self-service
-  registration and password reset return, how `User` ↔ `Organisation` scopes access.
+- A change needs to touch `contracts/**`, or any other protected file.
+- A spec gap needs a product decision that has not already been made.
+- A flight-log parser is about to affect real records. The parsers are built from public
+  format documentation, not from verified samples, so their claims stay **Inferred**, they
+  ship behind a flag that is off by default, and nothing writes to the flight record until
+  one real log file has been through them.
 - The mirror and the spec disagree. That is a finding, not a merge conflict.
 - Something needs personal data, a real flight-log sample, or a credential to proceed.
 - The same PR has failed twice for the same reason. Two failures is a pattern; a third
@@ -103,9 +114,10 @@ Stop and ask the user when:
 
 ## Never
 
-- Touch `.github/workflows/**` or `harness.config.json`.
+- Touch `.github/workflows/**`, `harness.config.json`, `CLAUDE.md` or `contracts/**`.
 - Read the mirror while writing application code, or in the same tick you write it.
 - Put a pilot's name, an e-mail, a licence number or a 32-hex organisation token into any
   tracked file — including a test fixture, a commit message and a PR body.
-- Merge your own tier 3 work, or approve on the user's behalf.
+- Silence a gate, lower a threshold, or weaken a test to make something pass. With no
+  human reading the diffs, this is the failure that would go unnoticed longest.
 - Commit or push unless the tick's action was to land something.
