@@ -48,13 +48,18 @@ predecessor system, which is the source of most of these terms, is in
   training. Login credentials are optional and issued deliberately.
 - **Responsible Manager** — the accountable post in a CAMO organisation, and a distinct
   concept from a system administrator. Holds administrative authority over one
-  organisation's data.
+  organisation's data. The rebuild's organisation role for it is `accountable_manager`.
 - **Organisation membership** — the attachment of a user to an organisation, carrying the
   post held (**organisation role**) and whether they are the **primary contact**. Distinct
-  from the user's global roles.
-- **Global role** — system-wide authority, multi-valued: Superadmin, Admin, Responsible
-  Manager, Pilot, User. A user holds several at once. Authority is the combination of
-  global roles and organisation membership.
+  from the system role. In the rebuild it is a first-class table and the thing tenant
+  scoping keys off, never a column on the person.
+- **Organisation role** — the post held in one organisation, one per membership:
+  `accountable_manager`, `operations`, `pilot`, `viewer`.
+- **System role** — deployment-wide authority, exactly one per person: `superadmin`
+  (cross-tenant) or `member` (none whatsoever). Authority is the combination of the system
+  role and the person's memberships. The predecessor instead had five *combinable* global
+  roles — Superadmin, Admin, Responsible Manager, Pilot, User — and that vocabulary now
+  survives only in the migration.
 - **Attach / detach** — adding or removing a user's membership of an organisation. Never
   deletes the user; deleting a pilot would orphan flight history. Distinct from delete
   everywhere in the UI and should stay so.

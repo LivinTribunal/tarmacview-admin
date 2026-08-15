@@ -1,14 +1,12 @@
 # 09 — Roles and permissions
 
-**This document has two halves and the line between them is load-bearing.** Everything
-above "The rebuild's permission model" is what the inspection could see of the
-predecessor: the role vocabulary, that roles are multi-valued, and that a second
-organisation-scoped role axis exists. What each of those roles could *do* was never
-observed — the session was a single superadmin — and this document does not pretend to
-have recovered it.
+**Read the caveat first.** What each role could *do* in the predecessor was never observed.
+The inspection ran under a single superadmin session, so no role boundary was ever crossed.
+The role vocabulary, that roles are multi-valued, and that a second organisation-scoped axis
+exists — those are Observed. The scope of each role never was.
 
-Everything below that heading is a **decision about the rebuild**, taken fresh rather than
-reconstructed. Build from that half. The predecessor half is history, not specification.
+That gap is not closed by recovery. "The rebuild's permission model" below defines the
+matrix fresh, and that is the half to build from.
 
 ## Two independent role axes
 
@@ -105,7 +103,7 @@ with no credentials never exercises it.
 |---|---|
 | `accountable_manager` | The CAMO accountable post. Full read/write on the organisation, including people, documents, permits and occurrences. May provision accounts |
 | `operations` | Day-to-day airworthiness work: assign flights, record maintenance, upload logs, manage aircraft and trainings. Cannot manage people or organisation-level documents |
-| `pilot` | Reads own flights, own licence and own training status. No writes |
+| `pilot` | Reads own flights, own certificate and own training status. No writes |
 | `viewer` | Read-only across the whole organisation. For auditors and regulators given temporary access |
 
 ### Capability matrix
@@ -136,7 +134,6 @@ deliberately rather than inherited by accident:
 - A **person** may exist with no e-mail and no credentials. That is the pilot register, and
   it is the normal case rather than an edge case.
 - **Credentials** are a separate optional concern attached to a person.
-- A person with no membership and no credentials is still a valid flight-log subject.
 
 ### Consequences
 
