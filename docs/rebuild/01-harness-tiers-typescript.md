@@ -169,8 +169,11 @@ the decision taken against its advice. Two items remain, and both are edits to
 `harness.config.json`:
 
 - **The `commands` flip**, above. Until it happens, `type-check` and `build` are required
-  checks that pass vacuously for every tier 2 and tier 3 change, so the walking skeleton's
-  own code lands with two of its four gates doing nothing.
+  checks that pass vacuously for every tier 2 and tier 3 change. It is **three** of the four
+  gates doing nothing, not two: `test` is wired to `structural-tests.sh`, which is a real
+  check of spec reachability and numbering but is not the code suites, so the walking
+  skeleton's own tests would not execute in CI at all. Treat a green tier 2 check set as
+  unverified until the flip lands.
 - **The tier 2 lockfile pattern is `pnpm-lock.yaml`, but the package manager is npm.**
   `package-lock.json` matches no tier pattern at all, so the first lockfile to land falls
   through to the catch-all rather than to tier 2.
