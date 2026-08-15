@@ -36,6 +36,25 @@ jobs:
         run: bash scripts/check-conventions.sh
 
   # ============================================================================
+  # Structural invariants. Whole-tree by nature and cheap, so unlike the sweep
+  # it runs on pull requests too: it asks whether the repo still hangs together
+  # (every spec doc reachable and contiguously numbered, load-bearing files
+  # parseable, check scripts executable), and a PR is exactly where a break in
+  # that should surface. Architectural boundary enforcement joins it when
+  # application code lands.
+  # ============================================================================
+  # the job id is the name harness.config.json already lists under tier1
+  # requiredChecks, so it stays spelled exactly that way.
+  structural-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Structural tests
+        run: bash scripts/structural-tests.sh
+
+  # ============================================================================
   # Full-tree sweep. The conventions check is diff-scoped on PRs so that
   # pre-existing violations never block unrelated work; this catches anything
   # that slipped in before the guard existed.
