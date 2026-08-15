@@ -89,6 +89,7 @@
         "**/middleware.ts",
         "**/migrations/**",
         "drizzle/**",
+        "drizzle.config.*",
         "prisma/migrations/**",
         "prisma/schema.prisma",
         "contracts/**"
