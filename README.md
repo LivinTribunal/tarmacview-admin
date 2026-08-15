@@ -123,10 +123,11 @@ expiry dates for several real operator organisations. The specification document
 not records** — no personal data is reproduced, and sample values are placeholders. Keep it
 that way when extending these documents.
 
-## Thesis & license
+## Copyright
 
-Developed alongside a Bachelor's thesis at the Faculty of Informatics, Masaryk University,
-in collaboration with **[ZEPHYR UAS s.r.o.](https://zephyruas.eu/)**
+© 2026 Štefan Moravík. All rights reserved.
 
-- **Author:** Štefan Moravík
-- **License:** Apache 2.0 — see [`LICENSE`](LICENSE); copyright attribution in [`NOTICE`](NOTICE).
+A TarmacView product — proprietary, and deliberately unlicensed. No licence is granted
+for use, copying, modification, or redistribution. This is not thesis work and not open
+source; the sibling [TarmacView](https://github.com/LivinTribunal/tarmacview) repository
+is a separate matter with its own licensing.

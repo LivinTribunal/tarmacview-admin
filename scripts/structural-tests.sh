@@ -95,7 +95,7 @@ for f in harness.config.json .harnext/contract.json; do
   fi
 done
 
-for f in CONTEXT.md CLAUDE.md README.md LICENSE NOTICE; do
+for f in CONTEXT.md CLAUDE.md README.md; do
   [[ -f "$f" ]] || fail "$f is missing"
 done
 

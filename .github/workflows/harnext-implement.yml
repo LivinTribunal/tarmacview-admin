@@ -60,7 +60,7 @@ jobs:
 
             Hard rules:
               - Docs-only repo. Do not scaffold application code, tooling, or a stack unless the issue explicitly asks for that decision and the plan approved it.
-              - Never modify protected files: `.github/workflows/**`, `harness.config.json`, `LICENSE`, `NOTICE`.
+              - Never modify protected files: `.github/workflows/**` and `harness.config.json`.
               - No personal data anywhere - no real pilot names, e-mails, licence numbers, tenant names, device serials, or org access tokens. Placeholders only.
               - No transcribed predecessor source, templates, CSS, or assets. Behaviour and structure only.
               - Every new claim about the predecessor is marked Observed or Inferred. Never silently promote inferred to observed.

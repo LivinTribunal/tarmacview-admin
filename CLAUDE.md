@@ -188,7 +188,6 @@ Agents must never modify:
 
 - `.github/workflows/**` — pipeline definitions
 - `harness.config.json` — risk tier configuration
-- `LICENSE`, `NOTICE`
 
 ## PR Conventions
 
