@@ -23,6 +23,9 @@ jobs:
     # agent stages run on the local runner: they need the Skill tool,
     # subagents and worktrees, which github-hosted runners cannot give them.
     # deterministic gates stay on github-hosted CI.
+    # cap the stage: an uncapped job runs to github's 6h ceiling, and on a
+    # self-hosted runner it holds a slot for all of it.
+    timeout-minutes: 90
     runs-on: ['self-hosted', 'harnext', 'harnext-tarmacview-admin']
     permissions:
       contents: write
@@ -76,7 +79,7 @@ jobs:
             Push the branch and open a DRAFT PR with `gh pr create --draft --base main --title "<type>: <short>" --body-file <path>`. Body must include `Closes #<num>`, a summary, the files changed and why, and any risks the plan flagged. Do not merge.
           # --allowedTools is REQUIRED: the action denies ALL tool calls by
           # default and any Edit/Write/Bash call would be silently blocked.
-          claude_args: '--model claude-opus-4-7 --max-turns 60 --allowedTools "Read,Glob,Grep,Bash,Edit,Write"'
+          claude_args: '--model claude-opus-5 --effort high --max-turns 500 --allowedTools "Read,Glob,Grep,Bash,Edit,Write,Skill,Task"'
           # Needed when another workflow dispatches this one via `gh workflow
           # run` - the actor becomes github-actions[bot] and the action
           # rejects bot actors unless allowlisted.

@@ -104,7 +104,7 @@ jobs:
             If nothing in the range falsified a doc, say so and open no PR. An empty gardening run is a good outcome, not a failure.
 
             Run `bash scripts/check-conventions.sh` and `bash scripts/structural-tests.sh`. Commit with lowercase verb-first messages, no AI attribution, author `Štefan Moravík <stevko.moravik@gmail.com>`. Open a DRAFT PR with `gh pr create --draft --base main` whose body lists each edit and its reason. Do not merge.
-          claude_args: '--model claude-opus-4-7 --max-turns 60 --allowedTools "Read,Glob,Grep,Bash"'
+          claude_args: '--model claude-opus-5 --effort high --max-turns 200 --allowedTools "Read,Glob,Grep,Bash,Edit,Write"'
           allowed_bots: 'github-actions'
 
       # advance the mark even when the agent opened nothing, or the next run
