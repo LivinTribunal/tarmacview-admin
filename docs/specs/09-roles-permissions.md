@@ -135,6 +135,35 @@ deliberately rather than inherited by accident:
   it is the normal case rather than an edge case.
 - **Credentials** are a separate optional concern attached to a person.
 
+### Sign-in and sign-out — decided
+
+Also a **decision about the rebuild**, taken by the owner on 15 Aug 2026 and settled on
+issue #32. Nothing here is Observed: the inspection was a GET-only crawl of an already
+authenticated session, so it never fetched a sign-in page. The route table recorded a
+`/login` path (doc 02 §Other) and nothing else about it — no fields, no failure
+behaviour, no post-sign-in redirect.
+
+- **The path is `/login`.** The session gate and the register pages already redirect
+  there, so this ratifies what the code assumes rather than adding a third spelling. The
+  predecessor is Slovak-only and `/prihlasenie` was equally plausible; unobserved either
+  way, and changing it later is a two-line edit.
+- **The gate's `next` parameter is honoured, and validated.** Only a single-slash-prefixed
+  relative path is accepted — anything protocol-relative, carrying a scheme, carrying a
+  backslash or carrying a control character falls back to `/`. An unvalidated one is an
+  open redirect, which is how this feature usually goes wrong.
+- **Every failure is one outcome.** A wrong password, an e-mail belonging to nobody and an
+  account carrying no password are indistinguishable in the response, its wording and its
+  timing. This is a security property rather than a preference: `person.email` is nullable
+  and people legitimately exist in the register with no credentials, so a distinguishable
+  rejection answers "is this address registered here" for several unrelated operators at
+  once. The timing half is the auth library's — it hashes the submitted password before
+  rejecting all three — and is a property of that version rather than of this decision.
+- **Sign-out is a POST**, never a GET link, which any prefetch or embedded image would
+  trigger. The rebuild has no `/logout` path: it is a server action, so doc 02's observed
+  row is not carried over.
+- **Signing in establishes who is calling and nothing more.** No role travels in the
+  session; authority still comes from the person row and the matrix above.
+
 ### Consequences
 
 - **Detach is not delete.** Removing a membership leaves the person and their flight
