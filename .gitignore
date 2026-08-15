@@ -4,6 +4,10 @@
 captures/
 *.har
 
+# Working memory for the /rebuild loop. A cache, not the ledger — issues and git
+# history are authoritative, and losing this directory loses nothing.
+.rebuild/
+
 # PHP / Composer
 /vendor/
 composer.phar
