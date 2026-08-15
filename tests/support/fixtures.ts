@@ -15,6 +15,10 @@ import {
 const organizations = [
   { key: 'alpha', name: 'Operator Alpha', reportToken: 'report-token-alpha' },
   { key: 'bravo', name: 'Operator Bravo', reportToken: 'report-token-bravo' },
+
+  // no airframes, no syllabus and nobody attached. the delete block is only a claim if
+  // something also proves a delete still goes through when there is nothing to protect.
+  { key: 'charlie', name: 'Operator Charlie', reportToken: 'report-token-charlie' },
 ] as const
 
 const people = [
