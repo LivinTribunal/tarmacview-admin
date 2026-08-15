@@ -29,7 +29,7 @@ So this lands before the first line of application code, not after.
 different reason — see "Merge authority" below.
 
 `detection.primaryLanguage` also becomes `TypeScript`, with a note recording that the
-decision was taken against the recommendation `01-tech-stack.md` used to carry.
+decision was taken against the recommendation `docs/specs/01-tech-stack.md` used to carry.
 `framework` and `packageManager` were left `null` here and filled in later — `Next.js` and
 `npm` — once the stack decision was written up rather than guessed at.
 

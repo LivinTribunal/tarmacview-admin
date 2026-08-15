@@ -186,23 +186,23 @@ nothing before it. So:
    without a test to write against. **Done** — `contracts/` is committed and protected.
 2. **Walking skeleton.** One vertical slice end to end — auth, tenancy, one resource,
    one test of each of the five layers. This is where the TypeScript stack proves itself.
-   Three things landed ahead of the code: the `01-tech-stack.md` rewrite from a fingerprint
-   of the predecessor into a decision about the rebuild, the reconciliation of the documents
-   that decision and the two closed gaps made stale, and the oracle ceilings in §5 above.
+   Three things landed ahead of the code: the `docs/specs/01-tech-stack.md` rewrite from a
+   fingerprint of the predecessor into a decision about the rebuild, the reconciliation of
+   the documents that decision and the two closed gaps made stale, and the oracle ceilings
+   in §5 above.
    The slice itself is split in two, because the second half is tier 3 and the first is not:
 
    - **2a — the shell.** `package.json`, `tsconfig.json`, the Vitest config, the
      device-type routes and form, and the *Route contract* and *Form contract* layers.
      **Done** — the `harness.config.json` `commands` flip landed with it, so `lint`,
      `type-check`, `test` and `build` all execute rather than passing vacuously.
-   - **2b — the tier-3 slice.** Schema, tenancy, auth, and the three remaining layers.
-     *Domain invariants* — an airframe with no device type reports "no limit configured",
-     never a pass, and a service interval fires on cycles or calendar months, whichever
-     comes first. *Tenant isolation* — a property over the **airframe**, not the device
-     type: the catalogue is deployment-wide and carries no organisation binding, so it has
-     no subject to scope. *Report schema parity* — over the `data.devices[]` block.
-     Tenancy is Postgres row-level security keyed off membership, so the isolation layer
-     needs a real database and runs against one.
+   - **2b — the tier-3 slice.** Schema, tenancy, auth, and the three remaining layers of
+     §5. *Domain invariants* — the device-type gap and the dual service interval, two of
+     the ones listed there. *Tenant isolation* — a property over the **airframe**, not the
+     device type: the catalogue is deployment-wide (`docs/specs/03-data-model.md`
+     §DeviceType), so it has no subject to scope. *Report schema parity* — over the
+     `data.devices[]` block. Tenancy is row-level security keyed off membership, so the
+     isolation layer needs a real database and runs against one.
 3. **The register resources.** Thirteen admin surfaces, contract-tested, parallelisable
    across runner slots because each is independent once the skeleton exists.
 4. **Ingestion.** Blocked on real sample files. Three import paths and the sync pipeline.
