@@ -227,8 +227,7 @@ Carried from `CLAUDE.md` because these are the ones an autonomous loop erodes fi
 - **A stale document found during a pass on a build issue is filed as its own issue, never
   folded into it.** The bias list here is `land > unblock > verify > build > plan > file`,
   and *build* loses every time, because documentation is what this repo currently is and a
-  planning pass over any issue will always find more of it to fix. Five docs-only slices
-  landed against the walking skeleton before one line of application code did.
+  planning pass over any issue will always find more of it to fix.
 - **Never put a closing keyword next to an issue number in a PR body, not even to negate
   one.** GitHub's linked-issue parser does not read negation: it matches the keyword and
   the number and ignores the sentence around them. A PR body written specifically to

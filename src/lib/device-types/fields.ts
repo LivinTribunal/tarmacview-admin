@@ -1,9 +1,9 @@
-import sk from '@/lib/i18n/messages/sk.json'
+import type { MessageKey } from '@/lib/i18n'
 
 export type FormField = {
   name: string
   control: 'input' | 'textarea'
-  labelKey: keyof typeof sk
+  labelKey: MessageKey
   type?: 'text' | 'number'
   required?: boolean
   min?: number
