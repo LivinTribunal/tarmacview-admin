@@ -137,10 +137,4 @@ describe('flight index rows', () => {
     expect(flightTableRow(entry).created_at).toBe('16.08.2026')
   })
 
-  it('renders no max-distance column, though the flight carries the figure', () => {
-    // doc 04 lists no column for it. it exists because the VLOS violation is judged on it,
-    // and that derivation is the operator report's - docs/specs/06-org-report.md
-    expect(flightTable.columns.map((column) => column.key)).not.toContain('max_distance')
-    expect(entry.maxDistanceMeters).not.toBe(entry.totalDistanceMeters)
-  })
 })

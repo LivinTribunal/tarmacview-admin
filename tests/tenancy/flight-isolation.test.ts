@@ -176,9 +176,6 @@ describe('the rows a register is tempted to drop, and must not', () => {
   })
 })
 
-// the half that is not a policy. a plain references(device.id) would let each of these rows
-// land: the row's own `organization_id` would be perfectly correct, and no policy on
-// `flight` would notice.
 describe('what the schema refuses, under a session whose policy refuses nothing', () => {
   it('rejects a flight naming another operator airframe', async () => {
     const refused = await refusal(() =>
@@ -199,13 +196,6 @@ describe('what the schema refuses, under a session whose policy refuses nothing'
       .from(flight)
       .where(eq(flight.fileName, 'placeholder-smuggled-flight.txt'))
     expect(landed).toEqual([])
-  })
-
-  it('accepts a null airframe, because MATCH SIMPLE leaves the constraint unenforced', async () => {
-    // the reason `device_id` may be nullable at all beside a composite foreign key, and so
-    // the reason an unassigned flight is writable
-    const rows = await withTenant(harness.app, alphaSession(), listFlights)
-    expect(rows[1]?.deviceId).toBeNull()
   })
 
   it('rejects a leg naming another operator flight', async () => {
@@ -253,6 +243,9 @@ describe('what the schema refuses, under a session whose policy refuses nothing'
 
 describe('what the flight schema itself decides: writes and deletes', () => {
   it('lets a member write a flight into their own organisation', async () => {
+    // it names no airframe, so this is also what proves MATCH SIMPLE leaves the composite
+    // foreign key unenforced on a null - which is the reason an unassigned flight is
+    // writable at all
     await withTenant(harness.app, alphaSession(), (tx) =>
       tx.insert(flight).values({
         organizationId: ids.organizations.alpha,

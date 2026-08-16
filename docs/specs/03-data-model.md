@@ -490,7 +490,7 @@ records what the technician certified — so keep it.
 | `pilot_id` | FK → User, **nullable** | Unassigned flights are normal and expected |
 | `device_id` | FK → Device, **nullable** | Likewise |
 | `file_name` | string | Source log filename; also the display name |
-| `entry_mode` | enum | Which of the three import paths created it (doc 07) |
+| `entry_mode` | enum | Which of the three import paths created it (doc 07) — the rebuild's enum carries four, see §"Flights in the rebuild" |
 | `total_flight_time_seconds` | int | Entered as `h:mm` or decimal hours, stored as seconds |
 | `max_altitude_meters` | decimal | |
 | `max_distance_meters` | decimal | Maximum distance from the pilot — the figure the VLOS check is judged on |
@@ -658,7 +658,7 @@ keeps an unassigned flight writable. `pilot_id` and `imported_by` get none of th
 `person` carries no organisation column (§"The shared-organisation read in the rebuild");
 what keeps a cross-tenant pilot out is `person_shared_organization_or_self` at read time.
 
-**Its dependents are `restrict` in three directions**, and each keeps a promise §"Delete
+**It restricts what it depends on, in three directions**, and each keeps a promise §"Delete
 authority in the rebuild" made: on `device`, so an airframe that flew cannot be deleted out
 from under the record; on `pilot_id` and on `imported_by`, so neither the person who flew nor
 the person who filed it can be.
