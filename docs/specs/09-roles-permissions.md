@@ -183,6 +183,10 @@ failure behaviour, no post-sign-in redirect. Everything below except the path is
 
 - **Detach is not delete.** Removing a membership leaves the person and their flight
   history intact.
+- **The database is deliberately narrower than this matrix on deletion.** *Manage people &
+  memberships* is an `accountable_manager` capability, but deleting a person or a
+  membership is a `superadmin` act today — see `03-data-model.md` §"Delete authority in the
+  rebuild", which records that as awaiting an answer here rather than as settled.
 - **A person with no membership sees nothing**, and remains a subject of records.
 - **`superadmin` is the only cross-tenant path.** No organisation role reaches another
   organisation.

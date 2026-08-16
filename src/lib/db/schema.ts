@@ -67,6 +67,17 @@ export const organization = pgTable(
       using: sql`${actingIsSuperadmin} or ${table.id} in (${actingOrganizations})`,
       withCheck: sql`${actingIsSuperadmin}`,
     }),
+
+    // DELETE has no WITH CHECK in Postgres - USING alone decides it - so the narrowing
+    // above covers inserts and updates and leaves deletion at the tenant predicate.
+    // restrictive, because permissive policies OR together and a narrower permissive one
+    // beside the policy above would restrict nothing. docs/specs/03-data-model.md
+    // §"Delete authority in the rebuild".
+    pgPolicy('organization_delete_superadmin_only', {
+      as: 'restrictive',
+      for: 'delete',
+      using: actingIsSuperadmin,
+    }),
   ],
 )
 
@@ -93,6 +104,15 @@ export const person = pgTable(
       for: 'all',
       using: sql`${actingIsSuperadmin} or ${table.id} = ${actingPerson}`,
       withCheck: sql`${actingIsSuperadmin}`,
+    }),
+
+    // and self does not extend to deleting self: a person row is the subject a flight
+    // history hangs off, and accounts are administered rather than self-served -
+    // docs/specs/03-data-model.md §"Delete authority in the rebuild".
+    pgPolicy('person_delete_superadmin_only', {
+      as: 'restrictive',
+      for: 'delete',
+      using: actingIsSuperadmin,
     }),
   ],
 )
@@ -127,6 +147,16 @@ export const membership = pgTable(
       for: 'all',
       using: sql`${actingIsSuperadmin} or ${table.personId} = ${actingPerson}`,
       withCheck: sql`${actingIsSuperadmin}`,
+    }),
+
+    // detaching yourself is a delete of this row, and only a superadmin may attach one -
+    // so a member deleting one is asymmetric in the dangerous direction. awaiting the
+    // people-and-memberships register rather than settled: docs/specs/03-data-model.md
+    // §"Delete authority in the rebuild".
+    pgPolicy('membership_delete_superadmin_only', {
+      as: 'restrictive',
+      for: 'delete',
+      using: actingIsSuperadmin,
     }),
   ],
 )
@@ -173,6 +203,13 @@ export const device = pgTable(
   },
   (table) => [
     index('device_organization_idx').on(table.organizationId),
+
+    // no restrictive delete policy beside this one, unlike organization/person/membership:
+    // a fleet is the operator's own record and deleting an airframe is the same authority
+    // as writing one - docs/specs/03-data-model.md §"Delete authority in the rebuild".
+    // that holds only while an airframe carries no history. when maintenance_log and
+    // flight land they must reference device with `ON DELETE restrict`, the way the
+    // organisation's dependents do above, or a member deletes the evidence with the row.
     pgPolicy('device_tenant_isolation', {
       for: 'all',
       using: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
@@ -204,7 +241,10 @@ export const trainingType = pgTable(
     index('training_type_organization_idx').on(table.organizationId),
 
     // shaped like device_tenant_isolation, and tenant-scoped on withCheck as well rather
-    // than superadmin-only: a member maintains their own syllabus.
+    // than superadmin-only: a member maintains their own syllabus. deleting a syllabus
+    // entry is that same authority, so this one keeps its tenant-scoped delete by decision
+    // and not by coincidence - docs/specs/03-data-model.md §"Delete authority in the
+    // rebuild".
     pgPolicy('training_type_tenant_isolation', {
       for: 'all',
       using: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,

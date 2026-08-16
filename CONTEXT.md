@@ -34,7 +34,8 @@ predecessor system, which is the source of most of these terms, is in
   aircraft, flights, documents, permits, forms and incidents; users attach to it through a
   membership. Carries the operator's regulatory identity (registration number, SPECIFIC
   permit, insurance validity) and its expiry-warning threshold. Deleting one is **blocked
-  while dependents exist** rather than cascaded — see `docs/specs/03-data-model.md`.
+  while dependents exist** rather than cascaded, and is a `superadmin` act even when there
+  are none — two independent controls; see `docs/specs/03-data-model.md`.
 - **Device** — one airframe, identified by serial number. Owns its maintenance history and
   is the subject of service scheduling.
 - **Flight** — one recorded flight. Owns its flight logs; may be linked to an incident.
