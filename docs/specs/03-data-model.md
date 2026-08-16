@@ -90,8 +90,9 @@ only dependents are memberships still deletes.
 
 ### Delete authority in the rebuild — decided
 
-A **decision about the rebuild**, taken by the owner on 15 Aug 2026 and recorded on issue
-#42. The predecessor's own delete rules were never Observed — the crawl was GET-only and
+A **decision about the rebuild**, taken on 16 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #42. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. The predecessor's own delete rules were never Observed — the crawl was GET-only and
 performed no writes ([00-index.md](00-index.md) §"Deliberate gaps") — so nothing here
 describes it.
 
