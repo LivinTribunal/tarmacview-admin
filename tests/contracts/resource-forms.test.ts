@@ -26,10 +26,6 @@ const registers: readonly { resource: string; fields: readonly FormField[] }[] =
   { resource: 'organizations', fields: organizationFormFields },
   { resource: 'training-types', fields: trainingTypeFormFields },
 
-  // the field *names* here are the oracle's, predecessor spelling and typo included -
-  // `license_number`, `licence_valid_to`, `licence_type_ids`. a name is the captured wire
-  // name of a rendered form; everything a reader sees carries certificate vocabulary
-  // instead. src/lib/users/fields.ts states the mapping once.
   { resource: 'users', fields: personFormFields },
 ]
 

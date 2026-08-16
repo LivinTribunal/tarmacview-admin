@@ -32,6 +32,12 @@ export type PersonEntry = Person & {
 // scoped-organizations.ts's `distinct` guarding against two joins multiplying out. the
 // roles are cast to text: the aggregate then carries a type the driver already parses,
 // rather than an array of an enum it would have to learn.
+//
+// that alignment rests on `membership_tenant_isolation` and `organization_tenant_isolation`
+// keying off the *same* app_acting_organizations() set. a readable membership whose
+// organisation is not readable would put a null into `organizations` beside a non-null
+// role, and the two cells would describe different attachments with nothing failing.
+// narrowing either policy without the other is what breaks it.
 export function listPeople(tx: TenantTransaction): Promise<PersonEntry[]> {
   return tx
     .select({

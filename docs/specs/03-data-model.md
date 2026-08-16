@@ -160,9 +160,9 @@ Multi-valued: `A1/A3`, `A2`, `STS` (the report also emits combined labels like `
 ### Certificates in the rebuild — decided
 
 A **decision about the rebuild**, taken on 16 Aug 2026 by the rebuild loop under the owner's
-standing autonomy grant and recorded on issue #39. The owner has not reviewed it. It settles
-the modelling the section above leaves inferred; that marking describes the *predecessor* and
-is left standing.
+standing autonomy grant and recorded on issue #39. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. It settles the modelling the section above
+leaves inferred; that marking describes the *predecessor* and is left standing.
 
 Three columns on `person`, carrying doc 04 §UserResource's *Osvedčenia* section:
 `certificate_number`, `certificate_types` and `certificate_valid_until`. The last mirrors
@@ -189,8 +189,9 @@ airframe with no device type.
 
 ### Account provisioning in the rebuild — decided
 
-Same decision, same date, same standing. It answers what the "Vytvoriť prihlasovací účet"
-toggle above decided in the predecessor, which the GET-only capture could not show.
+Same decision, same date, same standing — settled enough to build on, open enough to
+overturn. It answers what the "Vytvoriť prihlasovací účet" toggle above decided in the
+predecessor, which the GET-only capture could not show.
 
 The form's `Heslo` and `Potvrdenie hesla` fields decide whether credentials exist at all:
 

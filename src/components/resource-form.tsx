@@ -15,9 +15,11 @@ function Control({ field }: { field: FormField }) {
         multiple={field.multiple}
         defaultValue={field.multiple ? [] : ''}
       >
-        {/* an unset enum is a real state on every select declared so far, so the empty
-            choice is offered rather than the first option silently standing in for it */}
-        <option value="">{t('form.select.none')}</option>
+        {/* an unset enum is a real state on a single-valued select, so the empty choice is
+            offered rather than the first option silently standing in for it. a multiple
+            expresses the same state by selecting nothing, where an empty choice would be a
+            selectable value that satisfies `required` - which `roles` is. */}
+        {!field.multiple && <option value="">{t('form.select.none')}</option>}
         {(field.options ?? []).map((option) => (
           <option key={option.value} value={option.value}>
             {t(option.labelKey)}
