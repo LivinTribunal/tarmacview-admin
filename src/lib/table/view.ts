@@ -23,6 +23,9 @@ export type ColumnDef = {
   sortable?: boolean
   // doc 04 marks these *(toggle)*: offered in the visibility menu, hidden until enabled
   hiddenByDefault?: boolean
+  // `{id}` substituted per row, the way `editPath` below is. a column declaring one renders
+  // that route as an image, and its cell text becomes the image's accessible name
+  imagePath?: string
 }
 
 export type FilterDef = {
@@ -93,8 +96,8 @@ export function initialState(declaration: TableDeclaration): TableState {
 
 // `{id}` substituted, so a declaration states a path shape rather than shipping a
 // function across the server -> client boundary, where a function does not survive.
-export function rowPath(editPath: string, id: number): string {
-  return editPath.replace('{id}', String(id))
+export function rowPath(path: string, id: number): string {
+  return path.replace('{id}', String(id))
 }
 
 // a blank cell has no text of its own - the caller renders the locale's blank marker.

@@ -84,6 +84,11 @@ server action), is decided in `09-roles-permissions.md` §"Sign-in and sign-out"
 row is Observed as written; where the rebuild redirects it to instead, until the operator
 report exists, is decided in that same section.
 
+The rebuild adds one route with no row above it: `/api/organizations/{id}/logo`, which
+serves what the predecessor served from `/storage/organization-logos/{ULID}.png`. Why a
+stored file is reached through a handler rather than a static path is decided in
+[03-data-model.md](03-data-model.md) §"Serving a stored file in the rebuild".
+
 **Confirmed absent** (all 404): `/register`, `/forgot-password`, `/password/reset`.
 There is no self-service registration or password reset — accounts are provisioned by an
 admin. Decide deliberately whether the rebuild keeps that. For an aviation compliance tool

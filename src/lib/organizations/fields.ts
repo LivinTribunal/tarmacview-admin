@@ -90,7 +90,11 @@ export const organizationTable: TableDeclaration = {
   emptyKey: 'organization.index.empty',
   columns: [
     { key: 'id', labelKey: 'organization.column.id', sortable: true },
-    { key: 'logo_path', labelKey: 'organization.column.logo' },
+    {
+      key: 'logo_path',
+      labelKey: 'organization.column.logo',
+      imagePath: '/api/organizations/{id}/logo',
+    },
     { key: 'name', labelKey: 'organization.column.name', sortable: true },
     {
       key: 'uas_registration_number',
@@ -132,15 +136,16 @@ export const organizationTable: TableDeclaration = {
 // per src/lib/tenant/scoped-organizations.ts. Both render the locale's blank marker, the same
 // way an airframe with no device type does.
 //
-// `logo_path` renders as the stored path. There is no image cell in the chrome, and
-// adding one before anything serves the file would be chrome ahead of its subject.
+// `logo_path` carries the organisation's name, not the stored path: the column declares the
+// route serving the file and the cell is left holding the image's accessible name. The disk
+// layout never reaches the browser, and a null here is an organisation with no logo.
 //
 // the two dates are the first this application prints, and they go through the locale's
 // one format rather than each register picking its own.
 export function organizationTableRow(entry: OrganizationEntry): TableRow {
   return {
     id: entry.id,
-    logo_path: entry.logoPath,
+    logo_path: entry.logoPath ? entry.name : null,
     name: entry.name,
     uas_registration_number: entry.uasRegistrationNumber,
     people: entry.peopleCount,

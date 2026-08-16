@@ -71,6 +71,10 @@ storage/app/public/
 storage/framework/
 storage/logs/
 
+# the local FILE_STORAGE_ROOT from .env.example. what lands there is operator data -
+# logos, permits, incident files - and none of it belongs in the repo.
+/var/
+
 # Backups & dumps
 backups/
 *.dump
