@@ -45,7 +45,7 @@ decision was taken against the recommendation `docs/specs/01-tech-stack.md` used
   "tests/**",
   "e2e/**",
   "package.json",
-  "pnpm-lock.yaml",
+  "package-lock.json",
   "tsconfig.json",
   "next.config.*",
   "vite.config.*",
@@ -54,6 +54,10 @@ decision was taken against the recommendation `docs/specs/01-tech-stack.md` used
   "tailwind.config.*"
 ]
 ```
+
+The lockfile line was written `pnpm-lock.yaml` and corrected to `package-lock.json` by #25,
+which settled the package manager as npm. Until then the tree's real lockfile matched no
+tier at all — a dependency change could have landed as a catch-all edit.
 
 ### tier3 — isolation, authorisation, parsers, schema, and the test oracle
 
@@ -71,17 +75,23 @@ decision was taken against the recommendation `docs/specs/01-tech-stack.md` used
   "**/middleware.ts",
   "**/migrations/**",
   "drizzle/**",
+  "drizzle.config.*",
   "prisma/migrations/**",
   "prisma/schema.prisma",
   "contracts/**"
 ]
 ```
 
-Three of these are additions rather than translations, and each has a reason:
+Four of these are additions rather than translations, and each has a reason:
 
 **`**/middleware.ts`** — in a Next.js-shaped app this is where request-time authentication
 and tenant resolution actually run. A file that decides who you are and which organisation
 you are in belongs in the same tier as the policies it feeds.
+
+**`drizzle.config.*`** — added by #26, on the same logic. `drizzle/**` matches the
+migration directory but not the file that tells drizzle-kit which schema to read and where
+to write, and a change to that file redirects every migration after it. It belongs beside
+the migrations it points at, not in the catch-all, which is where it sat until #26.
 
 **`contracts/**`** — the extracted route, form and report contracts are the test oracle.
 An agent that can edit the oracle can make any failing test pass by weakening what it
@@ -92,12 +102,10 @@ human decision. This is the single most important addition on the list.
 and it will also catch unrelated files with "import" in the name. Over-matching into tier 3
 costs an approval; under-matching costs an airworthiness record.
 
-## `commands` — due now, with the shell
+## `commands` — applied with the shell
 
-`build` and `typeCheck` are still `null`, so those required checks still silently pass.
-That is wrong the moment application code lands, and it is correct until then.
-
-The target is:
+`build` and `typeCheck` were `null`, so those two required checks passed vacuously for every
+tier 2 and tier 3 change. #25 flipped all four alongside the walking skeleton's shell:
 
 ```json
 "commands": {
@@ -112,12 +120,15 @@ It was not applied with the tier patterns because there was no `package.json` to
 Pointing a live pipeline at `npm run lint` in a repository with no npm project does not make
 the gate stricter, it makes every stage fail for a reason that has nothing to do with the
 change under review — and a gate that always fails gets ignored, which is how gates die.
+That is why the flip waited for the shell rather than leading it, and why the two landed in
+one PR: a shell merging first would be a tier 2 change whose own suites never ran.
 
-The walking skeleton's shell supplies all four npm scripts the target names, so the flip is
-unblocked and is now the thing holding that PR. The two shell gates stay in front of the npm
-scripts when it lands: they check things no TypeScript toolchain knows about — personal data,
-AI attribution, confidence marking, spec reachability — and must not be displaced by the
-language toolchain arriving.
+The property this section asked for held. The two shell gates sit in front of the npm
+scripts, not behind them — they check things no TypeScript toolchain knows about (personal
+data, AI attribution, confidence marking, spec reachability) and were not displaced by the
+language toolchain arriving. `.github/workflows/ci.yml` carries a job per required check,
+spelled with the ids the tiers name — `lint`, `structural-tests`, `type-check`, `test`,
+`build` — so all four gates now execute against real code.
 
 ## Merge authority
 
@@ -164,22 +175,15 @@ places or the stricter one is decorative.
 
 ## Still needs a human
 
-`docs/specs/01-tech-stack.md` was the item here, and it has since been rewritten: the
+Three items stood here and two have closed. `docs/specs/01-tech-stack.md` was rewritten: the
 fingerprint stays as Observed fact about the predecessor, and the section after it records
-the decision taken against its advice. Two items remain, and both are edits to
-`harness.config.json`, and both must land **in the same PR as the shell**, not after it. A
-shell that merges first is a tier 2 change whose own suites never ran, which is the failure
-the tiers exist to prevent arriving one layer down.
+the decision taken against its advice. The `commands` flip landed with #25 — see the section
+above.
 
-- **The `commands` flip**, above. Until it happens, `type-check` and `build` are required
-  checks that pass vacuously for every tier 2 and tier 3 change. It is **three** of the four
-  gates doing nothing, not two: `test` is wired to `structural-tests.sh`, which is a real
-  check of spec reachability and numbering but is not the code suites, so the walking
-  skeleton's own tests would not execute in CI at all. Treat a green tier 2 check set as
-  unverified until the flip lands.
-- **Four root-level files the skeleton adds match no tier pattern at all**, so each falls
-  through to the catch-all rather than to tier 2. One edit, four entries: `package-lock.json`
-  (tier 2 lists `pnpm-lock.yaml`, but the package manager is npm), `eslint.config.mjs` and
-  `next-env.d.ts` (tier 2 lists neither), and `drizzle.config.*` (tier 3 lists `drizzle/**`,
-  which needs a directory). The first three arrive with the shell, the fourth with the
-  tier-3 slice.
+One item is left, and it is still the owner's edit: **three root-level files match no tier
+pattern at all**, so each falls through to the catch-all rather than to tier 2 —
+`eslint.config.mjs` and `next-env.d.ts`, which arrived with the shell in #25, and
+`.env.example`, which arrived with the tier-3 slice in #26. This list was four; the lockfile
+entry closed with #25 and `drizzle.config.*` with #26, both above. Until the remaining edit
+lands, an agent can change the lint configuration or the environment template at the lowest
+bar in the file.
