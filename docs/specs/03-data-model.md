@@ -131,6 +131,12 @@ on it is refused rather than guessed at. It is never derived from anything the r
 carries: a request that can choose the content type of the file it fetches can turn a stored
 file into script.
 
+That allow-list reads the **name and never the bytes**, so the response also carries
+`X-Content-Type-Options: nosniff` — otherwise a file named `.png` holding markup is served
+under a content type the browser may sniff past and execute in this origin, with the session
+cookie in scope. The header belongs to the pattern, not to the logo: the document buckets
+that copy this route accept `.pdf`, `.doc` and `.docx`, where sniffing is livelier still.
+
 **The storage root is configuration**, with no default. An unset value fails the first file
 request rather than resolving to the working directory, where every file in the checkout
 would become a candidate.

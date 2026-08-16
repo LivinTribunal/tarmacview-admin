@@ -36,6 +36,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   return new Response(new Uint8Array(logo.bytes), {
     headers: {
       'content-type': logo.contentType,
+      // the allow-list is on the extension and never on the contents, so a file named
+      // `.png` holding markup is served as an image by a content type the browser is
+      // otherwise free to sniff past and execute here. nosniff makes the type binding
+      // rather than advisory, which is what the allow-list was relying on all along.
+      'x-content-type-options': 'nosniff',
       // the response is tenant-scoped, so a shared cache holding it would hand one
       // operator's logo to another. `private` is the floor here, not a tuning decision.
       'cache-control': 'private',

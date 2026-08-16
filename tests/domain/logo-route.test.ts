@@ -86,6 +86,14 @@ describe('the organisation logo route serves what the scoped read returned', () 
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(bytes)
   })
 
+  it('makes that content type binding, because the allow-list never read the bytes', async () => {
+    // the extension said png; nothing checked that the contents are one. without nosniff a
+    // browser may sniff past the type and run markup in this origin, with the session in
+    // scope - and the buckets this route will be copied for take .doc and .pdf
+    const response = await call('42')
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff')
+  })
+
   it('keeps a tenant-scoped response out of every shared cache', async () => {
     const response = await call('42')
     expect(response.headers.get('cache-control')).toBe('private')
