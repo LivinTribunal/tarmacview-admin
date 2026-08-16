@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm'
 import {
   boolean,
   date,
+  foreignKey,
   index,
   integer,
   numeric,
@@ -11,6 +12,7 @@ import {
   serial,
   text,
   timestamp,
+  unique,
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
 
@@ -242,12 +244,20 @@ export const device = pgTable(
   (table) => [
     index('device_organization_idx').on(table.organizationId),
 
+    // redundant beside the primary key, and that is the point: it exists to be referenced.
+    // `training_device` carries `organization_id` into this pair, so a pivot row naming
+    // another operator's airframe is rejected by the foreign key rather than merely hidden
+    // from a read - docs/specs/03-data-model.md §"Trainings in the rebuild". a table
+    // constraint and not a `uniqueIndex()` like the ones above, because that is the
+    // unambiguously legal target of a composite foreign key.
+    unique('device_id_organization_key').on(table.id, table.organizationId),
+
     // no restrictive delete policy beside this one, unlike organization/person/membership:
     // a fleet is the operator's own record and deleting an airframe is the same authority
     // as writing one - docs/specs/03-data-model.md §"Delete authority in the rebuild".
-    // that holds only while an airframe carries no history. when maintenance_log and
-    // flight land they must reference device with `ON DELETE restrict`, the way the
-    // organisation's dependents do above, or a member deletes the evidence with the row.
+    // that holds only while an airframe carries no history. `training_device` is the first
+    // dependent to restrict on that reasoning, and when maintenance_log and flight land
+    // they must do the same, or a member deletes the evidence with the row.
     pgPolicy('device_tenant_isolation', {
       for: 'all',
       using: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
@@ -278,12 +288,124 @@ export const trainingType = pgTable(
     uniqueIndex('training_type_organization_code_key').on(table.organizationId, table.code),
     index('training_type_organization_idx').on(table.organizationId),
 
+    // the same referenceable pair as the airframe's, for the same reason: `training`
+    // carries `organization_id` into it, so a training classified by another operator's
+    // syllabus entry cannot be written at all.
+    unique('training_type_id_organization_key').on(table.id, table.organizationId),
+
     // shaped like device_tenant_isolation, and tenant-scoped on withCheck as well rather
     // than superadmin-only: a member maintains their own syllabus. deleting a syllabus
     // entry is that same authority, so this one keeps its tenant-scoped delete by decision
     // and not by coincidence - docs/specs/03-data-model.md §"Delete authority in the
     // rebuild".
     pgPolicy('training_type_tenant_isolation', {
+      for: 'all',
+      using: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
+      withCheck: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
+    }),
+  ],
+)
+
+// a training held by a pilot, optionally scoped to airframes - docs/specs/03-data-model.md
+// §"Trainings in the rebuild". the first row in the rebuild that reaches across two other
+// tenant-owned tables, and both reaches are closed by the schema rather than by a policy.
+//
+// `held_on` and `valid_until` are the rebuild's names for the contract's `date_start` and
+// `date_end`; the wire names stay the contract's in src/lib/trainings/fields.ts. a null
+// `valid_until` means the training never expires, which is a state and never an expiry that
+// has passed.
+//
+// `training_type_id` is nullable and `pilot_id` is not: doc 04 marks the pilot required and
+// the type not. both restrict on delete - which syllabus entry classified a training is
+// part of the competency record, so `device.device_type_id`'s `set null` is deliberately
+// not followed here.
+export const training = pgTable(
+  'training',
+  {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'restrict' }),
+    name: text('name').notNull(),
+
+    // no `references()` on these two: the tenant travels with them, in the composite
+    // foreign key below
+    trainingTypeId: integer('training_type_id'),
+    pilotId: integer('pilot_id')
+      .notNull()
+      .references(() => person.id, { onDelete: 'restrict' }),
+    heldOn: date('held_on'),
+    validUntil: date('valid_until'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('training_organization_idx').on(table.organizationId),
+    unique('training_id_organization_key').on(table.id, table.organizationId),
+
+    // the tenant boundary as a foreign key. a plain references(trainingType.id) would let
+    // this row point at another operator's syllabus entry and no policy would notice,
+    // because the row's own `organization_id` would be perfectly correct. carrying the
+    // column into the reference makes the cross-tenant row unwritable instead.
+    //
+    // MATCH SIMPLE is the default and is what is wanted: `training_type_id` is nullable,
+    // and a null there leaves the constraint unenforced rather than failing.
+    foreignKey({
+      columns: [table.trainingTypeId, table.organizationId],
+      foreignColumns: [trainingType.id, trainingType.organizationId],
+      name: 'training_training_type_id_organization_id_fk',
+    }).onDelete('restrict'),
+
+    // `pilot_id` gets no such treatment, because `person` carries no organisation column
+    // and never will. what keeps a cross-tenant pilot out is
+    // `person_shared_organization_or_self` at read time and the test beside it.
+    pgPolicy('training_tenant_isolation', {
+      for: 'all',
+      using: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
+      withCheck: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
+    }),
+  ],
+)
+
+// which airframes a training covered. `organization_id` is carried rather than reached
+// through `training` in a policy subquery: a policy depending on a neighbour's policy to
+// be correct is the coupling that breaks silently when one of the two is narrowed alone,
+// and the composite foreign keys below make this denormalisation unable to drift.
+//
+// so it needs no direct foreign key to `organization` - the reference into
+// `training (id, organization_id)` already forces the column to be a real training's
+// tenant, and that training's own `organization_id` is a foreign key to `organization`.
+export const trainingDevice = pgTable(
+  'training_device',
+  {
+    id: serial('id').primaryKey(),
+    trainingId: integer('training_id').notNull(),
+    deviceId: integer('device_id').notNull(),
+    organizationId: integer('organization_id').notNull(),
+  },
+  (table) => [
+    uniqueIndex('training_device_training_device_key').on(table.trainingId, table.deviceId),
+    index('training_device_organization_idx').on(table.organizationId),
+
+    // both ends are provably the same tenant as the row, which is the whole reason this
+    // table carries `organization_id` at all
+    foreignKey({
+      columns: [table.trainingId, table.organizationId],
+      foreignColumns: [training.id, training.organizationId],
+      name: 'training_device_training_id_organization_id_fk',
+    }).onDelete('cascade'),
+
+    // cascade from the training above, restrict from the airframe here. detaching an
+    // airframe from a training is not evidence in itself, so the pivot row goes with the
+    // training - but a training that says it covered an airframe is exactly the history
+    // the airframe's own comment says a dependent must refuse to let a member delete
+    // through.
+    foreignKey({
+      columns: [table.deviceId, table.organizationId],
+      foreignColumns: [device.id, device.organizationId],
+      name: 'training_device_device_id_organization_id_fk',
+    }).onDelete('restrict'),
+
+    pgPolicy('training_device_tenant_isolation', {
       for: 'all',
       using: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
       withCheck: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
@@ -368,3 +490,4 @@ export type Person = typeof person.$inferSelect
 export type Device = typeof device.$inferSelect
 export type DeviceType = typeof deviceType.$inferSelect
 export type TrainingType = typeof trainingType.$inferSelect
+export type Training = typeof training.$inferSelect

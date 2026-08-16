@@ -109,6 +109,8 @@ may delete is answered per table rather than left to fall out of that:
 | `membership` | `superadmin` only, **for now** | Only a superadmin may create one today, so letting a member delete one is asymmetric in the dangerous direction. Awaiting the people-and-memberships register rather than settled |
 | `training_type` | the owning tenant | A syllabus is the operator's own record, and deleting an entry is the same authority as writing one |
 | `device` | the owning tenant | Fleet management is the operator's own job — with the condition below |
+| `training` | the owning tenant | Same reasoning as the syllabus entry it points at — see §"Trainings in the rebuild" |
+| `training_device` | the owning tenant | Detaching an airframe from a training is not evidence in itself; the training survives it |
 
 The three superadmin-only rows are **restrictive** delete policies added beside the
 existing ones. Permissive policies OR together, so a narrower *permissive* policy would
@@ -121,9 +123,11 @@ organisation whose only dependents are memberships passes the second and now sti
 the first for anyone but a superadmin.
 
 **The airframe condition.** A device carries maintenance readings and the flights flown on
-it, and neither table exists yet — so nothing today stops a member deleting an airframe
-that will later hold history. When `MaintenanceLog` and `Flight` land they must reference
-the device with `ON DELETE restrict`, the way the organisation's dependents already do.
+it, and neither table exists yet — so a member could delete an airframe that will later hold
+history. Any dependent that does hold it must reference the device with `ON DELETE restrict`,
+the way the organisation's dependents already do. `training_device` is the first to do so: a
+training that says it covered an airframe is exactly that history, and deleting the airframe
+is now refused while one says it. `MaintenanceLog` and `Flight` must follow when they land.
 
 ---
 
@@ -486,9 +490,70 @@ organisation surface rather than among the system registers, and the capability 
 governs it is the existing *Manage trainings* (`09-roles-permissions.md`).
 
 Delete is a **hard delete**, unlike the organisation register: a training type with no
-trainings attached carries no airworthiness evidence. That needs revisiting once Training
-rows exist and can point at one — a soft delete is not pre-built for a relation that does
-not yet exist.
+trainings attached carries no airworthiness evidence. Training rows now exist and can point
+at one, and the revisit that was deferred here landed with them: the hard delete stands, and
+it is **blocked while a training references the entry** by the `restrict` in the section
+below.
+
+### Trainings in the rebuild — decided
+
+A **decision about the rebuild**, taken on 16 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #51. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. Nothing here describes the predecessor; the
+entity table above is what was Observed, and it stays standing.
+
+`training` is **tenant-owned** on the shape the section above established — `organization_id`
+not null, `restrict`, its own tenant-isolation policy. A training record is competency
+evidence, so a tenant delete must be a deliberate act against an emptied organisation.
+
+**The names that change**, and nothing else does:
+
+| Column | From the contract | Why the name changed |
+|---|---|---|
+| `held_on` | `date_start` | there is no end of a training, so `date_start` names a range that does not exist. The entity table above reads it *"when it took place"* |
+| `valid_until` | `date_end` | mirrors `organization.insurance_valid_until` and `person.certificate_valid_until`. **Blank means never expires**, per [04-admin-resources.md](04-admin-resources.md) §TrainingResource — never *expired* |
+
+The wire names stay the contract's in `src/lib/trainings/fields.ts`, the way §"Certificates
+in the rebuild" keeps `licence_type_ids`: a captured `name` attribute is the wire name of a
+rendered form, and `contracts/` is never edited to agree with us.
+
+**The foreign keys carry the tenant, so a cross-tenant row is impossible.** Not merely
+scoped by policy — rejected by the schema. `training_type` and `device` are both
+tenant-owned, so a plain reference to either would let a training point at another operator's
+syllabus entry or airframe, and no policy on `training` would notice, because the row's own
+`organization_id` would be perfectly correct. So both referenced tables carry a unique
+constraint on `(id, organization_id)` — redundant beside each primary key, and existing to be
+referenced — and `training` carries `organization_id` into a composite foreign key against
+each. `MATCH SIMPLE` is the default and is wanted: `training_type_id` is nullable, and a null
+there leaves the constraint unenforced rather than failing.
+
+`pilot_id` gets none of that, because `person` carries no organisation column and never will
+(§"The shared-organisation read in the rebuild"). What keeps a cross-tenant pilot out is
+`person_shared_organization_or_self` at read time.
+
+**The pivot.** `training_device (training_id, device_id, organization_id)`, unique on
+`(training_id, device_id)`, with a tenant-isolation policy shaped like its siblings and
+composite foreign keys into both `training (id, organization_id)` and
+`device (id, organization_id)`, so **both ends are provably the same tenant as the row**. It
+carries `organization_id` rather than reaching `training` through a policy subquery: a
+subquery would be the first policy in the schema depending on a *neighbour's* policy to be
+correct, which is the coupling that breaks silently when one of the two is narrowed alone.
+The composite foreign keys make the denormalisation unable to drift, and that is what buys
+the directness. It needs no foreign key to `organization` of its own — the reference into
+`training` already forces the column to be a real training's tenant.
+
+**`WITH CHECK` is tenant-scoped, not superadmin**, on both new tables — unlike `person` and
+`membership`, and like `training_type`. A training is the operator's own record, *Manage
+trainings* is an `accountable_manager` and `operations` capability
+([09-roles-permissions.md](09-roles-permissions.md) §"Capability matrix"), and deleting one
+is the same authority as writing one, so neither table carries a restrictive delete policy.
+
+**`Zariadenia` renders through the pivot** as an aggregate, the way `Organizácia` and `Roly`
+do over membership rows. It is only safe because `training_device_tenant_isolation` and
+`device_tenant_isolation` key off the same `app_acting_organizations()` set: a readable pivot
+row whose airframe is not readable would understate what a training covered with nothing
+failing. Narrowing either policy without the other is what breaks it. There is no
+organisation filter anywhere in the read — the policy scopes it, not a `WHERE` clause.
 
 ---
 

@@ -49,7 +49,12 @@ const served = servedPaths(join(repoRoot, 'src/app'))
 // the registers the rebuild serves today. the oracle carries path shapes for resources
 // nobody has built yet, and those are not failures - so the filter is the built set, and a
 // register joins it when its slice lands.
-const registers = ['/admin/device-types', '/admin/training-types', '/admin/users']
+const registers = [
+  '/admin/device-types',
+  '/admin/trainings',
+  '/admin/training-types',
+  '/admin/users',
+]
 
 describe('route contract: register paths, path shapes only, GET-only capture', () => {
   const captured = oracle.routes

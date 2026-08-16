@@ -5,6 +5,8 @@ import {
   membership,
   organization,
   person,
+  training,
+  trainingDevice,
   trainingType,
 } from '@/lib/db/schema'
 
@@ -83,16 +85,58 @@ const trainingTypes = [
   { key: 'bravoInitial', organization: 'bravo', name: 'Bravo Initial Training', code: 'A1' },
 ] as const
 
+// alpha and bravo only, never charlie: tests/tenancy/organization-isolation.test.ts deletes
+// charlie to prove the dependent block lifts, and `training.organization_id` is `restrict`,
+// so a training under charlie would turn that proof into a failure.
+const trainings = [
+  {
+    key: 'alphaRecurrent',
+    organization: 'alpha',
+    name: 'Alpha Recurrent Training',
+    trainingType: 'alphaInitial',
+    pilot: 'alphaPilot',
+    heldOn: '2026-03-01',
+    validUntil: '2027-03-01',
+    airframes: ['alphaOne'],
+  },
+
+  // no type, no date, no expiry and no airframe. the row that keeps the register honest
+  // about the difference between a gap and a stated fact: a null `valid_until` reads as
+  // *Bez expirácie*, a null `training_type_id` as the blank marker.
+  {
+    key: 'alphaOpen',
+    organization: 'alpha',
+    name: 'Alpha Unclassified Training',
+    trainingType: null,
+    pilot: 'alphaPilot',
+    heldOn: null,
+    validUntil: null,
+    airframes: [],
+  },
+  {
+    key: 'bravoRecurrent',
+    organization: 'bravo',
+    name: 'Bravo Recurrent Training',
+    trainingType: 'bravoInitial',
+    pilot: 'bravoManager',
+    heldOn: '2026-04-01',
+    validUntil: '2027-04-01',
+    airframes: ['bravoOne'],
+  },
+] as const
+
 export type OrganizationKey = (typeof organizations)[number]['key']
 export type PersonKey = (typeof people)[number]['key']
 export type AirframeKey = (typeof airframes)[number]['key']
 export type TrainingTypeKey = (typeof trainingTypes)[number]['key']
+export type TrainingKey = (typeof trainings)[number]['key']
 
 export type SeededIds = {
   organizations: Record<OrganizationKey, number>
   people: Record<PersonKey, number>
   airframes: Record<AirframeKey, number>
   trainingTypes: Record<TrainingTypeKey, number>
+  trainings: Record<TrainingKey, number>
   deviceType: number
 }
 
@@ -191,11 +235,40 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
     )
   }
 
+  const trainingIds = {} as Record<TrainingKey, number>
+  for (const entry of trainings) {
+    const organizationId = organizationIds[entry.organization]
+    trainingIds[entry.key] = await insertOne(
+      db
+        .insert(training)
+        .values({
+          organizationId,
+          name: entry.name,
+          trainingTypeId: entry.trainingType ? trainingTypeIds[entry.trainingType] : null,
+          pilotId: personIds[entry.pilot],
+          heldOn: entry.heldOn,
+          validUntil: entry.validUntil,
+        })
+        .returning({ id: training.id }),
+    )
+
+    // the pivot carries the tenant itself rather than reaching the training for it, so the
+    // seed states it here too - and the composite foreign key is what stops it drifting
+    for (const airframe of entry.airframes) {
+      await db.insert(trainingDevice).values({
+        trainingId: trainingIds[entry.key],
+        deviceId: airframeIds[airframe],
+        organizationId,
+      })
+    }
+  }
+
   return {
     organizations: organizationIds,
     people: personIds,
     airframes: airframeIds,
     trainingTypes: trainingTypeIds,
+    trainings: trainingIds,
     deviceType: deviceTypeId,
   }
 }

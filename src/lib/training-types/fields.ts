@@ -1,6 +1,6 @@
-import type { TrainingType } from '@/lib/db/schema'
 import type { FormField } from '@/lib/form/fields'
 import type { TableDeclaration, TableRow } from '@/lib/table/view'
+import type { TrainingTypeEntry } from '@/lib/tenant/scoped-training-types'
 
 // the training-type form declared once, rendered by both create and edit.
 // contracts/forms/training-types.json is the oracle for this list. `Kód` carries no
@@ -50,18 +50,17 @@ export const trainingTypeTable: TableDeclaration = {
   ],
 }
 
-// the usage count is null, not zero. there is no `training` table yet, so the count is
-// over a relation that does not exist and a `0` would assert this type has no trainings -
-// a fact this slice cannot know. the chrome renders the blank marker, the same way it does
-// for an airframe with no device type. once trainings land the count follows the
-// airframe-count precedent in src/lib/device-types/catalogue.ts: counted inside the tenant
-// transaction, scoped by the policy.
-export function trainingTypeTableRow(entry: TrainingType): TableRow {
+// the usage count is a real count now that `training` exists - listTrainingTypes in
+// src/lib/tenant/scoped-training-types.ts counts it inside the tenant transaction. it was
+// null while there was no relation to count, because a `0` would have asserted a fact the
+// slice could not know; a `0` here is that fact, and it is the count a member's own policy
+// admits rather than the deployment's.
+export function trainingTypeTableRow(entry: TrainingTypeEntry): TableRow {
   return {
     id: entry.id,
     name: entry.name,
     code: entry.code,
     description: entry.description,
-    trainings: null,
+    trainings: entry.trainingCount,
   }
 }

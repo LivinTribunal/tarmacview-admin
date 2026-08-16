@@ -50,6 +50,13 @@
       "when": 1786871615394,
       "tag": "0006_person_certificate",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1786873680300,
+      "tag": "0007_training",
+      "breakpoints": true
     }
   ]
 }
