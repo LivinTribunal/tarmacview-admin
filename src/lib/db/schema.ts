@@ -55,6 +55,24 @@ export const operationType = pgEnum('operation_type', ['VLOS', 'BVLOS'])
 export const certificateType = pgEnum('certificate_type', ['A1_A3', 'A2', 'STS'])
 export const deviceStatus = pgEnum('device_status', ['active', 'inactive', 'maintenance', 'retired'])
 
+// which import path created a flight - docs/specs/07-flight-ingestion.md. four and not
+// three: the doc's `upload_mode` discriminator has three values, but the controller sync
+// does not go through that endpoint and still produces a flight, so three would leave a
+// synced flight with no entry mode to carry. the enum describes the data model rather than
+// what the write path can currently reach, and today it can reach none of them.
+export const entryMode = pgEnum('entry_mode', [
+  'dji_log',
+  'agro_export',
+  'manual',
+  'controller_sync',
+])
+
+// the outcome of parsing a source file. the membership here is the rebuild's own decision
+// and not a recovered fact - doc 03 gives one value by example and doc 07's four-valued
+// list belongs to `MobileLogUpload`, a different entity. minimal on purpose: a pending
+// state joins it when the parsers land (#6) and have something to be pending about.
+export const parsingStatus = pgEnum('parsing_status', ['processed', 'failed'])
+
 // the tenant. `logo_path` holds where the file lives, never the bytes -
 // docs/specs/03-data-model.md §"Organisation deletion and the logo in the rebuild".
 // deleting one is blocked while dependents exist, and the block is the `restrict` on the
@@ -255,9 +273,10 @@ export const device = pgTable(
     // no restrictive delete policy beside this one, unlike organization/person/membership:
     // a fleet is the operator's own record and deleting an airframe is the same authority
     // as writing one - docs/specs/03-data-model.md §"Delete authority in the rebuild".
-    // that holds only while an airframe carries no history. `training_device` is the first
-    // dependent to restrict on that reasoning, and when maintenance_log and flight land
-    // they must do the same, or a member deletes the evidence with the row.
+    // that holds only while an airframe carries no history. `training_device` was the first
+    // dependent to restrict on that reasoning and `flight` below is the second, so an
+    // airframe that flew cannot be deleted out from under the record. `maintenance_log`
+    // must do the same when it lands, or a member deletes the evidence with the row.
     pgPolicy('device_tenant_isolation', {
       for: 'all',
       using: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
@@ -413,6 +432,134 @@ export const trainingDevice = pgTable(
   ],
 )
 
+// one recorded flight, and the airworthiness record itself - docs/specs/03-data-model.md
+// §"Flights in the rebuild". `organization_id` is `restrict` for the reason the airframe's
+// is, only harder: a tenant delete must be a deliberate act against an emptied
+// organisation, never a sweep that takes the flight history with it.
+//
+// `pilot_id` and `device_id` are both nullable and stay that way. a flight with neither is
+// normal - automated ingest cannot know who was flying, and assignment is a later step -
+// so nothing here may make it a creation-time requirement and no read may hide it.
+//
+// `parsing_status` and `parsing_errors` exist from the first migration though nothing
+// parses yet, because the register has to be built around the fact that they can be set: a
+// failed parse is still a record, and dropping it loses the evidence that a flight
+// happened. a null status is the manual-entry case, where there was no file to parse.
+export const flight = pgTable(
+  'flight',
+  {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'restrict' }),
+
+    // no `references()`: the tenant travels with the airframe, in the composite foreign key
+    // below
+    deviceId: integer('device_id'),
+
+    // both plain references to `person`, which carries no organisation column and never
+    // will - the same footing `training.pilot_id` has. `restrict` on each, so neither the
+    // pilot who flew nor the person who imported the record can be deleted out from under
+    // it. `imported_by` is nullable because a controller sync has no person to name.
+    pilotId: integer('pilot_id').references(() => person.id, { onDelete: 'restrict' }),
+    importedBy: integer('imported_by').references(() => person.id, { onDelete: 'restrict' }),
+
+    // the source log filename, and the flight's display name - doc 03 §Flight
+    fileName: text('file_name'),
+    entryMode: entryMode('entry_mode').notNull(),
+    totalFlightTimeSeconds: integer('total_flight_time_seconds'),
+    maxAltitudeMeters: numeric('max_altitude_meters'),
+
+    // maximum distance from the pilot, which is the figure the VLOS check is judged on -
+    // and a different quantity from the track length below. doc 03's field table was
+    // missing it; §"Flights in the rebuild" records what settled that.
+    maxDistanceMeters: numeric('max_distance_meters'),
+    totalDistanceMeters: numeric('total_distance_meters'),
+    parsingStatus: parsingStatus('parsing_status'),
+    parsingErrors: text('parsing_errors'),
+
+    // doc 04's `Importované`
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('flight_organization_idx').on(table.organizationId),
+    unique('flight_id_organization_key').on(table.id, table.organizationId),
+
+    // the tenant boundary as a foreign key, exactly as `training.training_type_id` carries
+    // it. a plain references(device.id) would let a flight name another operator's airframe
+    // and no policy would notice, because the row's own `organization_id` would be
+    // perfectly correct.
+    //
+    // MATCH SIMPLE is the default and is what is wanted: `device_id` is nullable, and a
+    // null there leaves the constraint unenforced rather than failing - which is what keeps
+    // an unassigned flight writable.
+    foreignKey({
+      columns: [table.deviceId, table.organizationId],
+      foreignColumns: [device.id, device.organizationId],
+      name: 'flight_device_id_organization_id_fk',
+    }).onDelete('restrict'),
+
+    // tenant-scoped on both halves and no restrictive delete policy, like `training` and
+    // unlike `person`: a flight is the operator's own record, and deleting one is the same
+    // authority as writing one. what protects the airframe's history is the `restrict`
+    // above, not a policy on this table.
+    pgPolicy('flight_tenant_isolation', {
+      for: 'all',
+      using: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
+      withCheck: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
+    }),
+  ],
+)
+
+// a leg or sampling window within a flight - one imported file yields several, which is
+// what doc 04's `Záznamy logov` count counts. the flight is the unit of record; this is the
+// detail.
+//
+// it carries `organization_id` rather than reaching `flight` through a policy subquery, for
+// the reason `training_device` does: a policy depending on a neighbour's policy to be
+// correct is the coupling that breaks silently when one of the two is narrowed alone, and
+// the composite foreign key below makes the denormalisation unable to drift. so it needs no
+// foreign key to `organization` of its own - the reference into `flight` already forces the
+// column to be a real flight's tenant.
+export const flightLog = pgTable(
+  'flight_log',
+  {
+    id: serial('id').primaryKey(),
+    flightId: integer('flight_id').notNull(),
+    organizationId: integer('organization_id').notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    endedAt: timestamp('ended_at', { withTimezone: true }),
+
+    // seconds, like the flight's own figure. doc 03 records the predecessor rendering the
+    // leg's duration as `hh:mm:ss`, which is a display of the same quantity.
+    durationSeconds: integer('duration_seconds'),
+    distanceMeters: numeric('distance_meters'),
+    maxAltitudeMeters: numeric('max_altitude_meters'),
+
+    // the airframe as the source file named it, which is not a reference to the register:
+    // a log states what it states, and the flight's `device_id` is the assignment
+    aircraft: text('aircraft'),
+  },
+  (table) => [
+    index('flight_log_flight_idx').on(table.flightId),
+    index('flight_log_organization_idx').on(table.organizationId),
+
+    // cascade from the flight: a leg is not evidence apart from the flight it details, so
+    // it goes with it
+    foreignKey({
+      columns: [table.flightId, table.organizationId],
+      foreignColumns: [flight.id, flight.organizationId],
+      name: 'flight_log_flight_id_organization_id_fk',
+    }).onDelete('cascade'),
+
+    pgPolicy('flight_log_tenant_isolation', {
+      for: 'all',
+      using: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
+      withCheck: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
+    }),
+  ],
+)
+
 // auth tables
 //
 // credentials are a separate optional concern attached to a person, so the account
@@ -491,3 +638,7 @@ export type Device = typeof device.$inferSelect
 export type DeviceType = typeof deviceType.$inferSelect
 export type TrainingType = typeof trainingType.$inferSelect
 export type Training = typeof training.$inferSelect
+export type EntryMode = (typeof entryMode.enumValues)[number]
+export type ParsingStatus = (typeof parsingStatus.enumValues)[number]
+export type Flight = typeof flight.$inferSelect
+export type FlightLog = typeof flightLog.$inferSelect

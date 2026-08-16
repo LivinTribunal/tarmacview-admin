@@ -37,10 +37,10 @@ describe('tenant isolation: the boundary is actually in force', () => {
     const rows = await harness.owner.execute(
       sql`select relname, relrowsecurity, relforcerowsecurity from pg_class
           where relname in ('organization', 'person', 'membership', 'device', 'training_type',
-                            'training', 'training_device')
+                            'training', 'training_device', 'flight', 'flight_log')
           order by relname`,
     )
-    expect(rows).toHaveLength(7)
+    expect(rows).toHaveLength(9)
     for (const row of rows) {
       expect(row, `${row.relname} is not fully protected`).toMatchObject({
         relrowsecurity: true,

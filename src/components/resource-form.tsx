@@ -57,6 +57,43 @@ function Control({ field }: { field: FormField }) {
   )
 }
 
+// one field, with the wrapper its control actually wants. the labelled <div> is the shape
+// every register used until `flights`, which is the first to need the two that do not fit
+// it - a hidden input has nothing to label, and a radio is one input per choice.
+function Field({ field }: { field: FormField }) {
+  // no wrapper and no label: it is not a control a reader interacts with
+  if (field.type === 'hidden') return <input name={field.name} type="hidden" />
+
+  // a fieldset and a legend rather than a <label for>, because the group's caption belongs
+  // to the set and not to any one of the inputs in it. each choice keeps its own label.
+  if (field.type === 'radio') {
+    return (
+      <fieldset>
+        {field.labelKey && <legend>{t(field.labelKey)}</legend>}
+        {(field.options ?? []).map((option) => (
+          <label key={option.value} htmlFor={`${field.name}-${option.value}`}>
+            <input
+              id={`${field.name}-${option.value}`}
+              name={field.name}
+              type="radio"
+              value={option.value}
+              required={field.required}
+            />
+            {t(option.labelKey)}
+          </label>
+        ))}
+      </fieldset>
+    )
+  }
+
+  return (
+    <div>
+      {field.labelKey && <label htmlFor={field.name}>{t(field.labelKey)}</label>}
+      <Control field={field} />
+    </div>
+  )
+}
+
 // still no submit handler, deliberately: the capture was GET-only, so
 // contracts/routes.json can assert nothing about a write and there is no write path
 // anywhere in the rebuild yet. this renders the field set the form contract is asserted
@@ -65,10 +102,7 @@ export function ResourceForm({ fields }: { fields: readonly FormField[] }) {
   return (
     <form>
       {fields.map((field) => (
-        <div key={field.name}>
-          <label htmlFor={field.name}>{t(field.labelKey)}</label>
-          <Control field={field} />
-        </div>
+        <Field key={field.name} field={field} />
       ))}
     </form>
   )

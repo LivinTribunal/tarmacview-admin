@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { deviceTypeFormFields } from '@/lib/device-types/fields'
+import { flightFormFields } from '@/lib/flights/fields'
 import type { FormField } from '@/lib/form/fields'
 import { organizationFormFields } from '@/lib/organizations/fields'
 import { trainingTypeFormFields } from '@/lib/training-types/fields'
@@ -22,8 +23,16 @@ import { personFormFields } from '@/lib/users/fields'
 type CapturedField = { name: string; control: string } & Record<string, string>
 type FormContract = { create: CapturedField[]; edit: CapturedField[] }
 
-const registers: readonly { resource: string; fields: readonly FormField[] }[] = [
+const registers: readonly {
+  resource: string
+  fields: readonly FormField[]
+  // set where the captured create and edit pages do not carry the same field set. that is a
+  // claim about the capture, never about the rebuild - which declares one field list either
+  // way, and here one covering the union.
+  captureDiffers?: boolean
+}[] = [
   { resource: 'device-types', fields: deviceTypeFormFields },
+  { resource: 'flights', fields: flightFormFields, captureDiffers: true },
   { resource: 'organizations', fields: organizationFormFields },
   { resource: 'training-types', fields: trainingTypeFormFields },
   { resource: 'trainings', fields: trainingFormFields },
@@ -52,11 +61,26 @@ const contractFor = (resource: string): FormContract =>
 for (const register of registers) {
   const contract = contractFor(register.resource)
 
-  describe(`form contract: ${register.resource} create and edit share one field set`, () => {
-    it('so one declaration serves both forms', () => {
-      expect(contract.create.map(fieldName).sort()).toEqual(contract.edit.map(fieldName).sort())
+  // asserted where the capture shows it, which is every register but `flights`: its create
+  // page was captured in upload mode, so the manual branch's three measurement fields were
+  // never in that page's initial markup. the contract's own note is why that cannot be read
+  // as their absence - *a form branch that no captured record exercises cannot be ruled
+  // out*. what is assertable there is the containment below, which is what makes one
+  // declaration over the union satisfy both variants.
+  if (register.captureDiffers) {
+    describe(`form contract: ${register.resource} captured create is contained in captured edit`, () => {
+      it('so one declaration over the union still serves both forms', () => {
+        const edit = contract.edit.map(fieldName)
+        expect(contract.create.map(fieldName).filter((name) => !edit.includes(name))).toEqual([])
+      })
     })
-  })
+  } else {
+    describe(`form contract: ${register.resource} create and edit share one field set`, () => {
+      it('so one declaration serves both forms', () => {
+        expect(contract.create.map(fieldName).sort()).toEqual(contract.edit.map(fieldName).sort())
+      })
+    })
+  }
 
   for (const variant of ['create', 'edit'] as const) {
     describe(`form contract: ${register.resource} ${variant}, at least the captured fields`, () => {
