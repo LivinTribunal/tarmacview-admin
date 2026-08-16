@@ -29,6 +29,13 @@
       "when": 1786837092542,
       "tag": "0003_organization_logo_and_delete_block",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786839174297,
+      "tag": "0004_delete_authority",
+      "breakpoints": true
     }
   ]
 }

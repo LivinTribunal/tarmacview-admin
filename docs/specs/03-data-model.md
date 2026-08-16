@@ -88,6 +88,42 @@ detaches its people and every person survives it, which is *detach is not delete
 the other end, and a membership is not evidence of airworthiness. So an organisation whose
 only dependents are memberships still deletes.
 
+### Delete authority in the rebuild — decided
+
+A **decision about the rebuild**, taken on 16 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #42. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. The predecessor's own delete rules were never Observed — the crawl was GET-only and
+performed no writes ([00-index.md](00-index.md) §"Deliberate gaps") — so nothing here
+describes it.
+
+Postgres decides `DELETE` by `USING` alone; there is no `WITH CHECK` for it. A policy
+written `for: 'all'` with a tenant-or-self `using` and a superadmin-only `withCheck`
+therefore narrows inserts and updates and leaves deletion at the `using` predicate. So who
+may delete is answered per table rather than left to fall out of that:
+
+| Table | Who may delete | Why |
+|---|---|---|
+| `organization` | `superadmin` only | Dissolving a tenant is not an operator's own housekeeping, and it is what `withCheck` already says about writing one |
+| `person` | `superadmin` only | The register entry a flight history hangs off, and accounts are administered rather than self-served — [09-roles-permissions.md](09-roles-permissions.md) §"Account provisioning" |
+| `membership` | `superadmin` only, **for now** | Only a superadmin may create one today, so letting a member delete one is asymmetric in the dangerous direction. Awaiting the people-and-memberships register rather than settled |
+| `training_type` | the owning tenant | A syllabus is the operator's own record, and deleting an entry is the same authority as writing one |
+| `device` | the owning tenant | Fleet management is the operator's own job — with the condition below |
+
+The three superadmin-only rows are **restrictive** delete policies added beside the
+existing ones. Permissive policies OR together, so a narrower *permissive* policy would
+restrict nothing at all; that distinction is the whole of the fix, and the member half of
+`tests/tenancy/delete-authority.test.ts` is what tells the two apart.
+
+**This and the dependent block above are independent controls.** A member is refused for
+who they are; everybody, superadmin included, is refused while dependents exist. The
+organisation whose only dependents are memberships passes the second and now still fails
+the first for anyone but a superadmin.
+
+**The airframe condition.** A device carries maintenance readings and the flights flown on
+it, and neither table exists yet — so nothing today stops a member deleting an airframe
+that will later hold history. When `MaintenanceLog` and `Flight` land they must reference
+the device with `ON DELETE restrict`, the way the organisation's dependents already do.
+
 ---
 
 ## User
