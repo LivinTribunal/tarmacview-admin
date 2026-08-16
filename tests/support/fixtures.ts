@@ -21,17 +21,45 @@ const organizations = [
   { key: 'charlie', name: 'Operator Charlie', reportToken: 'report-token-charlie' },
 ] as const
 
+// the certificate values are deliberately silly. a plausible-looking number survives
+// review; `CERT-PLACEHOLDER-…` cannot be mistaken for a real pilot's.
 const people = [
-  { key: 'alphaManager', name: 'Alpha Manager', email: 'alpha.manager@example.invalid' },
-  { key: 'bravoManager', name: 'Bravo Manager', email: 'bravo.manager@example.invalid' },
+  {
+    key: 'alphaManager',
+    name: 'Alpha Manager',
+    email: 'alpha.manager@example.invalid',
+    certificate: null,
+  },
+  {
+    key: 'bravoManager',
+    name: 'Bravo Manager',
+    email: 'bravo.manager@example.invalid',
+    certificate: null,
+  },
 
   // a pilot with no e-mail and no credentials. that is the normal case for the pilot
   // register, not an edge case, and a unique-not-null e-mail would make it impossible.
-  { key: 'alphaPilot', name: 'Alpha Pilot', email: null },
+  // the one fixture holding certificates, so the register has something to print and the
+  // three rows above keep proving the blank marker.
+  {
+    key: 'alphaPilot',
+    name: 'Alpha Pilot',
+    email: null,
+    certificate: {
+      number: 'CERT-PLACEHOLDER-0001',
+      types: ['A1_A3', 'A2'],
+      validUntil: '2027-06-30',
+    },
+  },
 
   // the only cross-tenant reach there is. it comes from the system role and not from a
   // membership, so this one holds none.
-  { key: 'systemAdmin', name: 'System Administrator', email: 'admin@example.invalid' },
+  {
+    key: 'systemAdmin',
+    name: 'System Administrator',
+    email: 'admin@example.invalid',
+    certificate: null,
+  },
 ] as const
 
 const airframes = [
@@ -97,6 +125,9 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
           name: entry.name,
           email: entry.email,
           systemRole: entry.key === 'systemAdmin' ? 'superadmin' : 'member',
+          certificateNumber: entry.certificate?.number ?? null,
+          certificateTypes: entry.certificate ? [...entry.certificate.types] : [],
+          certificateValidUntil: entry.certificate?.validUntil ?? null,
         })
         .returning({ id: person.id }),
     )

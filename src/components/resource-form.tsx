@@ -8,10 +8,18 @@ import { t } from '@/lib/i18n'
 function Control({ field }: { field: FormField }) {
   if (field.control === 'select') {
     return (
-      <select id={field.name} name={field.name} required={field.required} defaultValue="">
-        {/* an unset enum is a real state on every select declared so far, so the empty
-            choice is offered rather than the first option silently standing in for it */}
-        <option value="">{t('form.select.none')}</option>
+      <select
+        id={field.name}
+        name={field.name}
+        required={field.required}
+        multiple={field.multiple}
+        defaultValue={field.multiple ? [] : ''}
+      >
+        {/* an unset enum is a real state on a single-valued select, so the empty choice is
+            offered rather than the first option silently standing in for it. a multiple
+            expresses the same state by selecting nothing, where an empty choice would be a
+            selectable value that satisfies `required` - which `roles` is. */}
+        {!field.multiple && <option value="">{t('form.select.none')}</option>}
         {(field.options ?? []).map((option) => (
           <option key={option.value} value={option.value}>
             {t(option.labelKey)}
@@ -41,6 +49,7 @@ function Control({ field }: { field: FormField }) {
       required={field.required}
       min={field.min}
       max={field.max}
+      minLength={field.minlength}
       maxLength={field.maxlength}
       step={field.step}
       accept={field.accept}

@@ -11,10 +11,14 @@ export type FormField = {
   name: string
   control: 'input' | 'textarea' | 'select'
   labelKey: MessageKey
-  type?: 'text' | 'number' | 'date' | 'file'
+  type?: 'text' | 'number' | 'date' | 'file' | 'email' | 'password'
   required?: boolean
+  // a select taking more than one value. the people register's `Roly` and `Typy osvedčení`
+  // are the first two.
+  multiple?: boolean
   min?: number
   max?: number
+  minlength?: number
   maxlength?: number
   // the one html constraint here that takes a keyword as well as a number
   step?: number | 'any'

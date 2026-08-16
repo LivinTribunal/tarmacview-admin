@@ -43,6 +43,13 @@
       "when": 1786869666020,
       "tag": "0005_shared_organization_policy",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786871615394,
+      "tag": "0006_person_certificate",
+      "breakpoints": true
     }
   ]
 }

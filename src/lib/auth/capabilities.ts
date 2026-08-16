@@ -1,4 +1,4 @@
-import type { OrganizationRole } from '@/lib/db/schema'
+import type { OrganizationRole, SystemRole } from '@/lib/db/schema'
 
 // the capability matrix from docs/specs/09-roles-permissions.md, as data rather than as
 // branches in handlers. adding a capability is an edit to this table; a special case in
@@ -60,4 +60,18 @@ const granted: Record<OrganizationRole, Partial<Record<Capability, Grant>>> = {
 export function can(role: OrganizationRole | null, capability: Capability): Grant {
   if (role === null) return 'none'
   return granted[role][capability] ?? 'none'
+}
+
+// what the database will actually admit on `person` and `membership`, which today is
+// narrower than the table above: `WITH CHECK` on both is superadmin-only, so
+// `manage_people_and_memberships` and `provision_or_reset_account` are granted to
+// `accountable_manager` in the matrix and refused by Postgres - a gap left open on purpose
+// and closed by its own issue, #48. docs/specs/03-data-model.md §"The shared-organisation
+// read in the rebuild".
+//
+// the people register's chrome gates on this rather than on can(), or a manager is offered
+// a `Vytvoriť` the database will refuse. it lives here, beside the matrix it narrows,
+// because a branch inside a page is how a matrix stops describing the system.
+export function mayManagePeople(systemRole: SystemRole): boolean {
+  return systemRole === 'superadmin'
 }

@@ -5,6 +5,7 @@ import { deviceTypeFormFields } from '@/lib/device-types/fields'
 import type { FormField } from '@/lib/form/fields'
 import { organizationFormFields } from '@/lib/organizations/fields'
 import { trainingTypeFormFields } from '@/lib/training-types/fields'
+import { personFormFields } from '@/lib/users/fields'
 
 // the contract is a client-side floor and complete only for the captured records - see
 // docs/rebuild/00-operating-model.md §5 "Form contract" and contracts/README.md. So this
@@ -24,9 +25,11 @@ const registers: readonly { resource: string; fields: readonly FormField[] }[] =
   { resource: 'device-types', fields: deviceTypeFormFields },
   { resource: 'organizations', fields: organizationFormFields },
   { resource: 'training-types', fields: trainingTypeFormFields },
+
+  { resource: 'users', fields: personFormFields },
 ]
 
-const constrainedAttributes = ['min', 'max', 'maxlength', 'step'] as const
+const constrainedAttributes = ['min', 'max', 'minlength', 'maxlength', 'step'] as const
 
 // every one of those is a number except `step`, which also takes the keyword `any`.
 // comparing that numerically would be worse than useless: Number('any') is NaN, and
@@ -65,6 +68,7 @@ for (const register of registers) {
           expect(field.control).toBe(captured.control)
           if (captured.type) expect(field.type).toBe(captured.type)
           if (captured.required) expect(field.required).toBe(true)
+          if (captured.multiple) expect(field.multiple).toBe(true)
 
           for (const attribute of constrainedAttributes) {
             const value = captured[attribute]
