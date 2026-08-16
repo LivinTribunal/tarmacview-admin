@@ -39,11 +39,13 @@ describe('the acting session, resolved from the person row', () => {
   })
 
   it("reaches the acting person's own row under a member context, which is what every sign-in depends on", async () => {
-    // the read runs under `{ systemRole: 'member' }`, so only the own-row half of
-    // `person_self_or_superadmin` admits it. drop that half and every non-superadmin
-    // sign-in resolves to null, which reads as a rejected credential rather than as a
-    // broken policy. the subject is the other organisation's manager on purpose: the
-    // reach is a property of the policy, not of one tenant.
+    // the read runs under `{ systemRole: 'member' }`, so it is
+    // `person_shared_organization_or_self` that admits it. what pins the own-row half of
+    // that policy is the superadmin case above, whose person holds no membership and so
+    // is reachable by no other half - drop it and that sign-in resolves to null, which
+    // reads as a rejected credential rather than as a broken policy. the subject here is
+    // the other organisation's manager on purpose: the reach is a property of the policy,
+    // not of one tenant.
     const session = await resolveActingSession(harness.app, ids.people.bravoManager)
     expect(session).toEqual({ personId: ids.people.bravoManager, systemRole: 'member' })
   })

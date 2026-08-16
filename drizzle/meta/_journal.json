@@ -36,6 +36,13 @@
       "when": 1786839174297,
       "tag": "0004_delete_authority",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786869666020,
+      "tag": "0005_shared_organization_policy",
+      "breakpoints": true
     }
   ]
 }

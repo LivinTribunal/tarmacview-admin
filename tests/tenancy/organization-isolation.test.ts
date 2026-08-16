@@ -92,9 +92,9 @@ describe('tenant isolation: the two counts beside each organisation', () => {
   })
 
   it('leaves the people count blank for a member, rather than reporting their own row as a roster', async () => {
-    // `membership_own_or_superadmin` selects the acting person's own rows, so a count
-    // here would read 1 for an organisation of any size. that is a gap, and it is shown
-    // as one - src/lib/tenant/scoped-organizations.ts
+    // the count became readable to a member when `membership_tenant_isolation` landed,
+    // but showing it is the people register's slice. a gap, and shown as one -
+    // src/lib/tenant/scoped-organizations.ts
     const [alpha] = await list(alphaSession())
     expect(alpha?.peopleCount).toBeNull()
   })
