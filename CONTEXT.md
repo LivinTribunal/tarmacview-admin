@@ -36,6 +36,11 @@ predecessor system, which is the source of most of these terms, is in
   permit, insurance validity) and its expiry-warning threshold. Deleting one is **blocked
   while dependents exist** rather than cascaded, and is a `superadmin` act even when there
   are none — two independent controls; see `docs/specs/03-data-model.md`.
+- **Tenant-owned / deployment-wide** — which side of the ownership chain an entity sits on.
+  A tenant-owned entity carries `organization_id` and is tenant-scoped; a deployment-wide
+  one is neither, and its register is a **system register** maintained by `superadmin`.
+  Which side a register falls on is decided per register — see
+  `docs/specs/03-data-model.md`.
 - **Device** — one airframe, identified by serial number. Owns its maintenance history and
   is the subject of service scheduling.
 - **Flight** — one recorded flight. Owns its flight logs; may be linked to an incident.
