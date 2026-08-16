@@ -51,15 +51,24 @@ const served = servedPaths(join(repoRoot, 'src/app'))
 // register joins it when its slice lands.
 const registers = [
   '/admin/device-types',
+  '/admin/flights',
   '/admin/trainings',
   '/admin/training-types',
   '/admin/users',
 ]
 
+// `flights` is the one register whose oracle names a read-only detail page as well as the
+// index, create and edit its siblings carry. that page is where doc 04 §FlightResource's
+// *Detaily letov* relation manager lives, which is its own slice - so it is named here
+// rather than left to fail as an unserved path, and this line is what has to go when it
+// lands.
+const deferred = ['/admin/flights/{id}']
+
 describe('route contract: register paths, path shapes only, GET-only capture', () => {
   const captured = oracle.routes
     .filter((route) => registers.some((register) => route.path.startsWith(register)))
     .map((route) => route.path)
+    .filter((path) => !deferred.includes(path))
     .sort()
 
   it('the oracle carries register paths to assert against', () => {

@@ -118,6 +118,11 @@ the form. See doc 07 for the full import semantics.
 **Relation manager:** *Detaily letov* (flight logs) — read-only table:
 `Začiatok letu` · `Koniec letu` · `Trvanie` · `Vzdialenosť` · `Max. výška` · `Aircraft`.
 
+The rebuild refuses a flight that names another operator's airframe in the schema rather
+than in a policy, keeps an unassigned flight and a failed parse in the register, and adds a
+`Max. vzdialenosť (m)` field the capture never saw because the VLOS check is judged on it —
+see [03-data-model.md](03-data-model.md) §"Flights in the rebuild".
+
 ---
 
 ## TrainingResource — `/admin/trainings`

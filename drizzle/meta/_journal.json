@@ -57,6 +57,13 @@
       "when": 1786873680300,
       "tag": "0007_training",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786922192761,
+      "tag": "0008_flight",
+      "breakpoints": true
     }
   ]
 }

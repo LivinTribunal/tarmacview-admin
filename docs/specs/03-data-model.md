@@ -175,6 +175,8 @@ may delete is answered per table rather than left to fall out of that:
 | `device` | the owning tenant | Fleet management is the operator's own job — with the condition below |
 | `training` | the owning tenant | Same reasoning as the syllabus entry it points at — see §"Trainings in the rebuild" |
 | `training_device` | the owning tenant | Detaching an airframe from a training is not evidence in itself; the training survives it |
+| `flight` | the owning tenant | The operator's own record, on the same reasoning — see §"Flights in the rebuild" |
+| `flight_log` | the owning tenant | A leg is not evidence apart from its flight, and cascades with it |
 
 The three superadmin-only rows are **restrictive** delete policies added beside the
 existing ones. Permissive policies OR together, so a narrower *permissive* policy would
@@ -187,11 +189,12 @@ organisation whose only dependents are memberships passes the second and now sti
 the first for anyone but a superadmin.
 
 **The airframe condition.** A device carries maintenance readings and the flights flown on
-it, and neither table exists yet — so a member could delete an airframe that will later hold
-history. Any dependent that does hold it must reference the device with `ON DELETE restrict`,
-the way the organisation's dependents already do. `training_device` is the first to do so: a
-training that says it covered an airframe is exactly that history, and deleting the airframe
-is now refused while one says it. `MaintenanceLog` and `Flight` must follow when they land.
+it, so a member could delete an airframe that holds history. Any dependent that does hold it
+must reference the device with `ON DELETE restrict`, the way the organisation's dependents
+already do. `training_device` was the first to do so: a training that says it covered an
+airframe is exactly that history, and deleting the airframe is refused while one says it.
+`Flight` has now landed and does the same, so an airframe that flew cannot be deleted out
+from under the record. `MaintenanceLog` must follow when it lands.
 
 ---
 
@@ -490,10 +493,21 @@ records what the technician certified — so keep it.
 | `entry_mode` | enum | Which of the three import paths created it (doc 07) |
 | `total_flight_time_seconds` | int | Entered as `h:mm` or decimal hours, stored as seconds |
 | `max_altitude_meters` | decimal | |
-| `total_distance_meters` | decimal | |
+| `max_distance_meters` | decimal | Maximum distance from the pilot — the figure the VLOS check is judged on |
+| `total_distance_meters` | decimal | Track length, which is a different quantity |
 | `parsing_status` | enum | e.g. `Spracované`; `parsing_errors` carries the message |
 | `imported_by` | FK → User | |
 | `created_at` | datetime | "Importované" |
+
+`max_distance_meters` was **absent from this table until 16 Aug 2026**, and it is a gap in
+the crawl rather than a field the predecessor lacks. The crawl was GET-only, so no payload
+carrying it was ever fetched here; three other Observed records name it. Doc 07 §"Mode 3"
+collects `manual_max_distance_meters` *and* `manual_total_distance_meters` and states the
+two are distinct. The derivation below compares "the flight's max distance", a column this
+table did not contain. And [06-org-report.md](06-org-report.md) lists `max_distance` beside
+`max_altitude` in the captured `flights[]` payload, extracted to
+`contracts/report-schema.json` as `data.flights[].max_distance` — a captured JSON body
+rather than prose. The row above is that gap closed, not a new observation.
 
 Derived on the report: `has_vlos_violation` (bool) — compares the flight's max distance
 against the aircraft's max VLOS. `flight_date`, `flight_date_display`, `flight_date_sort`
@@ -618,6 +632,65 @@ do over membership rows. It is only safe because `training_device_tenant_isolati
 row whose airframe is not readable would understate what a training covered with nothing
 failing. Narrowing either policy without the other is what breaks it. There is no
 organisation filter anywhere in the read — the policy scopes it, not a `WHERE` clause.
+
+### Flights in the rebuild — decided
+
+A **decision about the rebuild**, taken on 16 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #59. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. Nothing here describes the predecessor; the
+§Flight and §FlightLog tables above are what was Observed, and they stay standing.
+
+`flight` is **tenant-owned** on the shape the two sections above established —
+`organization_id` not null, `restrict`, its own tenant-isolation policy, `WITH CHECK`
+tenant-scoped on both halves and no restrictive delete policy. A flight is the airworthiness
+record, so a tenant delete must be a deliberate act against an emptied organisation.
+
+**`pilot_id` and `device_id` are both nullable and stay that way.** A flight with neither is
+normal: automated ingest cannot know who was flying, assignment is a later step, and the
+register never hides an unassigned flight — it is the row most needing attention.
+
+**`device_id` carries `organization_id` into a composite foreign key** against
+`device (id, organization_id)`, exactly as `training.training_type_id` does. A plain
+reference would let a flight name another operator's airframe with the row's own
+`organization_id` perfectly correct and no policy noticing. `MATCH SIMPLE` is the default and
+is wanted: the column is nullable, and a null leaves the constraint unenforced, which is what
+keeps an unassigned flight writable. `pilot_id` and `imported_by` get none of that, because
+`person` carries no organisation column (§"The shared-organisation read in the rebuild");
+what keeps a cross-tenant pilot out is `person_shared_organization_or_self` at read time.
+
+**Its dependents are `restrict` in three directions**, and each keeps a promise §"Delete
+authority in the rebuild" made: on `device`, so an airframe that flew cannot be deleted out
+from under the record; on `pilot_id` and on `imported_by`, so neither the person who flew nor
+the person who filed it can be.
+
+**`flight_log` carries its own `organization_id`** and takes a composite foreign key into
+`flight (id, organization_id)`, cascading from the flight, rather than reaching it through a
+policy subquery — the reasoning `training_device` records above, and now an established
+pattern. A leg is not evidence apart from the flight it details, which is why this one
+cascades where the airframe restricts.
+
+**The enum members are the rebuild's own decision, not a recovered fact.** §Flight above
+gives one `parsing_status` value by example, and doc 07's four-valued list belongs to
+`MobileLogUpload`, a different entity. So `parsing_status` is `processed | failed`, minimal
+on purpose, and a pending state joins it when the parsers land. A **null status is the
+manual-entry case** — nothing was parsed, and inventing a state to fill the cell would report
+an outcome that never happened. `entry_mode` carries **four** values and not doc 07's three:
+the `upload_mode` discriminator has three, but a controller sync does not go through that
+endpoint and still produces a flight, so three would leave a synced flight with no entry mode
+to carry. The enum describes the data model rather than what the write path can reach, which
+today is none of them.
+
+**A failed parse is a row, and the register shows it.** `parsing_status` and `parsing_errors`
+exist from the first migration though nothing parses yet, because the register has to be
+built around the fact that they can be set. Nothing in the read filters on them.
+
+**The stated duration is the record.** Doc 07 leaves open which wins when an explicit
+duration and a start/end pair disagree; the duration does. This is the maintenance rule read
+across — a technician's readings are stated, not computed — and flight time drives cycles and
+service intervals, so the figure a pilot entered is the record. Start and end are context and
+are never a source it is re-derived from. Where a duration is absent and a start/end pair is
+present it is derived **once, at entry, and stored**, which is the write path's job. Stored
+as `total_flight_time_seconds`, and rendered `h:mm`.
 
 ---
 

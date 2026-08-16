@@ -126,6 +126,12 @@ predecessor system, which is the source of most of these terms, is in
   One flight has many. The flight is the unit of record; the log is the detail.
 - **Entry mode** — which of the import paths created a flight: DJI text log, agricultural
   spreadsheet export, manual entry, or controller sync.
+- **Maximum distance / total distance** — two different figures a flight carries. Maximum
+  distance is how far the aircraft got **from the pilot**, and is the one the VLOS violation
+  is judged on; total distance is the length of the track flown. Judging a violation on the
+  track length reads as a violation for any long survey flight flown within sight, and as a
+  pass for a short one flown straight out past the limit — see
+  `docs/specs/03-data-model.md`.
 - **Assignment** — attaching a pilot and an airframe to a flight after import. A flight may
   legitimately exist with neither; automated ingest cannot know who was flying. Assignment
   is a first-class later step, not a creation-time requirement.

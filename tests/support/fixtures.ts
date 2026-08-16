@@ -3,6 +3,8 @@ import type { Database } from '@/lib/db/client'
 import {
   device,
   deviceType,
+  flight,
+  flightLog,
   membership,
   organization,
   person,
@@ -144,11 +146,98 @@ const trainings = [
   },
 ] as const
 
+// alpha and bravo only, for the reason the trainings above are: charlie is deleted to prove
+// the dependent block lifts, and `flight.organization_id` is `restrict`.
+//
+// none of these names an airframe a training already covers. an airframe carrying both
+// would leave two `restrict` constraints able to refuse the same delete, and the test that
+// names which one refused would then be asserting an ordering Postgres never promised.
+//
+// every value is invented, filenames included: a real log name carries a controller serial
+// and a date, and neither belongs in this repo.
+const flights = [
+  {
+    key: 'alphaImported',
+    organization: 'alpha',
+    fileName: 'placeholder-flight-0001.txt',
+    entryMode: 'dji_log',
+    pilot: 'alphaPilot',
+    airframe: 'alphaTwo',
+    importedBy: 'alphaManager',
+    parsingStatus: 'processed',
+    parsingErrors: null,
+    totalFlightTimeSeconds: 5100,
+    maxAltitudeMeters: '95.5',
+    maxDistanceMeters: '420.25',
+    totalDistanceMeters: '1830.75',
+    legs: 2,
+  },
+
+  // no pilot, no airframe and nobody named as the importer. that is the normal state of a
+  // synced flight - automated ingest cannot know who was flying - and it is the row the
+  // register most has to keep visible.
+  {
+    key: 'alphaUnassigned',
+    organization: 'alpha',
+    fileName: 'placeholder-flight-0002.txt',
+    entryMode: 'controller_sync',
+    pilot: null,
+    airframe: null,
+    importedBy: null,
+    parsingStatus: 'processed',
+    parsingErrors: null,
+    totalFlightTimeSeconds: 36300,
+    maxAltitudeMeters: '48',
+    maxDistanceMeters: '110',
+    totalDistanceMeters: '640',
+    legs: 1,
+  },
+
+  // the parse failed, so there are no legs and no measurements - and the row is retained,
+  // because it is still evidence that a flight happened
+  {
+    key: 'alphaFailed',
+    organization: 'alpha',
+    fileName: 'placeholder-flight-0003.txt',
+    entryMode: 'dji_log',
+    pilot: null,
+    airframe: null,
+    importedBy: 'alphaManager',
+    parsingStatus: 'failed',
+    parsingErrors: 'Placeholder parse failure.',
+    totalFlightTimeSeconds: null,
+    maxAltitudeMeters: null,
+    maxDistanceMeters: null,
+    totalDistanceMeters: null,
+    legs: 0,
+  },
+
+  // manually entered, so nothing was parsed and the status is null rather than a state
+  // invented to fill it
+  {
+    key: 'bravoManual',
+    organization: 'bravo',
+    fileName: 'placeholder-flight-0004',
+    entryMode: 'manual',
+    pilot: 'bravoManager',
+    airframe: 'bravoOne',
+    importedBy: 'bravoManager',
+    parsingStatus: null,
+    parsingErrors: null,
+    totalFlightTimeSeconds: 2700,
+    maxAltitudeMeters: '60',
+    maxDistanceMeters: '250',
+    totalDistanceMeters: '900',
+    legs: 0,
+  },
+] as const
+
 export type OrganizationKey = (typeof organizations)[number]['key']
 export type PersonKey = (typeof people)[number]['key']
 export type AirframeKey = (typeof airframes)[number]['key']
 export type TrainingTypeKey = (typeof trainingTypes)[number]['key']
 export type TrainingKey = (typeof trainings)[number]['key']
+export type FlightKey = (typeof flights)[number]['key']
 
 export type SeededIds = {
   organizations: Record<OrganizationKey, number>
@@ -156,6 +245,7 @@ export type SeededIds = {
   airframes: Record<AirframeKey, number>
   trainingTypes: Record<TrainingTypeKey, number>
   trainings: Record<TrainingKey, number>
+  flights: Record<FlightKey, number>
   deviceType: number
 }
 
@@ -282,12 +372,50 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
     }
   }
 
+  const flightIds = {} as Record<FlightKey, number>
+  for (const entry of flights) {
+    const organizationId = organizationIds[entry.organization]
+    flightIds[entry.key] = await insertOne(
+      db
+        .insert(flight)
+        .values({
+          organizationId,
+          fileName: entry.fileName,
+          entryMode: entry.entryMode,
+          pilotId: entry.pilot ? personIds[entry.pilot] : null,
+          deviceId: entry.airframe ? airframeIds[entry.airframe] : null,
+          importedBy: entry.importedBy ? personIds[entry.importedBy] : null,
+          parsingStatus: entry.parsingStatus,
+          parsingErrors: entry.parsingErrors,
+          totalFlightTimeSeconds: entry.totalFlightTimeSeconds,
+          maxAltitudeMeters: entry.maxAltitudeMeters,
+          maxDistanceMeters: entry.maxDistanceMeters,
+          totalDistanceMeters: entry.totalDistanceMeters,
+        })
+        .returning({ id: flight.id }),
+    )
+
+    // the legs carry the tenant themselves rather than reaching the flight for it, the way
+    // the training pivot does - and the composite foreign key is what stops it drifting
+    for (let leg = 0; leg < entry.legs; leg += 1) {
+      await db.insert(flightLog).values({
+        flightId: flightIds[entry.key],
+        organizationId,
+        durationSeconds: 600,
+        distanceMeters: '300',
+        maxAltitudeMeters: '45',
+        aircraft: 'Placeholder Quadcopter',
+      })
+    }
+  }
+
   return {
     organizations: organizationIds,
     people: personIds,
     airframes: airframeIds,
     trainingTypes: trainingTypeIds,
     trainings: trainingIds,
+    flights: flightIds,
     deviceType: deviceTypeId,
   }
 }

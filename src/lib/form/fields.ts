@@ -10,8 +10,10 @@ import type { MessageKey } from '@/lib/i18n'
 export type FormField = {
   name: string
   control: 'input' | 'textarea' | 'select'
-  labelKey: MessageKey
-  type?: 'text' | 'number' | 'date' | 'file' | 'email' | 'password'
+  // absent on a hidden input alone, which renders no label. inventing a string nobody can
+  // ever see would be a translatable message with no reader.
+  labelKey?: MessageKey
+  type?: 'text' | 'number' | 'date' | 'file' | 'email' | 'password' | 'radio' | 'hidden'
   required?: boolean
   // a select taking more than one value. the people register's `Roly` and `Typy osvedčení`
   // are the first two.
@@ -25,7 +27,8 @@ export type FormField = {
   rows?: number
   // the file filter, as a comma-separated accept list
   accept?: string
-  // a select's choices. the labels resolve through src/lib/i18n like every other
-  // user-visible string, so the stored value and the word for it stay separable.
+  // the choices of a select, or of a radio group. the labels resolve through src/lib/i18n
+  // like every other user-visible string, so the stored value and the word for it stay
+  // separable.
   options?: readonly { value: string; labelKey: MessageKey }[]
 }
