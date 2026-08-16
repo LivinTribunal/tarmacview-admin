@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { formatCell } from '@/lib/table/view'
 import { trainingTypeTable, trainingTypeTableRow } from '@/lib/training-types/fields'
 
 // docs/specs/04-admin-resources.md §TrainingTypeResource, asserted as a declaration.
@@ -13,6 +12,7 @@ const entry = {
   code: 'A1',
   description: 'Placeholder training-type description.',
   createdAt: new Date('2026-08-15T00:00:00Z'),
+  trainingCount: 2,
 }
 
 describe('training-type index columns', () => {
@@ -56,13 +56,11 @@ describe('training-type index rows', () => {
     }
   })
 
-  it('leaves the usage count blank rather than claiming the type has no trainings', () => {
-    // there is no `training` table yet, so the count is over a relation that does not
-    // exist. a `0` would assert a fact this slice cannot know; null renders as the
-    // locale's blank marker.
-    const row = trainingTypeTableRow(entry)
-    expect(row.trainings).toBeNull()
-    expect(formatCell(row.trainings ?? null)).toBeNull()
+  it('states the usage count, which was blank only while there was no relation to count', () => {
+    // `training` exists now, so a `0` is a fact rather than a claim the slice could not
+    // make - src/lib/tenant/scoped-training-types.ts counts it under the training policy
+    expect(trainingTypeTableRow(entry).trainings).toBe(2)
+    expect(trainingTypeTableRow({ ...entry, trainingCount: 0 }).trainings).toBe(0)
   })
 
   it('leaves an absent description blank rather than empty text', () => {

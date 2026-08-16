@@ -5,6 +5,7 @@ import { deviceTypeFormFields } from '@/lib/device-types/fields'
 import type { FormField } from '@/lib/form/fields'
 import { organizationFormFields } from '@/lib/organizations/fields'
 import { trainingTypeFormFields } from '@/lib/training-types/fields'
+import { trainingFormFields } from '@/lib/trainings/fields'
 import { personFormFields } from '@/lib/users/fields'
 
 // the contract is a client-side floor and complete only for the captured records - see
@@ -25,6 +26,7 @@ const registers: readonly { resource: string; fields: readonly FormField[] }[] =
   { resource: 'device-types', fields: deviceTypeFormFields },
   { resource: 'organizations', fields: organizationFormFields },
   { resource: 'training-types', fields: trainingTypeFormFields },
+  { resource: 'trainings', fields: trainingFormFields },
 
   { resource: 'users', fields: personFormFields },
 ]

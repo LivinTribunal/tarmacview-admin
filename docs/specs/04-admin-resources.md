@@ -132,6 +132,11 @@ the form. See doc 07 for the full import semantics.
 | Dátum školenia | date | | When it took place |
 | Platnosť do | date | optional | Blank = never expires |
 
+The rebuild names the last two `held_on` and `valid_until`, keeps the contract's
+`date_start` and `date_end` as the form's wire names, and refuses a training that points at
+another operator's syllabus entry or airframe in the schema rather than in a policy — see
+[03-data-model.md](03-data-model.md) §"Trainings in the rebuild".
+
 ---
 
 ## TrainingTypeResource — `/admin/training-types`
