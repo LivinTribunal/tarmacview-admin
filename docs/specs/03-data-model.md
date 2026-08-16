@@ -75,11 +75,12 @@ observed `/storage/organization-logos/{ULID}.png` route — a column of bytes wo
 served from one. Keeping the bytes out of the row also keeps the register's own query small.
 What serves that path is not decided here; nothing in the rebuild serves it yet.
 
-**Deleting an organisation is blocked while dependents exist** — the option
-[04-admin-resources.md](04-admin-resources.md) leaves open, resolved to block rather than
-soft-delete. An organisation owns flights, documents and maintenance history, so a cascade
-destroys airworthiness evidence, and a `deleted_at` on a table nothing else filters buys
-nothing yet.
+**Deleting an organisation is blocked while dependents exist** — block rather than
+soft-delete. The register offers the delete as a bulk action
+([04-admin-resources.md](04-admin-resources.md) §OrganizationResource), which defers here
+for which way it goes. An organisation owns flights, documents and maintenance history, so
+a cascade destroys airworthiness evidence, and a `deleted_at` on a table nothing else
+filters buys nothing yet.
 
 The block is the `ON DELETE restrict` on the dependent foreign keys, not a check in a
 controller: a second call path can skip a controller and cannot skip the database.
@@ -92,9 +93,9 @@ only dependents are memberships still deletes.
 
 A **decision about the rebuild**, taken on 16 Aug 2026 by the rebuild loop under the owner's
 standing autonomy grant and recorded on issue #42. The owner has not reviewed it: settled
-enough to build on, open enough to overturn. The predecessor's own delete rules were never Observed — the crawl was GET-only and
-performed no writes ([00-index.md](00-index.md) §"Deliberate gaps") — so nothing here
-describes it.
+enough to build on, open enough to overturn. The predecessor's own delete rules were never
+Observed — the crawl was GET-only and performed no writes ([00-index.md](00-index.md)
+§"Deliberate gaps") — so nothing here describes it.
 
 Postgres decides `DELETE` by `USING` alone; there is no `WITH CHECK` for it. A policy
 written `for: 'all'` with a tenant-or-self `using` and a superadmin-only `withCheck`
