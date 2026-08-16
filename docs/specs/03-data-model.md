@@ -49,7 +49,7 @@ The tenant. Everything else hangs off it.
 |---|---|---|---|
 | `id` | int PK | | |
 | `name` | string(255) | **required** | |
-| `logo` | file | PNG/JPG/WebP, ≤2 MB | Stored `organization-logos/{ULID}.ext` |
+| `logo_path` | string | PNG/JPG/WebP, ≤2 MB | Field name Observed on the form; stored `organization-logos/{ULID}.ext` |
 | `uas_registration_number` | string(255) | | Operator registration, e.g. `SVK…` |
 | `specific_permit_number` | string(255) | | SPECIFIC-category operating permit |
 | `specific_operation_type` | enum | `VLOS` \| `BVLOS` | |
@@ -58,7 +58,35 @@ The tenant. Everything else hangs off it.
 | `licence_expiry_warning_days` | int | **required**, 1–730, default 40 | Drives the amber expiry warning on the report |
 | *report token* | string(32) hex | unique | Route key **and** operator-report URL. Column name not observed |
 
-Counts shown in the admin table (`Používatelia`, `UAS`) are aggregates, not columns.
+Counts shown in the admin table (`Používatelia`, `UAS`) are aggregates, not columns. There
+is no `updated_at`: the register offers one as a toggleable column — Observed — but no
+modification timestamp was ever seen in a payload, so the rebuild leaves the cell blank
+rather than inventing a column to fill it.
+
+### Organisation deletion and the logo in the rebuild — decided
+
+A **decision about the rebuild**, taken on 15 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #38. The owner has not reviewed it: settled
+enough to build on, open enough to overturn.
+
+**The logo is a path, not bytes.** `logo_path` holds where the file lives; the file lives on
+disk. The form field name is Observed, and that it stores a path is *(inferred)* from the
+observed `/storage/organization-logos/{ULID}.png` route — a column of bytes would not be
+served from one. Keeping the bytes out of the row also keeps the register's own query small.
+What serves that path is not decided here; nothing in the rebuild serves it yet.
+
+**Deleting an organisation is blocked while dependents exist** — the option
+[04-admin-resources.md](04-admin-resources.md) leaves open, resolved to block rather than
+soft-delete. An organisation owns flights, documents and maintenance history, so a cascade
+destroys airworthiness evidence, and a `deleted_at` on a table nothing else filters buys
+nothing yet.
+
+The block is the `ON DELETE restrict` on the dependent foreign keys, not a check in a
+controller: a second call path can skip a controller and cannot skip the database.
+`membership.organization_id` stays `cascade` deliberately — dissolving an organisation
+detaches its people and every person survives it, which is *detach is not delete* read from
+the other end, and a membership is not evidence of airworthiness. So an organisation whose
+only dependents are memberships still deletes.
 
 ---
 

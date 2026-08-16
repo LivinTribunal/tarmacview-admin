@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { deviceTypeFormFields } from '@/lib/device-types/fields'
 import type { FormField } from '@/lib/form/fields'
+import { organizationFormFields } from '@/lib/organizations/fields'
 import { trainingTypeFormFields } from '@/lib/training-types/fields'
 
 // the contract is a client-side floor and complete only for the captured records - see
@@ -21,10 +22,17 @@ type FormContract = { create: CapturedField[]; edit: CapturedField[] }
 
 const registers: readonly { resource: string; fields: readonly FormField[] }[] = [
   { resource: 'device-types', fields: deviceTypeFormFields },
+  { resource: 'organizations', fields: organizationFormFields },
   { resource: 'training-types', fields: trainingTypeFormFields },
 ]
 
-const numericAttributes = ['min', 'max', 'maxlength', 'step'] as const
+const constrainedAttributes = ['min', 'max', 'maxlength', 'step'] as const
+
+// every one of those is a number except `step`, which also takes the keyword `any`.
+// comparing that numerically would be worse than useless: Number('any') is NaN, and
+// Object.is(NaN, NaN) is true, so a declaration carrying a nonsense `step: NaN` would
+// satisfy the contract. the keyword is asserted as a keyword.
+const expected = (captured: string) => (captured === 'any' ? 'any' : Number(captured))
 
 const fieldName = (captured: CapturedField) => captured.name.replace(/^data\./, '')
 
@@ -58,9 +66,9 @@ for (const register of registers) {
           if (captured.type) expect(field.type).toBe(captured.type)
           if (captured.required) expect(field.required).toBe(true)
 
-          for (const attribute of numericAttributes) {
+          for (const attribute of constrainedAttributes) {
             const value = captured[attribute]
-            if (value !== undefined) expect(field[attribute]).toBe(Number(value))
+            if (value !== undefined) expect(field[attribute]).toBe(expected(value))
           }
         },
       )

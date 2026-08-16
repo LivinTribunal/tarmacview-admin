@@ -6,6 +6,21 @@ import { t } from '@/lib/i18n'
 // type and no resource name reach it.
 
 function Control({ field }: { field: FormField }) {
+  if (field.control === 'select') {
+    return (
+      <select id={field.name} name={field.name} required={field.required} defaultValue="">
+        {/* an unset enum is a real state on every select declared so far, so the empty
+            choice is offered rather than the first option silently standing in for it */}
+        <option value="">{t('form.select.none')}</option>
+        {(field.options ?? []).map((option) => (
+          <option key={option.value} value={option.value}>
+            {t(option.labelKey)}
+          </option>
+        ))}
+      </select>
+    )
+  }
+
   if (field.control === 'textarea') {
     return (
       <textarea
@@ -28,6 +43,7 @@ function Control({ field }: { field: FormField }) {
       max={field.max}
       maxLength={field.maxlength}
       step={field.step}
+      accept={field.accept}
     />
   )
 }

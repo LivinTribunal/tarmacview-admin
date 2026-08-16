@@ -9,13 +9,19 @@ import type { MessageKey } from '@/lib/i18n'
 // rule set.
 export type FormField = {
   name: string
-  control: 'input' | 'textarea'
+  control: 'input' | 'textarea' | 'select'
   labelKey: MessageKey
-  type?: 'text' | 'number'
+  type?: 'text' | 'number' | 'date' | 'file'
   required?: boolean
   min?: number
   max?: number
   maxlength?: number
-  step?: number
+  // the one html constraint here that takes a keyword as well as a number
+  step?: number | 'any'
   rows?: number
+  // the file filter, as a comma-separated accept list
+  accept?: string
+  // a select's choices. the labels resolve through src/lib/i18n like every other
+  // user-visible string, so the stored value and the word for it stay separable.
+  options?: readonly { value: string; labelKey: MessageKey }[]
 }

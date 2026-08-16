@@ -47,9 +47,9 @@ The tenant register and the entry point to the org workspace (doc 05).
 | Poistenie platné do | date | | Insurance validity |
 | Upozornenia o expirácii — dní pred | number | required, 1–730, default 40 | Amber warning threshold on the report |
 
-Deleting an organisation is offered as a bulk action. Given it owns flights, documents and
-maintenance history, **make this a soft delete or block it while dependents exist** — a
-hard cascade here destroys airworthiness evidence.
+Deleting an organisation is offered as a bulk action — a hard cascade here destroys
+airworthiness evidence. Which way the rebuild goes is settled in
+[03-data-model.md](03-data-model.md) §"Organisation deletion and the logo in the rebuild".
 
 ---
 

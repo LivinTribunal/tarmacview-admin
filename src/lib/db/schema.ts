@@ -41,11 +41,16 @@ export const organizationRole = pgEnum('organization_role', [
 export const operationType = pgEnum('operation_type', ['VLOS', 'BVLOS'])
 export const deviceStatus = pgEnum('device_status', ['active', 'inactive', 'maintenance', 'retired'])
 
+// the tenant. `logo_path` holds where the file lives, never the bytes -
+// docs/specs/03-data-model.md §"Organisation deletion and the logo in the rebuild".
+// deleting one is blocked while dependents exist, and the block is the `restrict` on the
+// dependent foreign keys below rather than a check a second call path could skip.
 export const organization = pgTable(
   'organization',
   {
     id: serial('id').primaryKey(),
     name: text('name').notNull(),
+    logoPath: text('logo_path'),
     uasRegistrationNumber: text('uas_registration_number'),
     specificPermitNumber: text('specific_permit_number'),
     specificOperationType: operationType('specific_operation_type'),
@@ -94,6 +99,10 @@ export const person = pgTable(
 
 // the attachment of a person to an organisation. detach is a delete of this row and
 // nothing else - the person and their flight history survive it.
+//
+// `organization_id` stays cascade where the two below are restrict: dissolving an
+// organisation detaches its people and every person survives it, which is the same rule
+// read from the other end. a membership is not airworthiness evidence.
 export const membership = pgTable(
   'membership',
   {
@@ -140,13 +149,17 @@ export const deviceType = pgTable('device_type', {
 // one airframe. `device_type_id` is nullable because "no type assigned" is a real and
 // common state - it leaves the airframe with no VLOS limit and no service interval,
 // which src/lib/devices/service-schedule.ts reports as a gap and never as a pass.
+//
+// `organization_id` is `restrict`: an airframe carries maintenance history and the
+// flights flown on it, so cascading a tenant delete through here destroys the
+// airworthiness record. the database refuses instead.
 export const device = pgTable(
   'device',
   {
     id: serial('id').primaryKey(),
     organizationId: integer('organization_id')
       .notNull()
-      .references(() => organization.id, { onDelete: 'cascade' }),
+      .references(() => organization.id, { onDelete: 'restrict' }),
     serialNumber: text('serial_number').notNull(),
     name: text('name'),
     model: text('model'),
@@ -171,14 +184,16 @@ export const device = pgTable(
 // the training taxonomy an operator holds. tenant-owned, unlike the catalogue above -
 // docs/specs/03-data-model.md §"Training types in the rebuild". a syllabus entry is an
 // operator's own record, so `code` is unique per organisation and two operators may both
-// hold `A1`.
+// hold `A1`. `organization_id` is `restrict` for the same reason the airframe's is: a
+// tenant delete has to be a deliberate act against an emptied organisation, not a sweep
+// that takes the syllabus with it.
 export const trainingType = pgTable(
   'training_type',
   {
     id: serial('id').primaryKey(),
     organizationId: integer('organization_id')
       .notNull()
-      .references(() => organization.id, { onDelete: 'cascade' }),
+      .references(() => organization.id, { onDelete: 'restrict' }),
     name: text('name').notNull(),
     code: text('code').notNull(),
     description: text('description'),
@@ -270,6 +285,7 @@ export const authVerification = pgTable('auth_verification', {
 
 export type SystemRole = (typeof systemRole.enumValues)[number]
 export type OrganizationRole = (typeof organizationRole.enumValues)[number]
+export type Organization = typeof organization.$inferSelect
 export type Device = typeof device.$inferSelect
 export type DeviceType = typeof deviceType.$inferSelect
 export type TrainingType = typeof trainingType.$inferSelect
