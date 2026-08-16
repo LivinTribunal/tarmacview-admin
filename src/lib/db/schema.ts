@@ -27,9 +27,14 @@ const actingIsSuperadmin = sql`coalesce(current_setting('app.system_role', true)
 
 // the organisations the acting person holds a membership of. keyed off membership,
 // never off a column on the person - docs/specs/03-data-model.md §"Membership in the
-// rebuild". this reads membership under membership's own policy, which selects the
-// acting person's own rows, so it needs no security-definer helper and cannot recurse.
-const actingOrganizations = sql`select m.organization_id from membership m where m.person_id = ${actingPerson}`
+// rebuild".
+//
+// the read goes through app_acting_organizations(), a SECURITY DEFINER function defined
+// in drizzle/0005_shared_organization_policy.sql, so it answers outside row-level
+// security. inlining the query here instead would make every policy below read
+// membership under membership's own policy - and that policy now asks this same
+// question, which is a recursion.
+const actingOrganizations = sql`select app_acting_organizations()`
 
 export const systemRole = pgEnum('system_role', ['superadmin', 'member'])
 export const organizationRole = pgEnum('organization_role', [
@@ -96,13 +101,20 @@ export const person = pgTable(
   (table) => [
     uniqueIndex('person_email_key').on(table.email).where(sql`${table.email} is not null`),
 
-    // deliberately narrow: self, or a superadmin. the organisation-wide people register
-    // needs a policy over shared memberships, and the obvious formulation of it recurses
-    // through membership's own policy - so it is written when that register lands, with
-    // a test, rather than guessed at here. deny-by-default is the rule.
-    pgPolicy('person_self_or_superadmin', {
+    // the people you share an organisation with, plus yourself - docs/specs/03-data-model.md
+    // §"The shared-organisation read in the rebuild". not named `tenant_isolation` like its
+    // siblings, because a person carries no organisation column and never will.
+    //
+    // the organisation predicate is written out even though membership's own policy now
+    // ands the same condition onto the subquery. the redundancy is the point: the
+    // register's scoping belongs in the policy that scopes it, not inherited from a
+    // neighbour a later change could narrow silently.
+    pgPolicy('person_shared_organization_or_self', {
       for: 'all',
-      using: sql`${actingIsSuperadmin} or ${table.id} = ${actingPerson}`,
+      using: sql`${actingIsSuperadmin} or ${table.id} = ${actingPerson}
+        or exists (select 1 from public.membership m
+                   where m.person_id = ${table.id}
+                     and m.organization_id in (${actingOrganizations}))`,
       withCheck: sql`${actingIsSuperadmin}`,
     }),
 
@@ -141,11 +153,20 @@ export const membership = pgTable(
     uniqueIndex('membership_person_organization_key').on(table.personId, table.organizationId),
     index('membership_organization_idx').on(table.organizationId),
 
-    // own rows, or a superadmin. every other policy in this file reads membership
-    // through this one, so it must not reference another table.
-    pgPolicy('membership_own_or_superadmin', {
+    // every attachment to an organisation the acting person belongs to, shaped like the
+    // three tenant_isolation policies beside it. the register's `Organizácia` and `Roly`
+    // columns are membership rows, so a policy that admitted only your own would leave two
+    // of them unrenderable - and moving that read into application code is the
+    // per-controller scoping docs/specs/09-roles-permissions.md §Multi-tenancy forbids.
+    //
+    // it reaches no table under a policy: app_acting_organizations() answers outside
+    // row-level security, so this one cannot arrive back at membership and recurse. what
+    // the narrow policy protected is protected by the set that function returns - only the
+    // acting person's own organisations, so another operator's staff is still not
+    // enumerable.
+    pgPolicy('membership_tenant_isolation', {
       for: 'all',
-      using: sql`${actingIsSuperadmin} or ${table.personId} = ${actingPerson}`,
+      using: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
       withCheck: sql`${actingIsSuperadmin}`,
     }),
 

@@ -203,6 +203,55 @@ two disagreeing is a tenant-isolation bug — exactly the class RLS is here to m
 impossible. Primary organisation, needed for the `/` redirect, derives from the
 primary-contact flag.
 
+### The shared-organisation read in the rebuild — decided
+
+A **decision about the rebuild**, taken on 16 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #39. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. Nothing here describes the predecessor — only a
+superadmin session was ever observed, so it never showed what one member may read of another
+([09-roles-permissions.md](09-roles-permissions.md) §"Observed access behaviour").
+
+A people register needs "the people I share an organisation with", and the obvious way to
+write it deadlocks. A policy expression reads another table under *that* table's policies,
+so a `person` policy asking about shared memberships reads `membership` under a policy that
+admitted only your own rows, and returns nobody but yourself; widening that one to ask which
+organisations you belong to makes it read `membership` under itself, which recurses.
+
+**A `SECURITY DEFINER` function breaks both knots at once.**
+`app_acting_organizations()` returns the organisations the acting person holds a membership
+of, reading `membership` outside row-level security, so nothing asks a policy the question a
+policy is answering. It is the only trusted thing added here, so it answers exactly one
+question: it never reads the system role, superadmin stays in the policies, and its
+`search_path` is pinned empty with `public.membership` written out. It must be owned by a
+role row-level security does not apply to — `FORCE ROW LEVEL SECURITY` reaches a plain table
+owner, and a function owned by one escapes nothing.
+
+Two policies are then rewritten against it:
+
+| Policy | Reads | Writes |
+|---|---|---|
+| `membership_tenant_isolation` | every attachment to an organisation the acting person belongs to | `superadmin` only |
+| `person_shared_organization_or_self` | yourself, plus anyone holding a membership of an organisation you belong to | `superadmin` only |
+
+**The person policy states the organisation predicate itself** rather than leaning on
+membership's, which now ands the same condition on. The redundancy is deliberate: the
+register's scoping belongs in the policy that scopes it, not inherited from a neighbour a
+later change could narrow silently. No behavioural test can reach that — the policy that
+would catch it is the one it duplicates — so it is asserted against the catalogue instead.
+
+**This widens reading and nothing else.** `WITH CHECK` on both tables stays `superadmin`
+only and both restrictive delete policies are untouched, so a member now sees rows they
+still may not touch. That leaves a real gap: `manage_people_and_memberships` and
+`provision_or_reset_account` are granted to `accountable_manager` by the matrix
+([09-roles-permissions.md](09-roles-permissions.md) §"Capability matrix") and the database
+admits neither. Closing it needs a policy predicate over a *per-membership* role, which no
+policy here does yet — a second decision of this size, on its own issue.
+
+The case that decides whether the pair is right is the **person two operators share**. They
+are visible to a member of either, and their membership of the *other* operator is not —
+otherwise a register leaks the existence of an organisation and its staffing through the one
+row that reaches across the boundary.
+
 ---
 
 ## Device (UAS / airframe)
