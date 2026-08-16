@@ -105,10 +105,9 @@ export const person = pgTable(
     // §"The shared-organisation read in the rebuild". not named `tenant_isolation` like its
     // siblings, because a person carries no organisation column and never will.
     //
-    // the organisation predicate is written out even though membership's own policy now
-    // ands the same condition onto the subquery. the redundancy is the point: the
-    // register's scoping belongs in the policy that scopes it, not inherited from a
-    // neighbour a later change could narrow silently.
+    // the organisation predicate is stated here rather than inherited from membership's
+    // policy, which now ands the same condition on. redundant on purpose, and the spec
+    // section says why.
     pgPolicy('person_shared_organization_or_self', {
       for: 'all',
       using: sql`${actingIsSuperadmin} or ${table.id} = ${actingPerson}
@@ -159,11 +158,9 @@ export const membership = pgTable(
     // of them unrenderable - and moving that read into application code is the
     // per-controller scoping docs/specs/09-roles-permissions.md §Multi-tenancy forbids.
     //
-    // it reaches no table under a policy: app_acting_organizations() answers outside
-    // row-level security, so this one cannot arrive back at membership and recurse. what
-    // the narrow policy protected is protected by the set that function returns - only the
-    // acting person's own organisations, so another operator's staff is still not
-    // enumerable.
+    // widening it gives up nothing the narrow one was protecting: the function above
+    // returns the acting person's own organisations and no others, so one operator still
+    // cannot enumerate another's staff.
     pgPolicy('membership_tenant_isolation', {
       for: 'all',
       using: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,

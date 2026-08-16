@@ -128,8 +128,8 @@ export const organizationTable: TableDeclaration = {
 //
 // two cells are deliberately null. `updated_at` has no column on `organization` and this
 // slice does not invent one - a value there would claim a modification time nothing
-// maintains. `people` is null under any session that cannot count memberships, per
-// src/lib/tenant/scoped-organizations.ts. Both render the locale's blank marker, the same
+// maintains. `people` is null under any session the register does not count people for,
+// per src/lib/tenant/scoped-organizations.ts. Both render the locale's blank marker, the same
 // way an airframe with no device type does.
 //
 // `logo_path` renders as the stored path. There is no image cell in the chrome, and

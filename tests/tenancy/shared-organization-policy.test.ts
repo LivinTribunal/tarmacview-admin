@@ -74,10 +74,8 @@ const peopleVisibleTo = (session: TenantSession) =>
 const membershipsVisibleTo = (session: TenantSession) =>
   withTenant(harness.app, session, (tx) => tx.select().from(membership).orderBy(asc(membership.id)))
 
-// the case the whole policy is about. a person the two operators happen to share is the
-// one row that reaches across the boundary, and a register that renders their attachments
-// unfiltered names an organisation the reader has no business knowing exists, and says
-// who staffs it.
+// the case the whole policy is about, and the one a sees-more-than-before test passes
+// while broken.
 describe('the shared-organisation read: the person two operators share', () => {
   it('shows a member of alpha the shared pilot, and none of that pilot bravo attachment', async () => {
     const names = (await peopleVisibleTo(alphaSession())).map((row) => row.name)
@@ -147,18 +145,12 @@ describe('the shared-organisation read: the person register under a member sessi
 
   it('a person attached to no organisation reaches nobody but themselves', async () => {
     // the seeded superadmin holds no membership, so under a member context the self
-    // disjunct is the only one that admits anything - and no register anywhere shows them
+    // disjunct is the only one that admits anything. the two lists above are exhaustive
+    // and neither names them, which is the other half of the claim.
     const names = (
       await peopleVisibleTo({ personId: ids.people.systemAdmin, systemRole: 'member' })
     ).map((row) => row.name)
     expect(names).toEqual(['System Administrator'])
-
-    expect((await peopleVisibleTo(alphaSession())).map((row) => row.name)).not.toContain(
-      'System Administrator',
-    )
-    expect((await peopleVisibleTo(bravoSession())).map((row) => row.name)).not.toContain(
-      'System Administrator',
-    )
   })
 
   it('a superadmin reaches every person, membership or none', async () => {
@@ -185,7 +177,10 @@ describe('the shared-organisation read: a member reads more and writes no more',
       ),
     ).rejects.toThrow()
 
-    const landed = await harness.owner.select().from(person).where(eq(person.name, 'Smuggled Person'))
+    const landed = await harness.owner
+      .select()
+      .from(person)
+      .where(eq(person.name, 'Smuggled Person'))
     expect(landed).toEqual([])
   })
 
@@ -327,7 +322,12 @@ describe('the shared-organisation read: what the rewritten policies did not dist
     const remaining = await harness.owner
       .select()
       .from(membership)
-      .where(and(eq(membership.personId, sharedPilot), eq(membership.organizationId, ids.organizations.alpha)))
+      .where(
+        and(
+          eq(membership.personId, sharedPilot),
+          eq(membership.organizationId, ids.organizations.alpha),
+        ),
+      )
     expect(remaining).toHaveLength(1)
   })
 })

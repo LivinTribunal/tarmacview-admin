@@ -3,18 +3,14 @@
 -- exist first.
 
 -- which organisations the acting person holds a membership of, answered outside row-level
--- security - docs/specs/03-data-model.md §"The shared-organisation read in the rebuild".
--- a policy expression reads another table under that table's own policies, so membership's
--- policy cannot ask this question of `membership` without asking itself. SECURITY DEFINER
--- is the escape: the question is answered once, by a function that reads no policy.
+-- security so that membership's own policy can ask it - docs/specs/03-data-model.md
+-- §"The shared-organisation read in the rebuild" has the deadlock this escapes.
 --
--- it answers that one question and nothing else. it must never read `app.system_role` -
--- superadmin lives in the policies, so this function has exactly one reason to be trusted.
---
--- SET search_path = '' with `public.membership` written out, because a definer function
--- that resolves its own names through the caller's search_path is the standard way one of
--- these is turned into a privilege escalation. STABLE and not IMMUTABLE: the answer
--- changes with the transaction's own settings.
+-- it must never read `app.system_role`: superadmin lives in the policies, so this has
+-- exactly one reason to be trusted. `search_path` is pinned empty with `public.membership`
+-- written out, because a definer function resolving its own names through the caller's
+-- path is the standard way one of these becomes a privilege escalation. STABLE and not
+-- IMMUTABLE: the answer changes with the transaction's own settings.
 --
 -- and a deployment constraint no schema dump shows: whoever applies this migration owns the
 -- function, and SECURITY DEFINER escapes row-level security only if that owner is a role
@@ -37,10 +33,8 @@ $$;--> statement-breakpoint
 REVOKE EXECUTE ON FUNCTION app_acting_organizations() FROM public;--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION app_acting_organizations() TO tarmacview_app;--> statement-breakpoint
 
--- generator output. the rename is a DROP and a CREATE, not an ALTER: a policy's name is
--- not something ALTER POLICY changes alongside its predicate, and the two policies say
--- different things anyway. no GRANT on tables or sequences follows, for 0004's reason -
--- no table and no sequence is created here, and a policy is not a privilege.
+-- generator output. the rename is a DROP and a CREATE, not an ALTER: ALTER POLICY does not
+-- change a name alongside a predicate. no GRANT follows, for 0004's reason.
 DROP POLICY "membership_own_or_superadmin" ON "membership" CASCADE;--> statement-breakpoint
 DROP POLICY "person_self_or_superadmin" ON "person" CASCADE;--> statement-breakpoint
 CREATE POLICY "membership_tenant_isolation" ON "membership" AS PERMISSIVE FOR ALL TO public USING (coalesce(current_setting('app.system_role', true) = 'superadmin', false) or "membership"."organization_id" in (select app_acting_organizations())) WITH CHECK (coalesce(current_setting('app.system_role', true) = 'superadmin', false));--> statement-breakpoint

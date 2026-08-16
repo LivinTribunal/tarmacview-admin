@@ -19,10 +19,10 @@ export type OrganizationEntry = Organization & {
 // member counts their own fleet while a superadmin counts the deployment. two joins need
 // `distinct` - each multiplies the other's rows out, and count() would report the product.
 //
-// the people count cannot be read that way. `membership_own_or_superadmin` selects the
-// acting person's *own* rows, so a member counting memberships reads 1 for an
-// organisation of twelve. So it is counted for a superadmin and left null for everyone
-// else, until the shared-membership policy the organisation people register needs exists.
+// the people count is left null for a member and counted only for a superadmin.
+// `membership_tenant_isolation` now admits a co-member's row, so the count is readable -
+// but showing it is the people register's slice, and a number appearing here ahead of the
+// register it belongs to is chrome ahead of its subject.
 export function listOrganizations(
   tx: TenantTransaction,
   session: TenantSession,

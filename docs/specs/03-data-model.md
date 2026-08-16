@@ -228,10 +228,10 @@ owner, and a function owned by one escapes nothing.
 
 Two policies are then rewritten against it:
 
-| Policy | Reads | Writes |
-|---|---|---|
-| `membership_tenant_isolation` | every attachment to an organisation the acting person belongs to | `superadmin` only |
-| `person_shared_organization_or_self` | yourself, plus anyone holding a membership of an organisation you belong to | `superadmin` only |
+| Policy | Reads |
+|---|---|
+| `membership_tenant_isolation` | every attachment to an organisation the acting person belongs to |
+| `person_shared_organization_or_self` | yourself, plus anyone holding a membership of an organisation you belong to |
 
 **The person policy states the organisation predicate itself** rather than leaning on
 membership's, which now ands the same condition on. The redundancy is deliberate: the
@@ -241,8 +241,8 @@ would catch it is the one it duplicates — so it is asserted against the catalo
 
 **This widens reading and nothing else.** `WITH CHECK` on both tables stays `superadmin`
 only and both restrictive delete policies are untouched, so a member now sees rows they
-still may not touch. That leaves a real gap: `manage_people_and_memberships` and
-`provision_or_reset_account` are granted to `accountable_manager` by the matrix
+still may not touch. That leaves a real gap: *Manage people & memberships* and *Provision or
+reset an account* are `accountable_manager` capabilities in the matrix
 ([09-roles-permissions.md](09-roles-permissions.md) §"Capability matrix") and the database
 admits neither. Closing it needs a policy predicate over a *per-membership* role, which no
 policy here does yet — a second decision of this size, on its own issue.
