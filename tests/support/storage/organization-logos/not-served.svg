@@ -1,0 +1,7 @@
+<!-- a readable file inside the storage root that the logo route must still refuse, because
+     .svg is not on the allow-list. it exists so that "refused" is provably the allow-list
+     and not a missing file - and svg is the case that matters, since an svg the browser is
+     told to render is script. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+  <rect width="16" height="16" fill="#3a4754" />
+</svg>

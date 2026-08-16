@@ -73,7 +73,7 @@ enough to build on, open enough to overturn.
 disk. The form field name is Observed, and that it stores a path is *(inferred)* from the
 observed `/storage/organization-logos/{ULID}.png` route — a column of bytes would not be
 served from one. Keeping the bytes out of the row also keeps the register's own query small.
-What serves that path is not decided here; nothing in the rebuild serves it yet.
+What serves that path is the section below.
 
 **Deleting an organisation is blocked while dependents exist** — block rather than
 soft-delete. The register offers the delete as a bulk action
@@ -88,6 +88,70 @@ controller: a second call path can skip a controller and cannot skip the databas
 detaches its people and every person survives it, which is *detach is not delete* read from
 the other end, and a membership is not evidence of airworthiness. So an organisation whose
 only dependents are memberships still deletes.
+
+### Serving a stored file in the rebuild — decided
+
+A **decision about the rebuild**, taken on 16 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #56. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. It governs every stored file and not only the
+logo above — §Document's four buckets and §Map's KML layers are the consumers still to come,
+and the organisation logo is the one built today.
+
+**The bytes stay on disk and the row holds the path**, unchanged from the section above.
+Hosting is one small instance with the application and Postgres co-located, so an object
+store is a dependency the deployment does not have.
+
+**What backs that disk up is not settled here, and it needs to be.** A single instance's
+disk is then the whole durability story for every uploaded file, with the rows and the
+bytes backed up separately or not at all. The answer is owed before real operator data
+lands, which is the history migration, #14.
+
+**Nothing is served from a static path, ever.** A file is served by an authenticated route
+handler that resolves the owning row **first**, inside the tenant transaction, and streams
+bytes only if that read returned a row. The handler takes a **row id**; the path is a column
+it reads, never an input it trusts — which disposes of path traversal rather than defending
+against it. The route sits under the resource that owns the file, because a generic file
+route is the shape that invites a handler taking a path.
+
+The file inherits the row's row-level security for free: another operator's file is not
+refused, it **reads as absent**, because the read that would have found it returned nothing
+— the reasoning `findOrganization` already carries for a cross-tenant id. Every other gap
+answers identically: no stored path, a path resolving outside the storage root, an extension
+nothing serves, no file on the disk. One answer, so none of them confirms a row exists.
+
+This is deliberately *not* the predecessor's shape. [01-tech-stack.md](01-tech-stack.md)
+records `/storage/…` symlink paths and ULID-derived filenames, both Observed. A symlinked
+`/storage/` is public static serving: no session, no membership check, and row-level security
+never consulted, because a static file handler never reaches Postgres. A ULID makes a name
+unguessable, and unguessable is not a boundary.
+
+**The content type comes from an extension allow-list** — PNG, JPG and WebP for a logo, per
+[04-admin-resources.md](04-admin-resources.md) §OrganizationResource — and an extension not
+on it is refused rather than guessed at. It is never derived from anything the request
+carries: a request that can choose the content type of the file it fetches can turn a stored
+file into script.
+
+That allow-list reads the **name and never the bytes**, so the response also carries
+`X-Content-Type-Options: nosniff` — otherwise a file named `.png` holding markup is served
+under a content type the browser may sniff past and execute in this origin, with the session
+cookie in scope. The header belongs to the pattern, not to the logo: the document buckets
+that copy this route accept `.pdf`, `.doc` and `.docx`, where sniffing is livelier still.
+
+**The storage root is configuration**, with no default. An unset value fails the first file
+request rather than resolving to the working directory, where every file in the checkout
+would become a candidate.
+
+**Public read is an explicit opt-in, never a default.** Two exceptions will exist and both
+must be positive flags the handler checks: `document.is_public` (permits only, exposed on the
+operator report) and the public `/map/{slug}` routes in
+[02-sitemap-routes.md](02-sitemap-routes.md). Neither table exists yet; what this section
+owes them is a handler whose default branch refuses, because one whose default branch serves
+is written the wrong way round.
+
+**Deferred to whichever slice builds the write path:** generated storage names, per-bucket
+size and content-type validation on upload, and the upload endpoint itself. The only write
+path in the rebuild is authentication, so an upload endpoint would have no caller today —
+and none of the above depends on how a file arrived, so settling it early mortgages nothing.
 
 ### Delete authority in the rebuild — decided
 

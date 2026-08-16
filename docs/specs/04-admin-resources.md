@@ -51,6 +51,11 @@ Deleting an organisation is offered as a bulk action — a hard cascade here des
 airworthiness evidence. Which way the rebuild goes is settled in
 [03-data-model.md](03-data-model.md) §"Organisation deletion and the logo in the rebuild".
 
+The `Logo` column renders the file rather than the stored path, through a route that reads
+the organisation row first. That, and the PNG/JPG/WebP row above serving as the allow-list
+the content type is decided from, are settled in [03-data-model.md](03-data-model.md)
+§"Serving a stored file in the rebuild".
+
 ---
 
 ## UserResource — `/admin/users`

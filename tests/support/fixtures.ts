@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import type { Database } from '@/lib/db/client'
 import {
   device,
@@ -12,15 +13,33 @@ import {
 
 // every value here is invented. no pilot name, e-mail address, licence number, airframe
 // serial or organisation token from the predecessor belongs in this repo, and a
-// realistic-looking 32-hex report token trips the conventions gate by design.
+// realistic-looking 32-hex report token trips the conventions gate by design. the logo
+// under storage/ is an invented placeholder square, drawn here rather than fetched.
 
+// the disk half of the fixtures. a test that serves a file points FILE_STORAGE_ROOT at
+// this directory, so the storage root stays configuration in tests too - nothing reads a
+// literal path out of the application.
+export const FIXTURE_STORAGE_ROOT = fileURLToPath(new URL('./storage', import.meta.url))
+
+// only alpha names a file. bravo and charlie keep a null `logo_path`, which is the normal
+// case for the column and the one that must not become a crash.
 const organizations = [
-  { key: 'alpha', name: 'Operator Alpha', reportToken: 'report-token-alpha' },
-  { key: 'bravo', name: 'Operator Bravo', reportToken: 'report-token-bravo' },
+  {
+    key: 'alpha',
+    name: 'Operator Alpha',
+    reportToken: 'report-token-alpha',
+    logoPath: 'organization-logos/alpha.png',
+  },
+  { key: 'bravo', name: 'Operator Bravo', reportToken: 'report-token-bravo', logoPath: null },
 
   // no airframes, no syllabus and nobody attached. the delete block is only a claim if
   // something also proves a delete still goes through when there is nothing to protect.
-  { key: 'charlie', name: 'Operator Charlie', reportToken: 'report-token-charlie' },
+  {
+    key: 'charlie',
+    name: 'Operator Charlie',
+    reportToken: 'report-token-charlie',
+    logoPath: null,
+  },
 ] as const
 
 // the certificate values are deliberately silly. a plausible-looking number survives
@@ -155,7 +174,7 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
     organizationIds[entry.key] = await insertOne(
       db
         .insert(organization)
-        .values({ name: entry.name, reportToken: entry.reportToken })
+        .values({ name: entry.name, reportToken: entry.reportToken, logoPath: entry.logoPath })
         .returning({ id: organization.id }),
     )
   }

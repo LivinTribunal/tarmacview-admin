@@ -1,4 +1,7 @@
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
+import { IndexTable } from '@/components/index-table'
 import { formatCell } from '@/lib/table/view'
 import { organizationTable, organizationTableRow } from '@/lib/organizations/fields'
 import type { OrganizationEntry } from '@/lib/tenant/scoped-organizations'
@@ -6,6 +9,9 @@ import type { OrganizationEntry } from '@/lib/tenant/scoped-organizations'
 // docs/specs/04-admin-resources.md §OrganizationResource, asserted as a declaration.
 // deliberately not in tests/contracts/: there is no extracted column oracle, only the
 // prose, and filing this beside the form contract would read as one.
+//
+// the last block renders, because `Logo` is the one cell in this register whose meaning is
+// not readable off the row: the declaration and the chrome each hold half of it.
 
 const entry: OrganizationEntry = {
   id: 4,
@@ -104,5 +110,35 @@ describe('organisation index rows', () => {
 
   it('renders the altitude as a number, so it sorts numerically and carries a decimal comma', () => {
     expect(formatCell(organizationTableRow(entry).max_allowed_altitude ?? null)).toBe('120,5')
+  })
+})
+
+describe('the logo cell, which is a file and not a value', () => {
+  const markup = (organization: OrganizationEntry) =>
+    renderToStaticMarkup(
+      createElement(IndexTable, {
+        declaration: organizationTable,
+        rows: [organizationTableRow(organization)],
+      }),
+    )
+
+  it('carries the organisation name in the cell and the stored path nowhere', () => {
+    // the path is the disk's layout. nothing on the page needs it, and handing it to the
+    // browser would publish the shape of the storage root for free
+    const row = organizationTableRow(entry)
+    expect(row.logo_path).toBe('Operator Placeholder')
+    expect(markup(entry)).not.toContain('organization-logos')
+  })
+
+  it('renders an image at the route the column declares, announced by the organisation name', () => {
+    expect(markup(entry)).toContain(
+      '<img src="/api/organizations/4/logo" alt="Operator Placeholder"/>',
+    )
+  })
+
+  it('renders the blank marker where no logo is stored, rather than an image at nothing', () => {
+    const without = { ...entry, logoPath: null }
+    expect(organizationTableRow(without).logo_path).toBeNull()
+    expect(markup(without)).not.toContain('<img')
   })
 })

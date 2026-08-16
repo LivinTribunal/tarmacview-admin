@@ -143,6 +143,11 @@ predecessor system, which is the source of most of these terms, is in
 - **Form** — a blank form the operator distributes or files.
 - **Incident (occurrence)** — a reported occurrence, optionally linked to the flight that
   caused it, recording whether persons were injured.
+- **Stored file** — bytes on disk under the **storage root**, named by a path column on the
+  row that owns them. Never a static path: it is served only through a handler that read
+  that row first, so it inherits the row's tenant scoping. See
+  [docs/specs/03-data-model.md](docs/specs/03-data-model.md) §"Serving a stored file in the
+  rebuild".
 
 ## Geozones
 
