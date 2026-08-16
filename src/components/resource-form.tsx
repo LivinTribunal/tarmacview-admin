@@ -8,7 +8,13 @@ import { t } from '@/lib/i18n'
 function Control({ field }: { field: FormField }) {
   if (field.control === 'select') {
     return (
-      <select id={field.name} name={field.name} required={field.required} defaultValue="">
+      <select
+        id={field.name}
+        name={field.name}
+        required={field.required}
+        multiple={field.multiple}
+        defaultValue={field.multiple ? [] : ''}
+      >
         {/* an unset enum is a real state on every select declared so far, so the empty
             choice is offered rather than the first option silently standing in for it */}
         <option value="">{t('form.select.none')}</option>
@@ -41,6 +47,7 @@ function Control({ field }: { field: FormField }) {
       required={field.required}
       min={field.min}
       max={field.max}
+      minLength={field.minlength}
       maxLength={field.maxlength}
       step={field.step}
       accept={field.accept}

@@ -44,6 +44,13 @@ export const organizationRole = pgEnum('organization_role', [
   'viewer',
 ])
 export const operationType = pgEnum('operation_type', ['VLOS', 'BVLOS'])
+
+// the closed EASA set of pilot competency certificates - CONTEXT.md §"Regulatory frame".
+// an enum and not a table, on the same tenant-owned/deployment-wide judgement device_type
+// records: doc 04 lists thirteen resources and none administers this set, so it is not an
+// operator's own record and a pivot would buy a second tier-3 policy for nothing -
+// docs/specs/03-data-model.md §"Certificates in the rebuild".
+export const certificateType = pgEnum('certificate_type', ['A1_A3', 'A2', 'STS'])
 export const deviceStatus = pgEnum('device_status', ['active', 'inactive', 'maintenance', 'retired'])
 
 // the tenant. `logo_path` holds where the file lives, never the bytes -
@@ -96,6 +103,19 @@ export const person = pgTable(
     name: text('name').notNull(),
     email: text('email'),
     systemRole: systemRole('system_role').notNull().default('member'),
+
+    // the *Osvedčenia* section of doc 04 §UserResource. certificate, never licence -
+    // CONTEXT.md §"Certification & training"; contracts/forms/users.json keeps the
+    // predecessor's three spellings and is never edited.
+    //
+    // an empty `certificate_types` means no certificate type is recorded, which is a gap
+    // and never a pass - the same rule as an airframe with no device type.
+    certificateNumber: text('certificate_number'),
+    certificateTypes: certificateType('certificate_types')
+      .array()
+      .notNull()
+      .default(sql`'{}'`),
+    certificateValidUntil: date('certificate_valid_until'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -344,6 +364,7 @@ export const authVerification = pgTable('auth_verification', {
 export type SystemRole = (typeof systemRole.enumValues)[number]
 export type OrganizationRole = (typeof organizationRole.enumValues)[number]
 export type Organization = typeof organization.$inferSelect
+export type Person = typeof person.$inferSelect
 export type Device = typeof device.$inferSelect
 export type DeviceType = typeof deviceType.$inferSelect
 export type TrainingType = typeof trainingType.$inferSelect

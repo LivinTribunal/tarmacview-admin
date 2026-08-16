@@ -157,6 +157,57 @@ the natural key, and uniqueness must be conditional.
 Multi-valued: `A1/A3`, `A2`, `STS` (the report also emits combined labels like `A2/STS`,
 `STS, A2/STS`). Modelled as a many-to-many or a JSON array — *(inferred)*, not observed.
 
+### Certificates in the rebuild — decided
+
+A **decision about the rebuild**, taken on 16 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #39. The owner has not reviewed it. It settles
+the modelling the section above leaves inferred; that marking describes the *predecessor* and
+is left standing.
+
+Three columns on `person`, carrying doc 04 §UserResource's *Osvedčenia* section:
+`certificate_number`, `certificate_types` and `certificate_valid_until`. The last mirrors
+`organization.insurance_valid_until` rather than the predecessor's `licence_valid_to`.
+
+**Certificate, never licence.** [CONTEXT.md](../../CONTEXT.md) §"Certification & training"
+names *osvedčenie* the term, and `CLAUDE.md` names licence/certificate a synonym pair not to
+reintroduce. `contracts/forms/users.json` holds three of the predecessor's spellings —
+`licence_type_ids`, `licence_valid_to`, `license_number`, one of them a typo — and keeps
+them: a captured `name` attribute is the wire name of a rendered form, the contract is the
+oracle, and the oracle is never edited to agree with us. Nothing a reader sees says
+*licence*.
+
+**The types are an enum array, not a table.** `certificate_type` is the closed EASA set
+`A1_A3`, `A2`, `STS`, the same tenant-owned-versus-deployment-wide judgement §"Device types
+in the rebuild" records, landing on the catalogue side: doc 04 lists thirteen resources and
+none of them administers this set, the relationship carries no attributes of its own, and a
+pivot table would need a shared-organisation policy of its own — tier-3 surface bought for
+nothing.
+
+`certificate_types` is `not null default '{}'`, and **an empty array means no certificate
+type is recorded**. That is a gap, and it must never read as a pass — the same rule as an
+airframe with no device type.
+
+### Account provisioning in the rebuild — decided
+
+Same decision, same date, same standing. It answers what the "Vytvoriť prihlasovací účet"
+toggle above decided in the predecessor, which the GET-only capture could not show.
+
+The form's `Heslo` and `Potvrdenie hesla` fields decide whether credentials exist at all:
+
+| Form | Password | Result |
+|---|---|---|
+| Create | blank | a `person` row and nothing else — no `auth_user`, no `auth_account` |
+| Create | given | also an account, through `src/lib/auth` and never by writing the auth tables |
+| Edit | blank | unchanged — never "set the password to empty" |
+| Edit | given | reset |
+
+**A password with no e-mail is a validation error**, not a null insert: `auth_user.email` is
+`not null` and unique while `person.email` is nullable, so credentials with no address are an
+account nobody could sign in with. In code: `accountProvisioning()` in
+`src/lib/auth/provisioning.ts`, a rule rather than a handler — nothing in the rebuild writes
+a resource yet, and deciding this inside the first write path that needs it would be deciding
+it in the dark.
+
 ### Organisation membership (pivot)
 
 Users attach to organisations with membership attributes, so this is a pivot table, not
@@ -245,7 +296,10 @@ still may not touch. That leaves a real gap: *Manage people & memberships* and *
 reset an account* are `accountable_manager` capabilities in the matrix
 ([09-roles-permissions.md](09-roles-permissions.md) §"Capability matrix") and the database
 admits neither. Closing it needs a policy predicate over a *per-membership* role, which no
-policy here does yet — a second decision of this size, on its own issue.
+policy here does yet — a second decision of this size, on its own issue, #48. Until it
+lands the people register is read-only for a member, and its chrome offers `Vytvoriť` and
+`Upraviť` only to a session the database would admit: `mayManagePeople()` in
+`src/lib/auth/capabilities.ts`, beside the matrix it narrows.
 
 The case that decides whether the pair is right is the **person two operators share**. They
 are visible to a member of either, and their membership of the *other* operator is not —

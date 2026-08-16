@@ -81,6 +81,10 @@ airworthiness evidence. Which way the rebuild goes is settled in
 
 **Relation manager:** *Školenia* (trainings) — see doc 05.
 
+The rebuild names this section's fields *certificate*, not *licence*, and keeps the
+predecessor's field names only where the form contract captured them — see
+[03-data-model.md](03-data-model.md) §"Certificates in the rebuild".
+
 ---
 
 ## FlightResource — `/admin/flights`

@@ -130,6 +130,9 @@ rebuild and sit on the organisation surface under *Manage trainings* below — s
 fallback — a capability that needs adding is an edit to this table, never a special case in
 a controller.
 
+The table is the intent. The database is currently narrower for the two people rows — see
+[03-data-model.md](03-data-model.md) §"The shared-organisation read in the rebuild".
+
 ### Person is not account
 
 The predecessor's own split, recorded under "Account provisioning" above, is kept
