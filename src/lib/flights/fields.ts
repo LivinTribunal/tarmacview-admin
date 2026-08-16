@@ -117,7 +117,12 @@ export const flightTable: TableDeclaration = {
     { key: 'max_altitude', labelKey: 'flight.field.max_altitude', sortable: true },
     { key: 'total_distance', labelKey: 'flight.field.total_distance', sortable: true },
     { key: 'imported_by', labelKey: 'flight.column.imported_by', hiddenByDefault: true },
-    { key: 'created_at', labelKey: 'flight.column.created_at', sortable: true, hiddenByDefault: true },
+    {
+      key: 'created_at',
+      labelKey: 'flight.column.created_at',
+      sortable: true,
+      hiddenByDefault: true,
+    },
   ],
 }
 

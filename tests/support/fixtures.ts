@@ -186,7 +186,7 @@ const flights = [
     importedBy: null,
     parsingStatus: 'processed',
     parsingErrors: null,
-    totalFlightTimeSeconds: 36300,
+    totalFlightTimeSeconds: 2400,
     maxAltitudeMeters: '48',
     maxDistanceMeters: '110',
     totalDistanceMeters: '640',
