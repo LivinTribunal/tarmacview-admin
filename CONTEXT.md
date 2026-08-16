@@ -80,11 +80,16 @@ predecessor system, which is the source of most of these terms, is in
 - **Attach / detach** — adding or removing a person's membership of an organisation. Never
   deletes the person; deleting a pilot would orphan flight history. Distinct from delete
   everywhere in the UI and should stay so.
+- **Account provisioning** — issuing or resetting a person's login credentials. Always
+  administered, never self-served: there is no registration or password-reset path.
+  Creating a person and giving them an account are separate acts, and credentials with no
+  e-mail address are refused rather than stored — see `docs/specs/03-data-model.md`.
 
 ## Certification & training
 
-- **Certificate (osvedčenie)** — a pilot's competency certificate: a number, one or more
-  certificate types, and an expiry date.
+- **Certificate (osvedčenie)** — a pilot's competency certificate: a number, its
+  certificate types, and an expiry date. **No certificate type recorded** is a real state;
+  surface that gap, never let it read as a pass — see `docs/specs/03-data-model.md`.
 - **Training** — a recurrent or initial training record held by a pilot, optionally
   scoped to specific airframes. May carry no expiry, which is a real state, not a missing
   value. The airframes it is scoped to are the operator's own, enforced by the schema and
