@@ -31,7 +31,7 @@ predecessor system, which is the source of most of these terms, is in
 ## Aggregate roots
 
 - **Organization** — the tenant, and the top of nearly every ownership chain. Owns
-  aircraft, flights, documents, permits, forms and incidents; users attach to it through a
+  aircraft, flights, documents, permits, forms and incidents; people attach to it through a
   membership. Carries the operator's regulatory identity (registration number, SPECIFIC
   permit, insurance validity) and its expiry-warning threshold. Deleting one is **blocked
   while dependents exist** rather than cascaded, and is a `superadmin` act even when there
@@ -42,16 +42,18 @@ predecessor system, which is the source of most of these terms, is in
 
 ## People
 
-- **User** — serves as both login account and pilot record. A user may exist with **no
-  e-mail and no password** — that is a pilot who is a subject of flight records but cannot
-  log in. Any rule that makes e-mail required or unconditionally unique breaks the pilot
-  register.
-- **Pilot** — a user who flies. Rostered per organisation; may hold certificates and
+- **Person** — the human record, and the subject of flight history, membership and
+  certification. A person may exist with **no e-mail and no password** — that is a pilot who
+  is a subject of flight records but cannot log in. Any rule that makes e-mail required or
+  unconditionally unique breaks the pilot register. In the rebuild, credentials are a
+  separate optional `auth_user` row attached to a person rather than columns on it; the
+  predecessor combined the two — see `docs/specs/03-data-model.md`.
+- **Pilot** — a person who flies. Rostered per organisation; may hold certificates and
   training. Login credentials are optional and issued deliberately.
 - **Responsible Manager** — the accountable post in a CAMO organisation, and a distinct
   concept from a system administrator. Holds administrative authority over one
   organisation's data. The rebuild's organisation role for it is `accountable_manager`.
-- **Organisation membership** — the attachment of a user to an organisation, carrying the
+- **Organisation membership** — the attachment of a person to an organisation, carrying the
   post held (**organisation role**) and whether they are the **primary contact**. Distinct
   from the system role. In the rebuild it is a first-class table and the thing tenant
   scoping keys off, never a column on the person.
@@ -62,8 +64,14 @@ predecessor system, which is the source of most of these terms, is in
   role and the person's memberships. The predecessor instead had five *combinable* global
   roles — Superadmin, Admin, Responsible Manager, Pilot, User — and that vocabulary now
   survives only in the migration.
-- **Attach / detach** — adding or removing a user's membership of an organisation. Never
-  deletes the user; deleting a pilot would orphan flight history. Distinct from delete
+- **Acting session** — the resolved identity a scoped read runs under: the person id plus
+  the system role, read from the `person` row rather than trusted from the session, so a
+  session cannot claim an authority it does not hold. In code: `actingSession()` in
+  `src/lib/auth/session.ts`. `src/middleware.ts` decides who reaches a page; the acting
+  session decides what the database is told about them, and the two are not the same
+  boundary — see `docs/specs/09-roles-permissions.md`.
+- **Attach / detach** — adding or removing a person's membership of an organisation. Never
+  deletes the person; deleting a pilot would orphan flight history. Distinct from delete
   everywhere in the UI and should stay so.
 
 ## Certification & training
