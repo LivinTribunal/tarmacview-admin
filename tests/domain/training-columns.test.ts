@@ -41,7 +41,7 @@ describe('training index columns', () => {
     ).toEqual(['devices'])
   })
 
-  it('declares no toggle column, because the issue column list drops the three doc 04 marks', () => {
+  it('declares no toggle column: no `updated_at` exists and `Zariadenia` supersedes `devices_display`', () => {
     expect(trainingTable.columns.some((column) => column.hiddenByDefault)).toBe(false)
   })
 
@@ -66,8 +66,8 @@ describe('training index rows', () => {
   })
 
   it('renders the never-expires state rather than a blank cell, which reads as a gap', () => {
-    // doc 04: blank means *Bez expirácie*. a training that never lapses and a training
-    // whose expiry nobody recorded are different facts
+    // the predecessor's own string, docs/specs/03-data-model.md §Training: `empty = "Bez
+    // expirácie"`. doc 04's *Blank = never expires* is the input rule for the same fact
     const row = trainingTableRow({ ...entry, validUntil: null })
     expect(row.valid_until).toBe(t('training.validUntil.never'))
     expect(formatCell(row.valid_until ?? null)).not.toBeNull()

@@ -64,17 +64,18 @@ export const trainingFormFields: readonly FormField[] = [
 // no `Vytvoriť` header link and no bulk action, following the device-type, organisation and
 // training-type registers: doc 04 records `Odstrániť vybrané`, but no write path exists in
 // the rebuild and a checkbox wired to nothing is worse than no checkbox. the *(toggle)*
-// columns doc 04 lists are left out too, matching the column list issue #51 states.
+// columns doc 04 lists are left out too: `training` has no `updated_at` column at all, and
+// `devices_display` is a predecessor rendering artifact the `Zariadenia` cell supersedes.
 export const trainingTable: TableDeclaration = {
   resource: 'trainings',
   emptyKey: 'training.index.empty',
   editPath: '/admin/trainings/{id}/edit',
   columns: [
     { key: 'id', labelKey: 'training.column.id', sortable: true },
-    { key: 'name', labelKey: 'training.field.name', sortable: true },
-    { key: 'training_type', labelKey: 'training.field.training_type', sortable: true },
+    { key: 'name', labelKey: 'training.column.name', sortable: true },
+    { key: 'training_type', labelKey: 'training.column.training_type', sortable: true },
     { key: 'pilot', labelKey: 'training.field.pilot', sortable: true },
-    { key: 'devices', labelKey: 'training.field.devices' },
+    { key: 'devices', labelKey: 'training.column.devices' },
     { key: 'held_on', labelKey: 'training.field.held_on', sortable: true },
     { key: 'valid_until', labelKey: 'training.field.valid_until', sortable: true },
   ],
@@ -82,11 +83,11 @@ export const trainingTable: TableDeclaration = {
 
 // flattens a training into the record the chrome renders.
 //
-// a blank `Platnosť do` is **not** a blank cell. doc 04 reads it *Bez expirácie*, so a null
-// resolves the never-expires string - a training that never lapses and a training whose
-// expiry nobody recorded are different facts, and only one of them is a gap. `Dátum
-// školenia` and an unclassified `Typ` keep the locale's blank marker, which is what a gap
-// looks like everywhere else in the chrome.
+// a blank `Platnosť do` is **not** a blank cell. the predecessor prints *Bez expirácie* -
+// docs/specs/03-data-model.md §Training reads `empty = "Bez expirácie"`, and doc 10 carries
+// the string - so a null resolves it. doc 04's form table reads *Blank = never expires*,
+// which is the input rule for the same fact. `Dátum školenia` and an unclassified `Typ`
+// keep the locale's blank marker, which is what a gap looks like everywhere else.
 export function trainingTableRow(entry: TrainingEntry): TableRow {
   return {
     id: entry.id,

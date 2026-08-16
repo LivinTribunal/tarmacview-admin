@@ -87,8 +87,8 @@ predecessor system, which is the source of most of these terms, is in
   certificate types, and an expiry date.
 - **Training** — a recurrent or initial training record held by a pilot, optionally
   scoped to specific airframes. May carry no expiry, which is a real state, not a missing
-  value. The airframes it is scoped to are the operator's own, enforced by the schema and
-  not by a policy — see `docs/specs/03-data-model.md`.
+  value. The airframes it is scoped to are the operator's own — see
+  `docs/specs/03-data-model.md`.
 - **Training type** — the training taxonomy (initial, operational training, ERP, and the
   certificate-shaped types). Carries a code, unique **per organisation**: the taxonomy is
   an operator's own syllabus rather than a deployment-wide catalogue, so two operators may

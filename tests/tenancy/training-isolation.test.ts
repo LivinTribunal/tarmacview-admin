@@ -105,6 +105,30 @@ describe('tenant isolation: the cells that aggregate across the boundary', () =>
     expect(recurrent?.pilotName).toBe('Alpha Pilot')
   })
 
+  it('reports a gap in `Pilot` rather than another operator pilot, and still lists the row', async () => {
+    // the one of the three cells resting on a policy and not on a foreign key -
+    // `person_shared_organization_or_self`. `pilot_id` carries no composite key, because
+    // `person` has no organisation column, so this row is legal and a superadmin writes it.
+    await withTenant(harness.app, superadminSession(), (tx) =>
+      tx.insert(training).values({
+        organizationId: ids.organizations.alpha,
+        name: 'Alpha Training Under A Foreign Pilot',
+        pilotId: ids.people.bravoManager,
+      }),
+    )
+
+    const rows = await withTenant(harness.app, alphaSession(), listTrainings)
+    const foreign = rows.find((row) => row.name === 'Alpha Training Under A Foreign Pilot')
+    expect(foreign?.pilotId).toBe(ids.people.bravoManager)
+    expect(foreign?.pilotName).toBeNull()
+
+    // put the tenant back the way the fixture had it, so the positional reads below stay
+    // the fixture's own
+    await withTenant(harness.app, superadminSession(), (tx) =>
+      tx.delete(training).where(eq(training.name, 'Alpha Training Under A Foreign Pilot')),
+    )
+  })
+
   it('lists in `Zariadenia` only the airframes the acting session can read', async () => {
     const rows = await withTenant(harness.app, alphaSession(), listTrainings)
     expect(rows[0]?.airframes).toEqual(['SN-ALPHA-0001'])

@@ -493,8 +493,7 @@ Delete is a **hard delete**, unlike the organisation register: a training type w
 trainings attached carries no airworthiness evidence. Training rows now exist and can point
 at one, and the revisit that was deferred here landed with them: the hard delete stands, and
 it is **blocked while a training references the entry** by the `restrict` in the section
-below. So the sentence still reads the same way — a syllabus entry with no trainings
-attached deletes; one that classified a training does not.
+below.
 
 ### Trainings in the rebuild — decided
 
