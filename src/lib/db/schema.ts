@@ -234,19 +234,55 @@ export const membership = pgTable(
 )
 
 // the airframe catalogue. deployment-wide and maintained by superadmin, so it carries
-// no organisation column and no policy - docs/specs/03-data-model.md §"Device types in
-// the rebuild". the missing tenant binding is the decision, not an oversight; the
-// tenant-scoped entity in this chain is the airframe below.
-export const deviceType = pgTable('device_type', {
-  id: serial('id').primaryKey(),
-  name: text('name').notNull(),
-  maxVlos: numeric('max_vlos'),
-  serviceInterval: integer('service_interval'),
-  serviceIntervalMonths: integer('service_interval_months'),
-  batteryServiceInterval: integer('battery_service_interval'),
-  maintenanceInstructions: text('maintenance_instructions'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-})
+// no organisation column and nothing below scopes it by one - docs/specs/03-data-model.md
+// §"Device types in the rebuild". the missing tenant binding is the decision, not an
+// oversight; the tenant-scoped entity in this chain is the airframe below.
+//
+// not tenant-scoped is not the same as unguarded: the read here is deliberately wider than
+// the write, the way `document`'s is - §"Catalogue write authority in the rebuild".
+export const deviceType = pgTable(
+  'device_type',
+  {
+    id: serial('id').primaryKey(),
+    name: text('name').notNull(),
+    maxVlos: numeric('max_vlos'),
+    serviceInterval: integer('service_interval'),
+    serviceIntervalMonths: integer('service_interval_months'),
+    batteryServiceInterval: integer('battery_service_interval'),
+    maintenanceInstructions: text('maintenance_instructions'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  // no `table` parameter, unlike every other extras callback in this file: neither policy
+  // below names a column, which is the shape of a table nothing scopes by a tenant
+  () => [
+    // no tenant predicate on either half, because there is no organisation to ask about.
+    // `USING` asks only for an acting person, which is `document`'s global-read branch with
+    // nothing to or it against: every session reads the catalogue, and a connection that is
+    // nobody is not a session. `WITH CHECK` is flat superadmin, which is who maintains it.
+    pgPolicy('device_type_deployment_wide', {
+      for: 'all',
+      using: sql`${actingPerson} is not null`,
+      withCheck: sql`${actingIsSuperadmin}`,
+    }),
+
+    // and no restrictive UPDATE policy beside it, unlike `document`. that is a difference
+    // and not an omission: `UPDATE` is decided by `USING` **and** `WITH CHECK`, so a member
+    // passes the read above and then fails the check, because no value of a catalogue row
+    // makes them a superadmin. `document` needed one because there was such a value -
+    // setting `organization_id` to their own is an edit its check admits.
+    //
+    // `DELETE` has no `WITH CHECK` to fail - #42 - so the read above admits every session to
+    // it, and this is what does not. one catalogue row deleted is `device.device_type_id` set
+    // null on every airframe of that type in the deployment, each of which then has no VLOS
+    // limit and no service interval and can never register a violation. restrictive, because
+    // permissive policies OR together.
+    pgPolicy('device_type_delete_superadmin_only', {
+      as: 'restrictive',
+      for: 'delete',
+      using: actingIsSuperadmin,
+    }),
+  ],
+)
 
 // one airframe. `device_type_id` is nullable because "no type assigned" is a real and
 // common state - it leaves the airframe with no VLOS limit and no service interval,

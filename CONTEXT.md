@@ -107,7 +107,9 @@ predecessor system, which is the source of most of these terms, is in
   VLOS limit. An airframe with **no device type has no service intervals and no VLOS
   limit**, so service tracking and violation detection silently do nothing for it. Surface
   that gap; never let it read as a pass. The catalogue is deployment-wide rather than
-  per-organisation, maintained by `superadmin` — see `docs/specs/03-data-model.md`.
+  per-organisation, and **maintained by `superadmin` in the database and not only by
+  convention** — see [docs/specs/03-data-model.md](docs/specs/03-data-model.md) §"Catalogue
+  write authority in the rebuild".
 - **Cycle** — one recorded flight. The unit of cycle-based service intervals.
 - **Service interval** — the maintenance period, expressible two ways at once: in cycles
   and in calendar months. When both are set, **whichever limit is reached first** triggers
@@ -146,9 +148,9 @@ predecessor system, which is the source of most of these terms, is in
   discriminator on the row rather than a field on the form — see
   `docs/specs/03-data-model.md`.
 - **Global document library** — the deployment-wide bucket, carrying no organisation. Every
-  session reads it and only a superadmin writes it, which is the one place in the system
-  where those two differ. See [docs/specs/03-data-model.md](docs/specs/03-data-model.md)
-  §"The global document library in the rebuild".
+  session reads it and only a superadmin writes it, the same split the device-type catalogue
+  carries. See [docs/specs/03-data-model.md](docs/specs/03-data-model.md) §"The global
+  document library in the rebuild".
 - **Operations documentation** — the operator's standing compliance pack: operations
   manual, emergency response procedures, checklists, insurance, registration.
 - **Flight permit** — an authorisation document for specific flights. The only document

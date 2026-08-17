@@ -172,6 +172,7 @@ may delete is answered per table rather than left to fall out of that:
 | `organization` | `superadmin` only | Dissolving a tenant is not an operator's own housekeeping, and it is what `withCheck` already says about writing one |
 | `person` | `superadmin` only | The register entry a flight history hangs off, and accounts are administered rather than self-served — [09-roles-permissions.md](09-roles-permissions.md) §"Account provisioning" |
 | `membership` | `superadmin` only, **for now** | Only a superadmin may create one today, so letting a member delete one is asymmetric in the dangerous direction. Awaiting the people-and-memberships register rather than settled |
+| `device_type` | `superadmin` only | The catalogue is deployment-wide, and deleting one entry unsets the type on every airframe of it in the deployment — see §"Catalogue write authority in the rebuild" |
 | `training_type` | the owning tenant | A syllabus is the operator's own record, and deleting an entry is the same authority as writing one |
 | `device` | the owning tenant | Fleet management is the operator's own job — with the condition below |
 | `training` | the owning tenant | Same reasoning as the syllabus entry it points at — see §"Trainings in the rebuild" |
@@ -465,6 +466,50 @@ So a device type is not tenant-owned and carries no tenant scoping. The tenant-s
 in this chain is **Device**, which holds `organization_id` and inherits its VLOS limit and
 service intervals from a type — which is also why the missing-device-type gap is a statement
 about an airframe rather than about the catalogue.
+
+### Catalogue write authority in the rebuild — decided
+
+A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #65. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. Nothing here describes the predecessor, whose
+own write rules were never Observed for the reason §"Delete authority in the rebuild" gives.
+
+**"Maintained by `superadmin`" above was a sentence in this document and nothing in the
+database.** `device_type` was the only table in the schema with no row-level security at all
+— the right answer to *which tenant scopes it*, since none can, and no answer at all to *who
+may write it* while the schema-wide `GRANT` hands every session the three write verbs. What
+that left a member holding: `device.device_type_id` is `ON DELETE set null`, so deleting one
+catalogue row unsets the type on every airframe of that type across every operator, and an
+airframe with no device type has no VLOS limit and no service interval — so it can never
+register a violation or a service warning, and the loss reads as a clean compliance record.
+Editing `max_vlos` is quieter and re-judges every flight of every operator flying the type.
+
+So the table carries policies, and **none of them names an organisation**, because it has
+none to name:
+
+| | `superadmin` | any other session | a connection with no acting person |
+|---|---|---|---|
+| `USING` | ✅ | ✅ | ❌ |
+| `WITH CHECK` | ✅ | ❌ | ❌ |
+
+plus a **restrictive `FOR DELETE`** keyed on `superadmin`, because `USING` alone decides
+`DELETE` — #42 again, and the row the delete-authority table above now carries.
+`tests/tenancy/catalogue-write-authority.test.ts` holds all three verbs up, and
+`tests/tenancy/airframe-isolation.test.ts` still holds the deployment-wide half —
+**rewritten** by this slice rather than removed, because what it asserted was the *absence*
+of row-level security as the mechanism for not being tenant-scoped.
+
+**No restrictive `UPDATE` policy, unlike the global document library, and that is a
+difference rather than an omission.** `UPDATE` is decided by `USING` **and** `WITH CHECK`: a
+member passes the read and then fails the flat check, because no value of a catalogue row
+makes them a superadmin. The library needed one because there was such a value — setting
+`organization_id` to their own is an edit its check admits. One policy per command and never
+a restrictive `for: 'all'`, for the reason §"The global document library in the rebuild"
+gives.
+
+**The shape every later deployment-wide register inherits** — `map` is the next one. Being
+deployment-wide decides the *read* and decides nothing about the *write*, and a table with no
+policy has no write authority rather than a strict one.
 
 ---
 
