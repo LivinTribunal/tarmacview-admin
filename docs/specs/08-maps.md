@@ -104,7 +104,10 @@ inside an uploaded file, so imported KML can be corrected without re-uploading.
 
 - Layers are served through the app (`/map/{slug}/kml`), not straight from storage, so
   access, the `fallback` path form and cache-busting all stay under application control.
-  Keep the indirection.
+  Keep the indirection — but keep only the `?file={id}` form. The `?fallback={path}` variant
+  is a stored path taken from the request, which
+  [03-data-model.md](03-data-model.md) §"Serving a stored file in the rebuild" forbids
+  outright.
 - Priority ordering plus per-type colouring plus the two geozone flags together define the
   click-resolution behaviour. That logic is the substance of the feature — reproduce it
   before worrying about the map's appearance.

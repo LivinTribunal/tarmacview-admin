@@ -166,5 +166,20 @@
   "device.warning.noServiceInterval": "Typ zariadenia nemá nastavený servisný interval",
   "device.warning.serviceDue": "Servis je potrebný",
   "device.serviceLimit.cycles": "Dosiahnutý limit cyklov",
-  "device.serviceLimit.months": "Dosiahnutý kalendárny limit"
+  "device.serviceLimit.months": "Dosiahnutý kalendárny limit",
+  "map.index.title": "Geozónové mapy",
+  "map.index.empty": "Žiadne mapy",
+  "map.index.create": "Vytvoriť",
+  "map.create.title": "Nová mapa",
+  "map.edit.title": "Upraviť mapu",
+  "map.column.id": "ID",
+  "map.column.dark_basemap": "Tmavá mapa",
+  "map.column.kml_files": "Na mape",
+  "map.column.created_at": "Vytvorené",
+  "map.field.name": "Názov",
+  "map.field.slug": "Slug",
+  "map.field.allow_dark_basemap": "Povoliť prepínanie tmavej mapy",
+  "map.field.organizations": "Organizácie",
+  "map.darkBasemap.on": "Áno",
+  "map.darkBasemap.off": "Nie"
 }

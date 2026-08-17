@@ -33,14 +33,21 @@ describe('tenant isolation: the boundary is actually in force', () => {
     expect(rows[0]).toEqual({ rolsuper: false, rolbypassrls: false })
   })
 
-  it('every tenant-owned table forces row-level security, so not even its owner escapes', async () => {
+  // "tenant-owned" no longer names the whole list: `map` and `map_kml_file` belong to no
+  // operator and are enlisted here anyway, because what this asserts is that a table
+  // carrying policies is not quietly readable by its owner - which is as true of a
+  // deployment-wide table as of a tenant-owned one. `device_type` is the one policy-carrying
+  // table absent here, and only because the deployment-wide test below asserts the same two
+  // flags on it beside the rest of its own claim.
+  it('every policy-carrying table forces row-level security, so not even its owner escapes', async () => {
     const rows = await harness.owner.execute(
       sql`select relname, relrowsecurity, relforcerowsecurity from pg_class
           where relname in ('organization', 'person', 'membership', 'device', 'training_type',
-                            'training', 'training_device', 'flight', 'flight_log', 'document')
+                            'training', 'training_device', 'flight', 'flight_log', 'document',
+                            'map', 'map_organization', 'map_kml_file')
           order by relname`,
     )
-    expect(rows).toHaveLength(10)
+    expect(rows).toHaveLength(13)
     for (const row of rows) {
       expect(row, `${row.relname} is not fully protected`).toMatchObject({
         relrowsecurity: true,

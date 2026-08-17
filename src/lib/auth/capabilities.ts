@@ -75,3 +75,16 @@ export function can(role: OrganizationRole | null, capability: Capability): Gran
 export function mayManagePeople(systemRole: SystemRole): boolean {
   return systemRole === 'superadmin'
 }
+
+// and the same narrowing over the maps register, for a different reason rather than the
+// same one: `manage_geozone_maps` is granted to `accountable_manager` and `operations`
+// above, and a map belongs to no organisation at all - so no organisation role reaches one,
+// and `map`'s `WITH CHECK` is a flat superadmin. docs/specs/03-data-model.md §"Maps in the
+// rebuild", and docs/specs/09-roles-permissions.md records the divergence.
+//
+// a second function with the same body and not a shared one: the two narrowings answer
+// different questions and will stop agreeing as soon as either policy moves - the people
+// rows are waiting on #48, and this row is waiting on nothing.
+export function mayManageMaps(systemRole: SystemRole): boolean {
+  return systemRole === 'superadmin'
+}

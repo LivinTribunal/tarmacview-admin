@@ -53,6 +53,7 @@ const registers = [
   '/admin/device-types',
   '/admin/flights',
   '/admin/general-documents',
+  '/admin/maps',
   '/admin/trainings',
   '/admin/training-types',
   '/admin/users',

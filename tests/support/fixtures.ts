@@ -6,6 +6,9 @@ import {
   document,
   flight,
   flightLog,
+  map,
+  mapKmlFile,
+  mapOrganization,
   membership,
   organization,
   person,
@@ -297,6 +300,48 @@ const documents = [
   },
 ] as const
 
+// the geozone maps. every value is invented, the slugs included: the predecessor's own
+// slugs live in contracts/routes.json as capture and are never reseeded here as if they
+// were ours.
+//
+// the two rows carry the whole of what makes this register unlike its siblings. the first
+// is assigned to both operators, so a member reading it must see their own assignment and
+// not the other's - the disclosure the pivot's tenant-scoped read exists to prevent. the
+// second is assigned to **nobody** and has no layers, and every session still reads it:
+// the assignment decides which tenants see a map in their report, never who may read the
+// map, and a map with no layers counts none rather than reading blank.
+const maps = [
+  {
+    key: 'shared',
+    name: 'Placeholder Geozones',
+    slug: 'placeholder-geozones',
+    allowDarkBasemap: true,
+    organizations: ['alpha', 'bravo'],
+    // one typed layer and one untyped. *no type* is the absence of a classification, so it
+    // is a null here and never a seventh enum value.
+    layers: [
+      {
+        displayName: 'Placeholder Restricted Area',
+        layerType: 'lzr',
+        filePath: 'map-layers/placeholder-restricted-area.kml',
+      },
+      {
+        displayName: 'Placeholder Untyped Layer',
+        layerType: null,
+        filePath: 'map-layers/placeholder-untyped-layer.kml',
+      },
+    ],
+  },
+  {
+    key: 'unassigned',
+    name: 'Placeholder Empty Map',
+    slug: 'placeholder-empty-map',
+    allowDarkBasemap: false,
+    organizations: [],
+    layers: [],
+  },
+] as const
+
 export type OrganizationKey = (typeof organizations)[number]['key']
 export type PersonKey = (typeof people)[number]['key']
 export type AirframeKey = (typeof airframes)[number]['key']
@@ -304,6 +349,7 @@ export type TrainingTypeKey = (typeof trainingTypes)[number]['key']
 export type TrainingKey = (typeof trainings)[number]['key']
 export type FlightKey = (typeof flights)[number]['key']
 export type DocumentKey = (typeof documents)[number]['key']
+export type MapKey = (typeof maps)[number]['key']
 
 export type SeededIds = {
   organizations: Record<OrganizationKey, number>
@@ -313,6 +359,7 @@ export type SeededIds = {
   trainings: Record<TrainingKey, number>
   flights: Record<FlightKey, number>
   documents: Record<DocumentKey, number>
+  maps: Record<MapKey, number>
   deviceType: number
 }
 
@@ -495,6 +542,35 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
     )
   }
 
+  const mapIds = {} as Record<MapKey, number>
+  for (const entry of maps) {
+    mapIds[entry.key] = await insertOne(
+      db
+        .insert(map)
+        .values({
+          name: entry.name,
+          slug: entry.slug,
+          allowDarkBasemap: entry.allowDarkBasemap,
+        })
+        .returning({ id: map.id }),
+    )
+
+    for (const key of entry.organizations) {
+      await db
+        .insert(mapOrganization)
+        .values({ mapId: mapIds[entry.key], organizationId: organizationIds[key] })
+    }
+
+    for (const layer of entry.layers) {
+      await db.insert(mapKmlFile).values({
+        mapId: mapIds[entry.key],
+        filePath: layer.filePath,
+        displayName: layer.displayName,
+        layerType: layer.layerType,
+      })
+    }
+  }
+
   return {
     organizations: organizationIds,
     people: personIds,
@@ -503,6 +579,7 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
     trainings: trainingIds,
     flights: flightIds,
     documents: documentIds,
+    maps: mapIds,
     deviceType: deviceTypeId,
   }
 }
