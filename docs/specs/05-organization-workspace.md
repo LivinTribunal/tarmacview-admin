@@ -196,3 +196,74 @@ filters `Vypršané` / `Platné`; actions `Pridať školenie`, `Upraviť`, `Odst
 `Odstrániť vybrané`. Same shape as `TrainingResource`, scoped to one pilot.
 
 **Flight → Detaily letov** and **Map → KML súbory** are covered in docs 04 and 08.
+
+---
+
+## The workspace in the rebuild — decided
+
+A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #70. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. Everything above this line is what was Observed
+of the predecessor, and nothing here may be edited into it — in particular the tab table and
+the two *"columns not observed"* notes stay exactly as they are.
+
+**The route segment is `{org}`, and so the directory is `[org]`.** Every sibling register is
+served from an `[id]` directory, and this one is not: `tests/contracts/routes.test.ts` maps a
+`[segment]` directory to `{segment}` and the oracle spells the path
+`/admin/organizations/{org}/edit`. The oracle is never edited to agree with us, so the habit
+is what gives way. Declared row actions still substitute `{id}`, which is the chrome's own
+placeholder and a different layer.
+
+With the route served, `/admin/organizations` joins the register list the route contract
+asserts, so all three of its captured paths — the index, `create` and this one — are covered
+rather than asserted by nothing.
+
+**The tab is a query parameter and only the active tab reads.** `?activeRelationManager={n}`,
+as the oracle records it: not a path segment and not a fragment. An absent or unparseable `n`
+renders the first tab. An out-of-range one is **not-found**, never a silent fallback — a link
+to a tab that does not exist is a broken link and should read as one, and a fallback answers
+200 for a tab nobody built.
+
+The tabs *"load lazily"* above is Observed of a screen that fetched on click. The rebuild
+renders one tab per request and runs that tab's query alone, which satisfies the same claim:
+the behaviour is preserved, the mechanism is not.
+
+**The organisation filter is a selection, not a boundary.** The UAS tab's read carries
+`where organization_id = {org}`, which is the clause every file in the rebuild's tenant layer
+says it deliberately does not have. Both are true, and the distinction is the point:
+row-level security decides which airframes the acting session **may** see at all; this clause
+decides which of those it is **looking at**. It is the same line
+[03-data-model.md](03-data-model.md) §"The global document library in the rebuild" draws for
+the document bucket.
+
+Concretely, and asserted rather than claimed: dropping the clause widens the register to the
+acting session's *own* airframes across their other organisations and never past them. That
+is the difference between a wrong screen and a breach.
+
+**An organisation you hold no membership of is not-found.** The scoped read returns no row, a
+page with nothing to render is not-found, and no branch anywhere asks whether the session is
+allowed — refusing would confirm the organisation is real. A `superadmin` reaches every
+organisation. This is the one security property of the slice and it is asserted against a
+real database and the real policies.
+
+**Tab 2 (UAS) is the first sub-register and, for now, the only one.** It is an index table
+over an organisation-scoped read and nothing more; there is no relation-manager abstraction,
+because one tab cannot show what varies. The other six render their label and query nothing.
+
+Two readings of §2 above that the capture does not settle:
+
+- **`Zariadenie` carries the serial number** *(inferred)*. Which field sat under that header
+  was not observable, and the five columns record no separate `Sériové číslo` — an aircraft
+  register that never shows the serial is not one a CAMO could use. What settles it for the
+  rebuild either way is that `Názov zariadenia` is nullable and the serial is not, and an
+  identifying column that is blank for the normal case identifies nothing.
+- **`Typ zariadenia` states the gap and is never blank.** §2 records the unassigned state as
+  frequent; the rebuild renders it as its own wording rather than as the blank marker, which
+  would read as an unfilled cell. Without a device type there is no VLOS limit and no service
+  interval, so the airframe can never register a violation or a service warning — see
+  [03-data-model.md](03-data-model.md) §Device.
+
+**No row action, no bulk action and no filter** on this tab. `Upraviť`, `Vymazať`,
+`Vymazať vybrané` and the `Stav` filter are all Observed and all from a GET-only capture; no
+airframe route is served and no write path exists, so the declaration carries none of them
+rather than offering chrome wired to nothing.

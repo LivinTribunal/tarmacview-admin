@@ -17,10 +17,12 @@ import { seedFixtures, type SeededIds } from '../support/fixtures'
 // listAirframes under two organisation sessions, asserted on the markup each one
 // produces.
 //
-// the declaration is local to this test. the airframe register is doc 05 §2 and lands
-// with that slice; its columns, its `Stav` filter and its `Vymazať vybrané` bulk action
-// are Observed there. no /admin path for it is served yet, so it declares no row action
-// rather than linking at a live 404.
+// the declaration stays local to this test even though the real one now exists in
+// src/lib/devices/fields.ts. what this file needs and that one does not declare is a bulk
+// action: `Vymazať vybrané` is Observed in doc 05 §2 and the register does not carry it
+// while no write path answers one, so the chrome's bulk branch would otherwise have no
+// subject anywhere. tests/tenancy/organization-workspace.test.ts is where the real
+// declaration is proved, over the scoped read it is actually rendered with.
 
 const airframeTable: TableDeclaration = {
   resource: 'airframes',

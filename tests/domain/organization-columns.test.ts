@@ -66,11 +66,15 @@ describe('organisation index columns', () => {
     )
   })
 
-  it('declares no row action while neither target route is served', () => {
-    // `Home Page` is the operator report and `Správa organizácie` is the doc-05
-    // workspace. an actions column here would be a live 404, so organisations also stay
-    // out of the `registers` prefix list in tests/contracts/routes.test.ts until then.
-    expect(organizationTable.editPath).toBeUndefined()
+  it('declares the one row action whose route is now served', () => {
+    // `Správa organizácie` is the doc-05 workspace, which this slice serves - so the
+    // register reaches it, and `/admin/organizations` joins the `registers` prefix list
+    // in tests/contracts/routes.test.ts. `Home Page` is the operator report and is still
+    // unserved, so it stays undeclared rather than being a live 404.
+    //
+    // `{id}` and not `{org}`: rowPath() substitutes `{id}` and only `{id}`, while the
+    // oracle spells the route `{org}` and the served directory is therefore `[org]`.
+    expect(organizationTable.editPath).toBe('/admin/organizations/{id}/edit')
   })
 
   it('declares no bulk action, because nothing yet answers one', () => {
