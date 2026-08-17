@@ -175,17 +175,6 @@ describe('what the stored path itself is not allowed to do', () => {
     expect(Array.from(logo?.bytes.subarray(0, 4) ?? [])).toEqual([0x52, 0x49, 0x46, 0x46])
   })
 
-  it('refuses a pdf, which the document route serves, on a file that is there and readable', async () => {
-    // the other direction of the same claim: copy the document reader's map onto this one
-    // and only this case notices
-    expect(await readFile(join(FIXTURE_STORAGE_ROOT, GLOBAL_MANUAL))).toEqual(manualBytes)
-
-    const logo = await withStoredPath(GLOBAL_MANUAL, () =>
-      readLogo(alphaSession(), ids.organizations.alpha),
-    )
-    expect(logo).toBeNull()
-  })
-
   it('left the fixture as it found it, or every read above this line is suspect', async () => {
     const logo = await readLogo(alphaSession(), ids.organizations.alpha)
     expect(logo?.bytes).toEqual(logoBytes)

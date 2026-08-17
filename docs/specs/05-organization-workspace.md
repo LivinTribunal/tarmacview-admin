@@ -290,10 +290,10 @@ cell reads as a gap, never as a broken row. See
 write path will do with it.
 
 **`is_public` is surfaced and nothing about it is decided.** §4's tab renders `Verejné`,
-stating the affirmative where the flag is set and nothing where it is clear — the shape §0's
-`Hlavná` uses, and for the same reason: the column is `not null default false` and cannot
-tell a permit deliberately kept back from one nobody ever ticked. It also puts the word on
-the rows that carry the exposure rather than on the rows that do not.
+stating the affirmative where the flag is set and nothing where it is clear — the shape and
+the reasoning §"`Hlavná` renders the flag and never a negative" below already sets out, plus
+one reason of its own: it puts the word on the rows that carry the exposure rather than on
+the rows that do not.
 
 The ambiguity §4 records above — the toggle says *public page* while the operator report
 requires a session — is **not** reconciled by showing the flag. That reconciliation belongs

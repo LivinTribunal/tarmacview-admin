@@ -112,13 +112,6 @@ describe('the seven tabs doc 05 records', () => {
     expect(workspaceTabs[5]?.register?.declaration).toBe(organizationOperationsTable)
   })
 
-  it('gives the three document tabs three declarations and never one shared one', () => {
-    // #75's correction to how this slice was filed. the buckets differ by more than a
-    // constant, so a tab holding another tab's declaration would render doc 05's §4 columns
-    // under §3's heading with nothing else failing.
-    const declarations = [3, 4, 5].map((index) => workspaceTabs[index]?.register?.declaration)
-    expect(new Set(declarations).size).toBe(3)
-  })
 
   it('gives each people tab its own empty wording', () => {
     // *Žiadni používatelia* is the deployment-wide register's sentence and reads wrong

@@ -148,19 +148,14 @@ export function generalDocumentTableRow(entry: DocumentEntry): TableRow {
 //
 // none of the three declares a filter, a row action or a bulk action, the same absence
 // `airframeTable` and the two people tables state: doc 05 records `Stiahnuť`, `Upraviť`,
-// `Odstrániť` and the bulk removals, all Observed from a GET-only capture, and no write path
-// exists. `Stiahnuť` is the one of them that is a **read**, so it is served - the filename
-// cell links to the file route, the way `Odkaz` does above, rather than waiting for an
-// actions column. the row id is still the only thing that reaches the url.
+// `Odstrániť`, the bulk removals and §4's `Verejné` filter, all Observed from a GET-only
+// capture. the filter is deferred with the filter panel - doc 05 §"The workspace in the
+// rebuild" says why it is the natural first one - and the rest are writes with no write path.
+// `Stiahnuť` alone is a **read**, so it is served: the filename cell links to the file route
+// the way `Odkaz` does above, and the row id is still the only thing that reaches the url.
 //
 // `Nahrané` is a plain column here and *(toggle)* on the register above. that is doc 05's
 // tab table against doc 04's, not an inconsistency to tidy away.
-//
-// doc 05 §4 records a `Verejné` filter and this declares none, deliberately. `FilterDef`
-// takes a static i18n-keyed option list, which is exactly `Verejné`'s two fixed values and
-// not `Pilot`'s or `Zariadenie`'s per-tenant ones - so it is the natural first filter in the
-// rebuild, and declaring the first one is a decision about the filter panel rather than
-// about this tab.
 
 // §3, and the column list is *(inferred)*: doc 05 records the register as empty for the
 // inspected organisation and assumes the document shape.
@@ -202,14 +197,30 @@ export const organizationOperationsTable: TableDeclaration = {
   ],
 }
 
-// tabs 3 and 5. `Súbor` carries the file's own name and never the path it sits at, the
-// narrower rule `generalDocumentTableRow` states above and for the same reason.
+// tab 3. `Súbor` carries the file's own name and never the path it sits at, the narrower rule
+// `generalDocumentTableRow` states above and for the same reason.
 //
 // `Nahral` is a gap wherever the session cannot read the uploader. that is the *normal* case
 // for the global library, whose uploader is a superadmin no member shares an organisation
 // with; here the uploader is usually one of the operator's own people, so a gap on these
 // tabs means the document names nobody - and it is still a gap and never a pass.
-export function organizationDocumentTableRow(entry: DocumentEntry): TableRow {
+export function organizationFormTableRow(entry: DocumentEntry): TableRow {
+  return {
+    id: entry.id,
+    name: entry.name,
+    file: basename(entry.filePath),
+    size: fileSize(entry.size),
+    uploaded_by: entry.uploadedByName,
+    created_at: formatDate(entry.createdAt),
+  }
+}
+
+// tab 5, and its own function rather than tab 3's: the two declarations are separate because
+// §3's column list is inferred and §5's is Observed, and one shared row function would put
+// back exactly the coupling that split exists to prevent - a correction to the inferred cells
+// silently rewriting the observed ones. src/lib/users/fields.ts writes one per declaration for
+// its two overlapping tabs on the same reasoning.
+export function organizationOperationsTableRow(entry: DocumentEntry): TableRow {
   return {
     id: entry.id,
     name: entry.name,
@@ -224,10 +235,9 @@ export function organizationDocumentTableRow(entry: DocumentEntry): TableRow {
 // it would state a distinction the bucket does not have.
 //
 // `Verejné` states the affirmative and says nothing where the flag is clear - the shape
-// `organizationPersonTableRow`'s `Hlavná` uses, and for the same reason: `is_public` is
-// `not null default false` and cannot tell "deliberately not public" from "nobody ever
-// ticked it". it also puts the word on the rows that carry the exposure rather than on the
-// rows that do not, which is the half of the column worth reading.
+// `organizationPersonTableRow`'s `Hlavná` uses and for the reason stated there, plus one of
+// its own: it puts the word on the rows that carry the exposure rather than on the rows that
+// do not.
 //
 // whether a public permit is exposed to a session-less reader at all is doc 06's to settle -
 // doc 05 §4 flags the predecessor's own wording against the report's, and this cell shows

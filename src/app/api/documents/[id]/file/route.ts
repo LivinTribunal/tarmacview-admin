@@ -10,10 +10,7 @@ import { withTenant } from '@/lib/tenant/tenant-context'
 // *register* is not. it takes a document id and nothing else: no path, no filename, no
 // extension, no bucket, and no organisation, because the row carries all of them.
 //
-// what one route rather than five buys is that `nosniff`, the extension allow-list, the
-// containment check and `Cache-Control: private` are enforced in one place - #63's case, and
-// the reason to consolidate before the three workspace tabs took the count from two to five
-// rather than after.
+// one route rather than five, so the four guards below are enforced in one place - #63.
 //
 // what does not change is that the row is read first, inside the tenant transaction, and
 // that the refusal below is a resolved session or nothing - src/middleware.ts does not cover

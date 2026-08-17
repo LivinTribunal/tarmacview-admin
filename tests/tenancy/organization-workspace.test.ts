@@ -319,9 +319,13 @@ describe('the three document tabs list their own bucket and their own operator',
     expect(markup).not.toContain('Placeholder Operations Manual Template')
   })
 
-  it('lists the operator permits on tab 4, by filename and never by a name column', async () => {
+  it('lists the operator permits by filename, and states `Verejné` on the one that carries it', async () => {
     // doc 03 §Document: a permit takes the filename for its name, and doc 05 §4 names the
-    // column `Názov súboru` where the other two name it `Názov`
+    // column `Názov súboru` where the other two name it `Názov`.
+    //
+    // two permits are seeded and one is ticked, so the count is what says the flag is read
+    // off the row rather than printed for every permit. a shared declaration would have had
+    // to hide this column or invent it for the other two tabs.
     const markup = await open(
       memberOf(ids.people.alphaManager),
       ids.organizations.alpha,
@@ -332,16 +336,6 @@ describe('the three document tabs list their own bucket and their own operator',
     expect(markup).toContain('placeholder-alpha-permit.pdf')
     expect(markup).toContain('placeholder-alpha-restricted.pdf')
     expect(markup).not.toContain('Alpha Occurrence Form')
-  })
-
-  it('states `Verejné` on the permit that carries the flag and on no other row', async () => {
-    // two permits, one ticked. a shared declaration would have had to hide this column or
-    // invent it for the other two tabs, which is why there are three declarations.
-    const markup = await open(
-      memberOf(ids.people.alphaManager),
-      ids.organizations.alpha,
-      PERMITS_TAB,
-    )
 
     expect(markup).toContain(t('document.column.is_public'))
     expect(markup.match(new RegExp(t('document.isPublic.yes'), 'g'))).toHaveLength(1)

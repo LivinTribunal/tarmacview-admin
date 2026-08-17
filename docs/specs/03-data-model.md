@@ -129,16 +129,14 @@ What the consolidation is for is the count. `nosniff`, the extension allow-list,
 containment check and `Cache-Control: private` are four guards that a fifth handler carries only
 because somebody remembered — and a guard required on six handlers and enforced by nobody will
 eventually be on five (#63). The three workspace buckets would have taken the count from two to
-five; they took it to two. One table was already the decision §"The global document library in
-the rebuild" took so that *four tables would repeat the file-serving integration four times*
-could not happen, and four routes over that one table is the same repetition through the other
-door.
+five; they took it to two. Four routes over one table is §"The global document library in the
+rebuild"'s *four tables would repeat the file-serving integration four times*, through the
+other door.
 
 **The allow-list is then the union of what the buckets accept:** `.pdf`, `.doc`, `.docx`,
 `.jpg`, `.jpeg`, `.png` — §Document gives the permits bucket the image types. It stays a
 different list from the logo's, and `.webp` is what still separates them: it is the logo's and
-no document bucket was ever seen to take one. The two lists must not converge on whichever is
-easiest to serve, so a test holds them apart on that extension, where before #75 a `.png` did.
+no document bucket was ever seen to take one.
 
 The file inherits the row's row-level security for free: another operator's file is not
 refused, it **reads as absent**, because the read that would have found it returned nothing
@@ -161,8 +159,8 @@ file into script.
 That allow-list reads the **name and never the bytes**, so the response also carries
 `X-Content-Type-Options: nosniff` — otherwise a file named `.png` holding markup is served
 under a content type the browser may sniff past and execute in this origin, with the session
-cookie in scope. The header belongs to the pattern, not to the logo: the document route
-accepts `.pdf`, `.doc` and `.docx` among its six, where sniffing is livelier still.
+cookie in scope. The header belongs to the pattern, not to the logo: the document route's six
+include the office and PDF types, where sniffing is livelier still.
 
 **The storage root is configuration**, with no default. An unset value fails the first file
 request rather than resolving to the working directory, where every file in the checkout

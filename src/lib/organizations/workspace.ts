@@ -1,8 +1,9 @@
 import { airframeTable, airframeTableRow } from '@/lib/devices/fields'
 import {
-  organizationDocumentTableRow,
   organizationFormTable,
+  organizationFormTableRow,
   organizationOperationsTable,
+  organizationOperationsTableRow,
   organizationPermitTable,
   organizationPermitTableRow,
 } from '@/lib/documents/fields'
@@ -28,9 +29,8 @@ import {
 // no relation-manager abstraction here, and now deliberately for good. a sub-register is an
 // `IndexTable` over an organisation-scoped read, which is the three lines every register
 // since the shared table has used. the document buckets were where #70 and #73 expected a
-// shape to become visible - and what generalised turned out to be the *read* and not the
-// declaration, because doc 05 §4 carries `Verejné` and names its first column the filename
-// where §3 and §5 name it the document. so the extraction landed in
+// shape to become visible, and what generalised turned out to be the *read* and not the
+// declaration - src/lib/documents/fields.ts says why. so the extraction landed in
 // scoped-documents.ts's `listOrganizationDocuments`, and six tabs still state their own
 // three lines.
 
@@ -84,7 +84,7 @@ export const workspaceTabs: readonly WorkspaceTab[] = [
       declaration: organizationFormTable,
       load: async (tx, organizationId) =>
         (await listOrganizationDocuments(tx, organizationId, 'forms')).map(
-          organizationDocumentTableRow,
+          organizationFormTableRow,
         ),
     },
   },
@@ -104,7 +104,7 @@ export const workspaceTabs: readonly WorkspaceTab[] = [
       declaration: organizationOperationsTable,
       load: async (tx, organizationId) =>
         (await listOrganizationDocuments(tx, organizationId, 'operations')).map(
-          organizationDocumentTableRow,
+          organizationOperationsTableRow,
         ),
     },
   },

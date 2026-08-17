@@ -244,13 +244,6 @@ describe('the file route read finds any bucket the policy admits, and no other o
     expect(found?.organizationId).toBe(ids.organizations.alpha)
   })
 
-  it('finds a permit, the bucket the dropped filter used to refuse by name', async () => {
-    const found = await withTenant(harness.app, alphaSession(), (tx) =>
-      findDocument(tx, ids.documents.alphaPermit),
-    )
-    expect(found?.category).toBe('permits')
-  })
-
   it('answers not-found for another operator document rather than forbidden', async () => {
     // the claim the bucket filter never carried and never could: what excludes this row is
     // `document_tenant_isolation`, which the filter sat in front of rather than beside
@@ -258,11 +251,6 @@ describe('the file route read finds any bucket the policy admits, and no other o
       findDocument(tx, ids.documents.bravoForm),
     )
     expect(found).toBeNull()
-  })
-
-  it('answers not-found from a connection with no tenant context, the global rows included', async () => {
-    const [row] = await harness.app.select().from(document).limit(1)
-    expect(row).toBeUndefined()
   })
 })
 

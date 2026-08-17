@@ -45,8 +45,8 @@ export function listGeneralDocuments(tx: TenantTransaction): Promise<DocumentEnt
 // scoped-people.ts and scoped-airframes.ts draw and
 // tests/tenancy/organization-workspace.test.ts asserts: `document_tenant_isolation` decides
 // which rows the session may see at all, and this clause decides which of them the tab is
-// looking at. `category` beside it is not a boundary either - the four buckets partition the
-// table, so what it decides is which tab a readable row appears on.
+// looking at. `category` beside it decides which tab, because the four buckets partition the
+// table.
 export function listOrganizationDocuments(
   tx: TenantTransaction,
   organizationId: number,
@@ -59,20 +59,10 @@ export function listOrganizationDocuments(
 }
 
 // the row behind /api/documents/{id}/file, and it carries **no bucket filter** - the
-// correction #75 makes to what this file said before it.
-//
-// what docs/specs/03-data-model.md §"Serving a stored file in the rebuild" forbids is a
-// handler that takes a path or a filename from the request; this one takes an id, resolves
-// the row inside the tenant transaction, and reads the path as a column. a route serving one
-// table by row id is not the generic file route that section refuses to have - it is the
-// route sitting under the resource that owns the file, and the resource is `document`, which
-// doc 03 made one table on purpose so the file-serving integration would not be repeated
-// per bucket.
-//
-// so the bucket stays with the registers above, where it decides which tab a row appears on.
-// here it would only have decided which of five copies of one handler served the row, and
-// what scopes this read is `document_tenant_isolation` either way: another operator's
-// document yields nothing, and a global one yields to every session.
+// correction #75 makes to what this file said before it, argued in
+// docs/specs/03-data-model.md §"Serving a stored file in the rebuild". the bucket stays with
+// the registers above; what scopes this read is `document_tenant_isolation`, so another
+// operator's document yields nothing and a global one yields to every session.
 export async function findDocument(tx: TenantTransaction, id: number): Promise<Document | null> {
   const [row] = await tx.select().from(document).where(eq(document.id, id)).limit(1)
   return row ?? null

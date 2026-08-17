@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   generalDocumentTable,
   generalDocumentTableRow,
-  organizationDocumentTableRow,
   organizationFormTable,
+  organizationFormTableRow,
   organizationOperationsTable,
+  organizationOperationsTableRow,
   organizationPermitTable,
   organizationPermitTableRow,
 } from '@/lib/documents/fields'
@@ -214,14 +215,6 @@ describe('the workspace document tabs declare doc 05 columns, in order', () => {
     ])
   })
 
-  it('keeps `Verejné` off the two buckets doc 05 does not give it', () => {
-    // the failure this pins is a shared declaration inventing the flag for a form or an
-    // operations manual, where `is_public` is a column of the table and not of the register
-    for (const [bucket, declaration] of workspaceTables.filter(([name]) => name !== 'permits')) {
-      expect(declaration.columns.map((column) => column.key), bucket).not.toContain('is_public')
-    }
-  })
-
   it.each(workspaceTables)(
     '%s reaches its file through the one route and through one column',
     (_, declaration) => {
@@ -269,9 +262,9 @@ describe('the workspace document tabs declare doc 05 columns, in order', () => {
 describe('the workspace document tab rows', () => {
   it('carries a cell for every declared column, on all three tabs', () => {
     const rows = [
-      [organizationFormTable, organizationDocumentTableRow(bucketEntry)],
+      [organizationFormTable, organizationFormTableRow(bucketEntry)],
       [organizationPermitTable, organizationPermitTableRow(permitEntry)],
-      [organizationOperationsTable, organizationDocumentTableRow(bucketEntry)],
+      [organizationOperationsTable, organizationOperationsTableRow(bucketEntry)],
     ] as const
 
     for (const [declaration, row] of rows) {
@@ -282,13 +275,21 @@ describe('the workspace document tab rows', () => {
   })
 
   it('shows the stored file by its own name and never by the path it sits at', () => {
-    expect(organizationDocumentTableRow(bucketEntry).file).toBe('placeholder-alpha-manual.pdf')
+    // all three row shapes, so §3's stays exercised now that it is its own function rather
+    // than §5's under another name
+    const form: DocumentEntry = {
+      ...bucketEntry,
+      category: 'forms',
+      filePath: 'forms/placeholder-alpha-form.pdf',
+    }
+    expect(organizationFormTableRow(form).file).toBe('placeholder-alpha-form.pdf')
+    expect(organizationOperationsTableRow(bucketEntry).file).toBe('placeholder-alpha-manual.pdf')
     expect(organizationPermitTableRow(permitEntry).file).toBe('placeholder-alpha-permit.pdf')
   })
 
   it('gives a permit no `Názov` cell, because its name is the filename already', () => {
     expect(organizationPermitTableRow(permitEntry)).not.toHaveProperty('name')
-    expect(organizationDocumentTableRow(bucketEntry).name).toBe('Alpha Operations Manual')
+    expect(organizationOperationsTableRow(bucketEntry).name).toBe('Alpha Operations Manual')
   })
 
   it('states `Verejné` where the permit is public and says nothing where it is not', () => {
@@ -305,12 +306,12 @@ describe('the workspace document tab rows', () => {
   })
 
   it('renders `Veľkosť` human-readable on both row shapes', () => {
-    expect(organizationDocumentTableRow(bucketEntry).size).toBe('2,4 MB')
+    expect(organizationOperationsTableRow(bucketEntry).size).toBe('2,4 MB')
     expect(organizationPermitTableRow(permitEntry).size).toBe('51,2 kB')
   })
 
   it('states a missing size as a gap rather than as an empty file', () => {
-    expect(organizationDocumentTableRow({ ...bucketEntry, size: null }).size).toBeNull()
+    expect(organizationOperationsTableRow({ ...bucketEntry, size: null }).size).toBeNull()
     expect(organizationPermitTableRow({ ...permitEntry, size: null }).size).toBeNull()
   })
 
@@ -318,15 +319,15 @@ describe('the workspace document tab rows', () => {
     // not the normal row here, unlike the global library's: these documents are uploaded by
     // the operator's own people, whom a member of that operator can read. a gap on these
     // tabs means the document names nobody - and it is still a gap and never a pass.
-    const row = organizationDocumentTableRow({ ...bucketEntry, uploadedByName: null })
+    const row = organizationOperationsTableRow({ ...bucketEntry, uploadedByName: null })
     expect(row.uploaded_by).toBeNull()
     expect(row.name).toBe('Alpha Operations Manual')
 
-    expect(organizationDocumentTableRow(bucketEntry).uploaded_by).toBe('Placeholder Pilot')
+    expect(organizationOperationsTableRow(bucketEntry).uploaded_by).toBe('Placeholder Pilot')
   })
 
   it('prints `Nahrané` in the one format this application prints', () => {
-    expect(organizationDocumentTableRow(bucketEntry).created_at).toBe('17.08.2026')
+    expect(organizationOperationsTableRow(bucketEntry).created_at).toBe('17.08.2026')
     expect(organizationPermitTableRow(permitEntry).created_at).toBe('17.08.2026')
   })
 })

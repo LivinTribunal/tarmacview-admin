@@ -79,17 +79,11 @@ describe('the document file route serves what the scoped read returned', () => {
     await call('42')
 
     expect(withTenant).toHaveBeenCalledWith(expect.anything(), session, expect.any(Function))
-    // and by the id as a number, not as the string the url carried
+    // by the id as a number, not as the string the url carried - and by nothing else, which
+    // is the property #75 turns on: the bucket, the path and the extension are all columns
+    // the read resolves. `toHaveBeenCalledWith` pins the whole argument list, so a third
+    // argument - something about the file coming off the request - fails here.
     expect(readDocumentFile).toHaveBeenCalledWith({}, 42)
-  })
-
-  it('hands the read a transaction and an id, and nothing else', async () => {
-    // the property #75 turns on: the handler takes a **row id**, and the bucket, the path
-    // and the extension are all columns the read resolves. a third argument here would mean
-    // something about the file came off the request, which is the generic file route doc 03
-    // refuses to have.
-    await call('42')
-    expect(readDocumentFile.mock.calls[0]).toEqual([{}, 42])
   })
 
   it('carries the allow-listed content type and the bytes the read returned', async () => {
