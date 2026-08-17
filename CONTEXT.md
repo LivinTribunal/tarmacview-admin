@@ -147,6 +147,10 @@ predecessor system, which is the source of most of these terms, is in
   track length reads as a violation for any long survey flight flown within sight, and as a
   pass for a short one flown straight out past the limit — see
   `docs/specs/03-data-model.md`.
+- **Flight date** — when a flight was flown, which is not when its record arrived. Derived
+  from the earliest flight log's start, falling back to the import instant where no leg
+  states one, and never stored as a column of its own — see
+  `docs/specs/03-data-model.md`.
 - **Assignment** — attaching a pilot and an airframe to a flight after import. A flight may
   legitimately exist with neither; automated ingest cannot know who was flying. Assignment
   is a first-class later step, not a creation-time requirement.

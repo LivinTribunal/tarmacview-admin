@@ -89,6 +89,77 @@ carry text — unassigned flights render a label plus an inline **Priradiť** (a
 
 An unrecognised `period` returns an HTML error page instead of JSON. Return a JSON error.
 
+### The data endpoint in the rebuild — decided
+
+A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #87. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. Nothing here describes the predecessor except
+where it says so; §Access and the endpoint above are what was Observed and they stay standing.
+
+**The route keys on the organisation's `id`.** §Access asks for the token's double duty to be
+broken, and the rebuild already broke it without recording that it had: `report_token` is its
+own unique column with no reader anywhere in `src/`, and admin routes key on the serial id.
+So the report does too, scoped by the session and by row-level security, and `report_token`
+is reserved for the explicit revocable share link §Access asks for — which has no issue yet.
+[03-data-model.md](03-data-model.md) §Organization carries the field.
+
+**The `{org}` in the path is a selection and never a boundary.** The read runs inside
+`withTenant` and there is no hand-written organisation filter guarding it: an id belonging to
+an organisation the session is not a member of reads as absent, the same answer the
+workspace already gives. A refusal would confirm the organisation is real.
+
+**The blocks it does not serve are declared, not empty.** `data.pilots[]` and
+`data.devices[]` are absent from the payload and named in a pending list the parity test
+asserts against, so a block dropped by accident fails the suite instead of passing as "not
+built yet". Serving them as empty arrays would say this operator has no pilots and no
+airframes, which is a gap reading as a fact.
+
+**An unrecognised `period` answers JSON, which is a deliberate behavioural departure** from
+the HTML error page above. `custom` without a usable `date_from`/`date_to`, and a `pilot_id`
+or `device_id` that is not an id, are the same class of error and get the same answer. An
+*absent* period is not an error: it is `this_month`, the state the screen opens in before a
+period is ever picked. Dates arrive on the query string as `YYYY-MM-DD`; `DD.MM.YYYY` is what
+a reader sees and never what a query string carries.
+
+**Periods and the three date variants resolve in UTC**, following the note in
+`src/lib/i18n`: which zone a reader should see an instant in wants an organisation or a
+browser to key off, and the report page is the first thing that will have either.
+`period_dates` renders `DD.MM.YYYY`, and `total_flight_minutes` and `total_flight_hours` are
+one quantity in two units, both derived from the recorded seconds rather than from each
+other. `active_pilots` counts distinct pilots with a flight in the period, so an unassigned
+flight contributes to none.
+
+**Nullable columns the oracle types as non-null.** `flight_hours`, `max_altitude` and
+`max_distance` serialise a null as `0` to hold parity — except that the VLOS judgement below
+reads the *column*, so a flight that recorded no distance is never mistaken for one that
+recorded zero. `parsing_errors` serialises a null as `""`, which is the one blank here that
+is honest: no error recorded is exactly what an empty message means. `parsing_status` does
+not, and gets a label naming the nothing-was-parsed case — a null status is the manual-entry
+case, and reporting a parsed state or a blank would state an outcome that never happened
+([03-data-model.md](03-data-model.md) §"Flights in the rebuild").
+
+**So this null renders two ways, and the difference is recorded rather than left to a code
+comment.** The flights register in [04-admin-resources.md](04-admin-resources.md)
+§FlightResource renders the same null `parsing_status` as a **blank cell**, which is right
+there: a table cell that is empty says nothing, and the column beside it carries the failure
+where a parse failed. A contract key has no empty available to it — the oracle types this one
+non-null on every captured row — so the absence has to be named instead of shown. Two
+renderings of one value, for the reason each surface can carry.
+
+**Where the flight's date comes from.** Derived, not stored — the derivation and what is
+Inferred about it are in [03-data-model.md](03-data-model.md) §"Flights in the rebuild".
+
+**`has_vlos_violation` is false in three different situations and only one is a pass:** the
+distance was within the limit, the airframe has no VLOS limit to judge against, or no
+distance was recorded to judge. The oracle gives this block no fourth key and parity forbids
+inventing one, so the gap is surfaced where a key already exists for it —
+`data.devices[].max_vlos_meters` is null and `service_warning` names the missing device type
+— and never by overloading the boolean.
+
+The consequence lands on the flights table below and is written here so it is not
+rediscovered: **`has_vlos_violation: false` must not render as an affirmative all-clear.** A
+flight that could not be judged is not a flight that passed.
+
 ## Tables
 
 **Štatistiky pilotov** — `PILOT` (name + e-mail) · `POČET LETOV` · `CELKOVÝ ČAS` ·

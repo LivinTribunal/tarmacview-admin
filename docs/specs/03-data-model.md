@@ -56,7 +56,7 @@ The tenant. Everything else hangs off it.
 | `max_allowed_altitude` | decimal | | Metres |
 | `insurance_valid_until` | date | | |
 | `licence_expiry_warning_days` | int | **required**, 1–730, default 40 | Drives the amber expiry warning on the report |
-| *report token* | string(32) hex | unique | Route key **and** operator-report URL. Column name not observed |
+| *report token* | string(32) hex | unique | Route key **and** operator-report URL in the predecessor. Column name not observed. The rebuild splits them and keys both routes on `id` — decided, see [06-org-report.md](06-org-report.md) §"The data endpoint in the rebuild" |
 
 Counts shown in the admin table (`Používatelia`, `UAS`) are aggregates, not columns. There
 is no `updated_at`: the register offers one as a toggleable column — Observed — but no
@@ -805,6 +805,23 @@ today is none of them.
 **A failed parse is a row, and the register shows it.** `parsing_status` and `parsing_errors`
 exist from the first migration though nothing parses yet, because the register has to be
 built around the fact that they can be set. Nothing in the read filters on them.
+
+**The flight's date is derived, not stored** — decided 17 Aug 2026 on issue #87, and the
+one paragraph here that is not part of the 16 Aug decision above. §Flight lists no
+flight-date column and the admin flights form collects no date (Observed:
+`contracts/forms/flights.json`, both create and edit), yet the captured report payload
+carries all three of `flight_date`, `flight_date_display` and `flight_date_sort` non-null on
+every row. What the predecessor derived them from was never observed — *(inferred)*, and the
+line above about presentation variants of one instant stays as it was.
+
+The rebuild's own derivation: a flight's date is its **earliest `flight_log.started_at`**,
+falling back to `created_at` where no leg states one. `created_at` is the import instant, so
+a July flight imported in August reports July; a flight with legs takes the leg's date,
+always. `flight_log.started_at` is nullable, so the fallback keys on there being no earliest
+start rather than on there being no legs. **No `flight_date` column**: the parsers are
+blocked (#6) and no form collects one, so it would be a column with no writer. The report's
+period filter runs on the same derivation as the reported date, or a flight would be listed
+under one month and displayed under another.
 
 **The stated duration is the record.** Doc 07 leaves open which wins when an explicit
 duration and a start/end pair disagree; the duration does. This is the maintenance rule read
