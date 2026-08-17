@@ -927,9 +927,9 @@ six enum members, because the seventh entry is *no type (grey)*, which is the ab
 classification and not a value of one — the same shape as an airframe with no device type; and
 the members take identifier-safe codes with the label resolving through the message catalogue,
 following `certificate_type`'s `A1_A3`. The colour is **not** a column: it is bound to the
-type, so the legend stays consistent across maps and branding restyles the palette centrally.
-The file column is `file_path`, not the table's `file`, matching `document.file_path` — the
-bytes are on disk and the column says where.
+type, for the reason [08-maps.md](08-maps.md) §"Layer types" gives. The file column is
+`file_path`, not the table's `file`, matching `document.file_path` — the bytes are on disk
+and the column says where.
 
 **The assignment is not an access control, and nothing in the rebuild may imply it is.**
 [08-maps.md](08-maps.md) says it outright: it controls *which tenants see a map in their
