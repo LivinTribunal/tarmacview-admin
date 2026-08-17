@@ -1,6 +1,4 @@
-import { readFile } from 'node:fs/promises'
-import { extname } from 'node:path'
-import { resolveStoredFile, type StoredFile } from '@/lib/files/storage'
+import { readStoredFile, type StoredFile } from '@/lib/files/storage'
 import { findDocument } from '@/lib/tenant/scoped-documents'
 import type { TenantTransaction } from '@/lib/tenant/tenant-context'
 
@@ -14,9 +12,9 @@ import type { TenantTransaction } from '@/lib/tenant/tenant-context'
 // gives the global library `.pdf`, `.doc` and `.docx`.
 //
 // `.webp` stays off it. it is the logo route's own type and no document bucket was ever seen
-// to take one, so the two allow-lists remain two lists rather than converging on whatever is
-// easiest to serve - the property #61 asserted with a `.png` and which now has to be
-// asserted with the extension the two lists still disagree about.
+// to take one, so the three allow-lists remain three lists rather than converging on whatever
+// is easiest to serve - the property #61 asserted with a `.png` and which now has to be
+// asserted with the extension this list and the logo's still disagree about.
 //
 // `.doc` and `.docx` are two content types and not one: an old binary Word file served as
 // the OOXML type is a lie the browser acts on. none of these is ever derived from the
@@ -36,8 +34,8 @@ const contentTypes: Readonly<Record<string, string>> = {
 //
 // every gap is the same null and the caller cannot tell them apart: no row, a path that
 // escapes the storage root, an extension nothing serves, or no file on the disk.
-// `file_path` is not null on this table, so the logo's fifth gap - a row naming no file at
-// all - cannot arise.
+// `file_path` is not null on this table, so the fifth gap the logo and the occurrence
+// register both have - a row naming no file at all - cannot arise here.
 //
 // `is_public` is not read here, and that is the point: doc 03 §"Serving a stored file in the
 // rebuild" wants a public read to be an explicit opt-in on a handler whose default branch
@@ -50,16 +48,5 @@ export async function readDocumentFile(
   const found = await findDocument(tx, id)
   if (!found) return null
 
-  const contentType = contentTypes[extname(found.filePath).toLowerCase()]
-  if (!contentType) return null
-
-  const file = resolveStoredFile(found.filePath)
-  if (file === null) return null
-
-  try {
-    return { bytes: await readFile(file), contentType }
-  } catch {
-    // a row naming a file the disk does not have is a gap, not a crash
-    return null
-  }
+  return readStoredFile(found.filePath, contentTypes)
 }

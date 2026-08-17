@@ -84,13 +84,14 @@ server action), is decided in `09-roles-permissions.md` §"Sign-in and sign-out"
 row is Observed as written; where the rebuild redirects it to instead, until the operator
 report exists, is decided in that same section.
 
-The rebuild adds two routes with no row above them, one per resource whose files it serves:
+The rebuild adds three routes with no row above them, one per resource whose files it serves:
 `/api/organizations/{id}/logo`, which serves what the predecessor served from
-`/storage/organization-logos/{ULID}.png`, and `/api/documents/{id}/file` for every bucket of
-`document` — the global library and the three organisation registers alike. Why a stored
-file is reached through a handler rather than a static path, and why the buckets share one
-route rather than taking one each, is decided in
-[03-data-model.md](03-data-model.md) §"Serving a stored file in the rebuild".
+`/storage/organization-logos/{ULID}.png`, `/api/documents/{id}/file` for every bucket of
+`document` — the global library and the three organisation registers alike — and
+`/api/incidents/{id}/file` for the file an occurrence report carries, which is a column on its
+own table rather than a fourth document bucket. Why a stored file is reached through a handler
+rather than a static path, and why the buckets share one route rather than taking one each, are
+decided in [03-data-model.md](03-data-model.md) §"Serving a stored file in the rebuild".
 
 **Confirmed absent** (all 404): `/register`, `/forgot-password`, `/password/reset`.
 There is no self-service registration or password reset — accounts are provisioned by an

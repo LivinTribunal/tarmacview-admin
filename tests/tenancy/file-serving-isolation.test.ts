@@ -3,8 +3,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { document, organization } from '@/lib/db/schema'
+import { document, incident, organization } from '@/lib/db/schema'
 import { readDocumentFile } from '@/lib/files/document'
+import { readIncidentFile } from '@/lib/files/incident'
 import { readOrganizationLogo } from '@/lib/files/organization-logo'
 import { withTenant, type TenantSession } from '@/lib/tenant/tenant-context'
 import { startTestDatabase, type TestDatabase } from '../support/database'
@@ -14,7 +15,7 @@ import { FIXTURE_STORAGE_ROOT, seedFixtures, type SeededIds } from '../support/f
 // rebuild". the claim is that a stored file is reached only through the owning row, so it
 // is asserted the way every other scoped read here is: a real database, a real
 // TenantSession, and no request anywhere. the route handler over it is thin by design, and
-// its own wiring - session, transaction, response - is tests/domain/logo-route.test.ts.
+// its own wiring - session, transaction, response - is tests/domain/stored-file-route.test.ts.
 //
 // the second half poisons `logo_path` with values no caller can produce today. that is the
 // point of it: the column is not user input now, but the history migration (#14) imports
@@ -27,11 +28,21 @@ import { FIXTURE_STORAGE_ROOT, seedFixtures, type SeededIds } from '../support/f
 const ALPHA_LOGO = 'organization-logos/alpha.png'
 const GLOBAL_MANUAL = 'general-documents/placeholder-operations-manual.pdf'
 const ALPHA_PERMIT = 'permits/placeholder-alpha-permit.pdf'
+const ALPHA_INCIDENT = 'incidents/placeholder-alpha-incident.pdf'
 
-// the one extension the two allow-lists still disagree about. `.png` was that extension until
-// #75 gave the document route the union of the four buckets' lists, and doc 03 §Document puts
-// `.png` on the permits bucket - so the claim that the lists are two lists needs the type no
-// document bucket was ever seen to take.
+// the two extensions that hold the three allow-lists apart, and the cross-refusal cases below
+// are what say the lists are three lists rather than one convenience.
+//
+// `.webp` is the logo's own: `.png` was that extension until #75 gave the document route the
+// union of the four buckets' lists, and doc 03 §Document puts `.png` on the permits bucket -
+// so the claim needs the type no document bucket, and no occurrence report, was ever seen to
+// take. `.pdf` runs the other way: both document readers serve it and the logo must not, or a
+// logo cell renders a pdf.
+//
+// what these cases cannot separate is the document reader from the incident one. their lists
+// coincide today - doc 05 §6's `PDF, DOC, DOCX, images` arrives at exactly doc 03 §Document's
+// six - so what holds those two apart is the **table** each reads and not the extension, and
+// that is asserted above and below as a cross-tenant not-found rather than as a refusal.
 const LOGO_WEBP = 'organization-logos/placeholder-mark.webp'
 
 let harness: TestDatabase
@@ -39,6 +50,7 @@ let ids: SeededIds
 let logoBytes: Uint8Array
 let manualBytes: Uint8Array
 let permitBytes: Uint8Array
+let incidentBytes: Uint8Array
 let outsideRoot: string
 let outsideFile: string
 
@@ -51,6 +63,7 @@ beforeAll(async () => {
   logoBytes = await readFile(join(FIXTURE_STORAGE_ROOT, ALPHA_LOGO))
   manualBytes = await readFile(join(FIXTURE_STORAGE_ROOT, GLOBAL_MANUAL))
   permitBytes = await readFile(join(FIXTURE_STORAGE_ROOT, ALPHA_PERMIT))
+  incidentBytes = await readFile(join(FIXTURE_STORAGE_ROOT, ALPHA_INCIDENT))
 
   // the same bytes, one directory tree away from the storage root. a temporary directory
   // and not a second committed file: what matters is only that it is outside and readable.
@@ -165,14 +178,26 @@ describe('what the stored path itself is not allowed to do', () => {
     expect(logo).toBeNull()
   })
 
-  it('serves a webp, which is on this list and on no document bucket', async () => {
-    // the positive half of *the two allow-lists are two lists*. without it the refusal in
-    // the document block below would be satisfied by a reader that serves nothing at all.
+  it('serves a webp, which is on this list and on neither of the other two', async () => {
+    // the positive half of *the three allow-lists are three lists*. without it the refusals
+    // in the two blocks below would be satisfied by a reader that serves nothing at all.
     const logo = await withStoredPath(LOGO_WEBP, () =>
       readLogo(alphaSession(), ids.organizations.alpha),
     )
     expect(logo?.contentType).toBe('image/webp')
     expect(Array.from(logo?.bytes.subarray(0, 4) ?? [])).toEqual([0x52, 0x49, 0x46, 0x46])
+  })
+
+  it('refuses a pdf, which both other readers serve and a logo cell must never render', async () => {
+    // the cross-refusal running the other way, and the direction nothing asserted before this
+    // slice: the logo list is the narrowest of the three and carries no office type and no
+    // pdf at all. widen it to whatever is easiest to serve and only this case notices.
+    expect(await readFile(join(FIXTURE_STORAGE_ROOT, GLOBAL_MANUAL))).toEqual(manualBytes)
+
+    const logo = await withStoredPath(GLOBAL_MANUAL, () =>
+      readLogo(alphaSession(), ids.organizations.alpha),
+    )
+    expect(logo).toBeNull()
   })
 
   it('left the fixture as it found it, or every read above this line is suspect', async () => {
@@ -314,5 +339,116 @@ describe('one route, every bucket: the row is what decides which session it answ
   it('left the library as it found it, or the read above this line is suspect', async () => {
     const file = await readDocument(alphaSession(), ids.documents.globalManual)
     expect(file?.bytes).toEqual(manualBytes)
+  })
+})
+
+// the third consumer of the same boundary, and the one that earned the extraction: three
+// copies is the threshold src/lib/routes/identifier.ts states for this repo, so the session,
+// the transaction, the response headers, the containment check and the read off the disk are
+// all shared now and only the row and the allow-list are this reader's own.
+//
+// `incident.file_path` is its own column on its own table and not a `document` row - doc 03's
+// four buckets are `general`, `forms`, `permits` and `operations` and an occurrence report is
+// none of them - so this is one route per table and not a fifth register on somebody else's.
+//
+// the containment *arithmetic* is not repeated here either; what is, is that **this** reader
+// reaches the check on its own way to the disk. the other two being written alike is not an
+// assertion about this one, which is exactly the lesson #75 left.
+
+const readIncident = (session: TenantSession, id: number) =>
+  withTenant(harness.app, session, (tx) => readIncidentFile(tx, id))
+
+async function withIncidentPath<T>(storedPath: string | null, run: () => Promise<T>): Promise<T> {
+  const set = (value: string | null) =>
+    withTenant(harness.app, superadminSession(), (tx) =>
+      tx
+        .update(incident)
+        .set({ filePath: value })
+        .where(eq(incident.id, ids.incidents.alphaInjury)),
+    )
+
+  await set(storedPath)
+  try {
+    return await run()
+  } finally {
+    await set(ALPHA_INCIDENT)
+  }
+}
+
+describe('one route per table: the occurrence report file is reached through its own row', () => {
+  it('serves the operator their own report file, bytes and content type', async () => {
+    const file = await readIncident(alphaSession(), ids.incidents.alphaInjury)
+    expect(file?.contentType).toBe('application/pdf')
+    expect(file?.bytes).toEqual(incidentBytes)
+
+    // and the file it is equal to is a real pdf, and not the permit or the manual under
+    // another name - or the line above is only equal to itself
+    expect(Array.from(incidentBytes.subarray(0, 4))).toEqual([0x25, 0x50, 0x44, 0x46])
+    expect(incidentBytes).not.toEqual(permitBytes)
+    expect(incidentBytes).not.toEqual(manualBytes)
+  })
+
+  it('answers another operator with not-found, on the same report and the same file', async () => {
+    // bravo holds no membership of alpha, so the read returns no row and the bytes on disk
+    // are unreachable. one row and two sessions, so the null is the policy rather than a
+    // missing file - and it is what holds this reader apart from the document one, whose
+    // allow-list is the same list.
+    const file = await readIncident(bravoSession(), ids.incidents.alphaInjury)
+    expect(file).toBeNull()
+  })
+
+  it('serves a superadmin that same report, so the exclusion above is not an empty read', async () => {
+    const file = await readIncident(superadminSession(), ids.incidents.alphaInjury)
+    expect(file?.bytes).toEqual(incidentBytes)
+  })
+
+  it('answers a report that names no file at all, which is the normal case for the column', async () => {
+    // `incident.file_path` is nullable where `document.file_path` is not - doc 05 §6 marks
+    // the file optional - so this reader carries the logo's fifth gap and the document
+    // reader's four are not the whole list. a gap, never a crash.
+    const file = await readIncident(alphaSession(), ids.incidents.alphaNoInjury)
+    expect(file).toBeNull()
+  })
+
+  it('answers an id no report has at all', async () => {
+    const file = await readIncident(superadminSession(), 987654)
+    expect(file).toBeNull()
+  })
+
+  it('answers a stored path naming a file the disk does not have', async () => {
+    const file = await withIncidentPath('incidents/absent.pdf', () =>
+      readIncident(alphaSession(), ids.incidents.alphaInjury),
+    )
+    expect(file).toBeNull()
+  })
+
+  it('refuses a stored path outside the storage root, on a file that is there and readable', async () => {
+    // readable, so the null is the containment check reached on *this* reader's way to the
+    // disk and not a missing file. the escape is a `.png`, which this list serves - so the
+    // allow-list does not refuse it first and the check is genuinely what answers.
+    expect(await readFile(outsideFile)).toEqual(logoBytes)
+
+    const file = await withIncidentPath(outsideFile, () =>
+      readIncident(alphaSession(), ids.incidents.alphaInjury),
+    )
+    expect(file).toBeNull()
+  })
+
+  it('refuses the webp the logo route serves, on a file that is there', async () => {
+    // doc 05 §6 gives this register `PDF, DOC, DOCX, images` and enumerates no image type, so
+    // *images* is read as the three the rest of this application already serves from a stored
+    // document. `.webp` is the logo's own and stays off - copying that map onto this reader is
+    // what only this case notices.
+    expect(await readFile(join(FIXTURE_STORAGE_ROOT, LOGO_WEBP))).toHaveLength(34)
+
+    const file = await withIncidentPath(LOGO_WEBP, () =>
+      readIncident(alphaSession(), ids.incidents.alphaInjury),
+    )
+    expect(file).toBeNull()
+  })
+
+  it('left the report as it found it, or the reads above this line are suspect', async () => {
+    const file = await readIncident(alphaSession(), ids.incidents.alphaInjury)
+    expect(file?.bytes).toEqual(incidentBytes)
   })
 })

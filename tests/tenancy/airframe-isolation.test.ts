@@ -44,10 +44,10 @@ describe('tenant isolation: the boundary is actually in force', () => {
       sql`select relname, relrowsecurity, relforcerowsecurity from pg_class
           where relname in ('organization', 'person', 'membership', 'device', 'training_type',
                             'training', 'training_device', 'flight', 'flight_log', 'document',
-                            'map', 'map_organization', 'map_kml_file')
+                            'incident', 'map', 'map_organization', 'map_kml_file')
           order by relname`,
     )
-    expect(rows).toHaveLength(13)
+    expect(rows).toHaveLength(14)
     for (const row of rows) {
       expect(row, `${row.relname} is not fully protected`).toMatchObject({
         relrowsecurity: true,

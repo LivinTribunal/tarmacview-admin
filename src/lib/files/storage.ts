@@ -1,12 +1,13 @@
-import { isAbsolute, relative, resolve, sep } from 'node:path'
+import { readFile } from 'node:fs/promises'
+import { extname, isAbsolute, relative, resolve, sep } from 'node:path'
 
 // where uploaded files live on disk - docs/specs/03-data-model.md §"Serving a stored file
 // in the rebuild". nothing under here is ever served statically: a file leaves this
 // directory only through a handler that has already read its owning row.
 
 // what a resource's read hands back once its own row and its own allow-list have both
-// answered. it lives here rather than beside either reader, because the organisation logo
-// and the document library are now two of them.
+// answered. it lives here rather than beside either reader, because the organisation logo,
+// the document library and the occurrence register are now three of them.
 export type StoredFile = { bytes: Uint8Array; contentType: string }
 
 // configuration, because the deployment decides where the disk is and a test needs its
@@ -43,4 +44,36 @@ export function resolveStoredFile(storedPath: string): string | null {
     inside === '' || inside === '..' || inside.startsWith(`..${sep}`) || isAbsolute(inside)
 
   return escapes ? null : file
+}
+
+// everything the three readers do between a stored path and the bytes: two of the four
+// guards §"Serving a stored file in the rebuild" names, in one place rather than one copy
+// per table - #63, and #82 is the third copy that earned the extraction.
+//
+// the allow-list stays the **caller's**, passed in rather than merged here. the three lists
+// are three lists: the logo takes `.webp` and no document bucket was ever seen to, and doc
+// 05 §6 enumerates the occurrence register's own. a shared map would be the widening nobody
+// decided, which is what the cross-refusal cases in
+// tests/tenancy/file-serving-isolation.test.ts exist to catch.
+//
+// the extension is checked before the filesystem is touched, so a poisoned path with a name
+// nothing serves never becomes a read. every gap answers with the same null and the caller
+// cannot tell them apart: an extension nothing serves, a path that escapes the storage root,
+// or no file on the disk.
+export async function readStoredFile(
+  storedPath: string,
+  contentTypes: Readonly<Record<string, string>>,
+): Promise<StoredFile | null> {
+  const contentType = contentTypes[extname(storedPath).toLowerCase()]
+  if (!contentType) return null
+
+  const file = resolveStoredFile(storedPath)
+  if (file === null) return null
+
+  try {
+    return { bytes: await readFile(file), contentType }
+  } catch {
+    // a row naming a file the disk does not have is a gap, not a crash
+    return null
+  }
 }

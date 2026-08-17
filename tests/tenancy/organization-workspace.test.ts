@@ -61,6 +61,7 @@ const UAS_TAB = '2'
 const FORMS_TAB = '3'
 const PERMITS_TAB = '4'
 const OPERATIONS_TAB = '5'
+const INCIDENTS_TAB = '6'
 
 let harness: TestDatabase
 let ids: SeededIds
@@ -389,6 +390,77 @@ describe('the three document tabs list their own bucket and their own operator',
   })
 })
 
+// docs/specs/05-organization-workspace.md §6, the last tab. its subject is `Zranenia`: the
+// column is nullable, so it has **three** states and this is where all three are seen on one
+// screen at once. a per-cell assertion cannot show that they are three different renderings;
+// counting them on the rendered register can.
+describe('the occurrence tab lists its own operator, and states three things about injuries', () => {
+  const occurrences = (markup: string, needle: string) => markup.split(needle).length - 1
+
+  it('lists the operator occurrence reports and names the flight one of them reports on', async () => {
+    const markup = await open(
+      memberOf(ids.people.alphaManager),
+      ids.organizations.alpha,
+      INCIDENTS_TAB,
+    )
+
+    expect(markup).toContain('Placeholder Occurrence With Injury')
+    expect(markup).toContain('Placeholder Occurrence Without Injury')
+    expect(markup).toContain('Placeholder Occurrence Unanswered')
+    expect(markup).toContain('14.05.2026')
+
+    // `Let` is the linked flight's own display name. the incident naming it is the one filed
+    // against the flight whose parse failed - a failed parse is still a record.
+    expect(markup).toContain('placeholder-flight-0003.txt')
+  })
+
+  it('renders yes, an answered no and nobody answering as three distinct cells', async () => {
+    // the exception doc 05 records beside its affirmative-only rule. `Hlavná` and `Verejné`
+    // are `not null default false` and state the affirmative only, because a negative word in
+    // every row would claim a fact the column cannot carry. this column can carry it: one
+    // report says somebody was hurt, one says nobody was, and one was never answered.
+    const markup = await open(
+      memberOf(ids.people.alphaManager),
+      ids.organizations.alpha,
+      INCIDENTS_TAB,
+    )
+
+    expect(occurrences(markup, t('incident.injuries.yes'))).toBe(1)
+    expect(occurrences(markup, t('incident.injuries.no'))).toBe(1)
+
+    // three blanks and not one: the unanswered injury, and the two reports naming no flight.
+    // collapse the answered no into a blank and this becomes four.
+    expect(occurrences(markup, t('table.blank'))).toBe(3)
+  })
+
+  it('lists none of the other operator reports', async () => {
+    const markup = await open(
+      memberOf(ids.people.alphaManager),
+      ids.organizations.alpha,
+      INCIDENTS_TAB,
+    )
+    expect(markup).not.toContain('Placeholder Bravo Occurrence')
+  })
+
+  it('shows the other operator their own, which is the half that makes the first mean something', async () => {
+    const markup = await open(
+      memberOf(ids.people.bravoManager),
+      ids.organizations.bravo,
+      INCIDENTS_TAB,
+    )
+
+    expect(markup).toContain('Placeholder Bravo Occurrence')
+    expect(markup).not.toContain('Placeholder Occurrence With Injury')
+  })
+
+  it('reads an operator with no reports as empty rather than as everyone else', async () => {
+    const markup = await open(superadmin(), delta, INCIDENTS_TAB)
+
+    expect(markup).toContain(t('organization.workspace.incidents.empty'))
+    expect(markup).not.toContain('Placeholder Occurrence With Injury')
+  })
+})
+
 describe('an organisation the session holds no membership of', () => {
   it('is not-found for a member, because the read returns no row to render', async () => {
     // not a refusal: a forbidden response would confirm the organisation is real
@@ -416,20 +488,22 @@ describe('which tab the request opened', () => {
   it('renders the first tab when no tab is named, and runs that tab query alone', async () => {
     const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha)
 
-    // tab 0's own register and no other: the absence of every serial and of every stored
-    // filename is the evidence that neither the fleet loader nor any of the three document
+    // tab 0's own register and no other: the absence of every serial, of every stored
+    // filename and of every occurrence title is the evidence that none of the other six
     // loaders was ever awaited
     expect(markup).toContain('Alpha Manager')
     expect(markup).not.toContain('SN-')
     expect(markup).not.toContain('placeholder-alpha-permit.pdf')
     expect(markup).not.toContain('Alpha Occurrence Form')
+    expect(markup).not.toContain('Placeholder Occurrence With Injury')
   })
 
-  it('renders every tab label, so the one unbuilt tab is still addressable', async () => {
+  it('renders every tab label, so all seven are addressable from any one of them', async () => {
     const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, UAS_TAB)
 
     expect(markup).toContain(t('organization.workspace.tab.uas'))
     expect(markup).toContain(t('document.category.permits'))
+    expect(markup).toContain(t('organization.workspace.tab.incidents'))
     expect(markup).toContain('?activeRelationManager=6')
   })
 

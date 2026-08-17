@@ -19,7 +19,7 @@ import { withTenant } from '@/lib/tenant/tenant-context'
 //
 // no branch here asks whether the session is allowed. `findOrganization` returns no row for
 // an organisation they hold no membership of, and a page with nothing to render is
-// not-found - the same shape the two file routes already use, and the reason refusing would
+// not-found - the same shape the three file routes already use, and the reason refusing would
 // be worse: it would confirm the organisation is real.
 //
 // the organisation form doc 04 owns sits at the top of this screen in the predecessor. it
@@ -49,11 +49,11 @@ export default async function OrganizationWorkspacePage({
   // one transaction, and inside it exactly one register read: the tab that was asked for.
   // doc 05 says the tabs "load lazily - each is fetched only when opened", and this is that
   // behaviour rather than its mechanism. the predecessor fetched on click; a server-rendered
-  // page runs one query per request, and six loaders are never awaited.
+  // page runs one query per request, and the other six loaders are never awaited.
   const opened = await withTenant(db, session, async (tx) => {
     const organization = await findOrganization(tx, id)
     if (!organization) return null
-    return { organization, rows: tab.register ? await tab.register.load(tx, organization.id) : null }
+    return { organization, rows: await tab.register.load(tx, organization.id) }
   })
   if (!opened) notFound()
 
@@ -71,9 +71,7 @@ export default async function OrganizationWorkspacePage({
           </a>
         ))}
       </nav>
-      {tab.register && opened.rows !== null && (
-        <IndexTable declaration={tab.register.declaration} rows={opened.rows} />
-      )}
+      <IndexTable declaration={tab.register.declaration} rows={opened.rows} />
     </main>
   )
 }

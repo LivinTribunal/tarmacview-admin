@@ -202,7 +202,7 @@ filters `Vypršané` / `Platné`; actions `Pridať školenie`, `Upraviť`, `Odst
 ## The workspace in the rebuild — decided
 
 A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
-standing autonomy grant and recorded on issues #70, #73 and #75. The owner has not reviewed
+standing autonomy grant and recorded on issues #70, #73, #75 and #82. The owner has not reviewed
 it: settled enough to build on, open enough to overturn. Everything above this line is what
 was Observed of the predecessor, and nothing here may be edited into it — in particular the
 tab table and the two *"columns not observed"* notes stay exactly as they are.
@@ -246,8 +246,20 @@ allowed — refusing would confirm the organisation is real. A `superadmin` reac
 organisation. This is the workspace's one security property and it is asserted against a
 real database and the real policies.
 
-**Tabs 0 through 5 are built.** Each is an index table over an organisation-scoped read and
-nothing more. Tab 6, the occurrence register, renders its label and queries nothing.
+**All seven tabs are built.** Each is an index table over an organisation-scoped read and
+nothing more.
+
+**§6's column list is *(inferred)***, the way §3's is and for the same reason: §6 above records
+the register as empty and says *"Expect at least"* four columns. The rebuild declares those
+four — `Názov` · `Dátum` · `Let` · `Zranenia` — and invents no fifth, so nothing here is
+presented as captured. `Let` renders the linked flight's own display name and is blank where
+the report names none, which §6 calls *optional* and
+[03-data-model.md](03-data-model.md) §"Incidents in the rebuild" keeps writable.
+
+The file §6 records is served, like §3's, §4's and §5's — but through a route of its own rather
+than the document one, because it is a column on its own table. **No cell links to it**: §6
+names no file column, the column is nullable, and a link on every row would point at nothing
+for every report carrying no file.
 
 **There is no relation-manager abstraction, and the document buckets settled that rather
 than deferring it.** Six tabs was where a shape was expected to become visible. What
@@ -314,6 +326,24 @@ from "nobody ever set one". The cell states the affirmative where the flag is se
 blank where it is not; a negative word in every row would state a fact the column does not
 carry. An organisation with no primary contact therefore reads as a gap, which is what it is.
 
+**`Zranenia` is the exception, and states three things.** §6's toggle asks *"Došlo k zraneniu
+osôb?"*, and the rebuild makes `incident.injuries` **nullable** where the two columns the rule
+above covers are `not null default false` — see
+[03-data-model.md](03-data-model.md) §"Incidents in the rebuild". So the reasoning that
+produced the rule does not reach it: a column that *can* tell an answered **no** from an
+unanswered question is not stating a fact it does not carry when it prints one. The cell
+renders `Áno` where somebody answered yes, `Nie` where somebody answered no, and the blank
+marker where nobody answered at all.
+
+It is written down here, beside the rule and as a deliberate exception, because that is where
+the argument for one belongs — the alternative is a divergence a later audit discovers and
+files as a defect. What earns it is the record rather than the column type: an occurrence
+report is a form somebody filled in, and *"no, nobody was injured"* is the answer a CAMO is
+keeping the report for. Collapsing it into the same blank as *nobody said* would read as an
+all-clear on the one register where the absence of one is the finding. **Nothing about
+`Hlavná`, `Verejné` or `Tmavá mapa` changes**: all three remain `not null default false` and
+all three remain affirmative-only.
+
 `Telefón` and `Pozícia` were not on the rebuild's `person`; migration `0012` adds them and
 `Poznámka` is left out — see [03-data-model.md](03-data-model.md) §"Contact and job-title
 columns in the rebuild".
@@ -331,12 +361,14 @@ Two readings of §2 above that the capture does not settle:
   interval, so the airframe can never register a violation or a service warning — see
   [03-data-model.md](03-data-model.md) §Device.
 
-**No row action, no bulk action and no filter** on any of the six built tabs. `Upraviť`,
-`Vymazať`, `Vymazať vybrané`, `Odstrániť`, `Odstrániť vybrané`, the `Stav`, `Rola` and
-`Verejné` filters, `Hlavná kontaktná osoba` and the two `Odobrať` actions are all Observed and
-all from a GET-only capture; no route is served for any of them and no write path exists, so
-the declarations carry none of them rather than offering chrome wired to nothing. The
-`Verejné` filter is the one with a reason of its own, two sections up.
+**No row action, no bulk action and no filter** on any of the seven tabs. `Upraviť`,
+`Vymazať`, `Vymazať vybrané`, `Odstrániť`, `Odstrániť vybrané`, the `Stav`, `Rola`, `Verejné`
+and `Posledných 30 dní` filters, `Hlavná kontaktná osoba` and the two `Odobrať` actions are all
+Observed and all from a GET-only capture; no route is served for any of them and no write path
+exists, so the declarations carry none of them rather than offering chrome wired to nothing.
+The `Verejné` filter is the one with a reason of its own, two sections up — and §6's
+`Posledných 30 dní` is the opposite case again, a relative date window rather than a fixed
+option list, so it needs more of the filter panel than `Verejné` does rather than less.
 
 `Stiahnuť` is the exception, and it is a **read**: §3, §4 and §5 each link the filename cell
 at the one file route, so the action is served rather than deferred.

@@ -1,12 +1,13 @@
-import { readFile } from 'node:fs/promises'
-import { extname } from 'node:path'
-import { resolveStoredFile, type StoredFile } from '@/lib/files/storage'
+import { readStoredFile, type StoredFile } from '@/lib/files/storage'
 import { findOrganization } from '@/lib/tenant/scoped-organizations'
 import type { TenantTransaction } from '@/lib/tenant/tenant-context'
 
 // PNG, JPG and WebP - docs/specs/04-admin-resources.md §OrganizationResource states them
 // for the logo field. decided from the stored extension against this list and never off
 // anything a request carries: a chosen content type turns a stored file into script.
+//
+// the narrowest of the three lists, and the only one carrying `.webp`. it serves no office
+// type and no pdf at all, which is what keeps a logo cell from ever rendering a document.
 const contentTypes: Readonly<Record<string, string>> = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
@@ -21,8 +22,7 @@ const contentTypes: Readonly<Record<string, string>> = {
 //
 // every gap is the same null, and the caller cannot tell them apart: no row, no stored
 // path, a path that escapes the storage root, an extension nothing serves, or no file on
-// the disk. the extension is checked before the filesystem is touched, so a poisoned path
-// with a name nothing serves never becomes a read.
+// the disk.
 export async function readOrganizationLogo(
   tx: TenantTransaction,
   id: number,
@@ -30,16 +30,5 @@ export async function readOrganizationLogo(
   const found = await findOrganization(tx, id)
   if (!found?.logoPath) return null
 
-  const contentType = contentTypes[extname(found.logoPath).toLowerCase()]
-  if (!contentType) return null
-
-  const file = resolveStoredFile(found.logoPath)
-  if (file === null) return null
-
-  try {
-    return { bytes: await readFile(file), contentType }
-  } catch {
-    // a row naming a file the disk does not have is a gap, not a crash
-    return null
-  }
+  return readStoredFile(found.logoPath, contentTypes)
 }
