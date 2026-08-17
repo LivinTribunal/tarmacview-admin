@@ -40,6 +40,12 @@ describe('the VLOS judgement: one violation, and three ways to be false', () => 
     expect(flightReportRow(noDeviceType).has_vlos_violation).toBe(false)
   })
 
+  // a stated ceiling, because this one asserts less than it looks like it does. it pins the
+  // *behaviour* and not the guard behind it: `Number(null)` is 0 and 0 cannot exceed a
+  // non-negative limit, so deleting `maxDistanceMeters !== null` from the judgement leaves
+  // this green - measured, 535 passed, exit 0. the guard stays because it names the third
+  // branch outright and keeps holding if how a null serialises ever changes; what no test
+  // here can claim is that it is load-bearing today.
   it('is false with no distance recorded, because there is nothing to judge', () => {
     expect(flightReportRow(nothingRecorded).has_vlos_violation).toBe(false)
   })
