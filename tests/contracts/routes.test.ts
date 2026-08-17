@@ -46,10 +46,15 @@ function servedPaths(dir: string, prefix = ''): string[] {
 
 const served = servedPaths(join(repoRoot, 'src/app'))
 
-// the registers the rebuild serves today. the oracle carries path shapes for resources
-// nobody has built yet, and those are not failures - so the filter is the built set, and a
-// register joins it when its slice lands.
+// the paths the rebuild serves today. the oracle carries path shapes for resources nobody
+// has built yet, and those are not failures - so the filter is the built set, and a path
+// joins it when its slice lands.
+//
+// each entry is matched as a prefix, so the report's data endpoint is named in full: the
+// rest of `/organization-reports/…` - the page, the print view, the three download paths -
+// is R2 to R6 and is not served yet.
 const registers = [
+  '/organization-reports/{org}/data',
   '/admin/device-types',
   '/admin/flights',
   '/admin/general-documents',

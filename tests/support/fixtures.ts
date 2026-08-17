@@ -172,8 +172,14 @@ const trainings = [
 // names which one refused would then be asserting an ordering Postgres never promised.
 //
 // every value is invented, filenames included: a real log name carries a controller serial
-// and a date, and neither belongs in this repo.
+// and a date, and neither belongs in this repo. the dates are invented too, and chosen for
+// what they make expressible: `importedAt` is the import instant and each leg states its own
+// start, which is where the report derives a flight's date from -
+// docs/specs/03-data-model.md §"Flights in the rebuild". a default `created_at` and legs
+// with no start could express neither branch of that fallback.
 const flights = [
+  // imported in august and flown in july, which is the case the derivation exists for: a
+  // report keyed on the import instant would file this flight under the wrong month
   {
     key: 'alphaImported',
     organization: 'alpha',
@@ -188,7 +194,8 @@ const flights = [
     maxAltitudeMeters: '95.5',
     maxDistanceMeters: '420.25',
     totalDistanceMeters: '1830.75',
-    legs: 2,
+    importedAt: '2026-08-03T08:00:00Z',
+    legs: ['2026-07-14T09:00:00Z', '2026-07-14T11:30:00Z'],
   },
 
   // no pilot, no airframe and nobody named as the importer. that is the normal state of a
@@ -208,7 +215,11 @@ const flights = [
     maxAltitudeMeters: '48',
     maxDistanceMeters: '110',
     totalDistanceMeters: '640',
-    legs: 1,
+    importedAt: '2026-08-05T09:00:00Z',
+
+    // its one leg states no start. the fallback keys on there being no earliest start and
+    // not on there being no legs, and this is the row that tells those two readings apart.
+    legs: [null],
   },
 
   // the parse failed, so there are no legs and no measurements - and the row is retained,
@@ -227,7 +238,8 @@ const flights = [
     maxAltitudeMeters: null,
     maxDistanceMeters: null,
     totalDistanceMeters: null,
-    legs: 0,
+    importedAt: '2026-08-06T10:00:00Z',
+    legs: [],
   },
 
   // manually entered, so nothing was parsed and the status is null rather than a state
@@ -246,7 +258,8 @@ const flights = [
     maxAltitudeMeters: '60',
     maxDistanceMeters: '250',
     totalDistanceMeters: '900',
-    legs: 0,
+    importedAt: '2026-08-07T11:00:00Z',
+    legs: [],
   },
 ] as const
 
@@ -649,16 +662,18 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
           maxAltitudeMeters: entry.maxAltitudeMeters,
           maxDistanceMeters: entry.maxDistanceMeters,
           totalDistanceMeters: entry.totalDistanceMeters,
+          createdAt: new Date(entry.importedAt),
         })
         .returning({ id: flight.id }),
     )
 
     // the legs carry the tenant themselves rather than reaching the flight for it, the way
     // the training pivot does - and the composite foreign key is what stops it drifting
-    for (let leg = 0; leg < entry.legs; leg += 1) {
+    for (const startedAt of entry.legs) {
       await db.insert(flightLog).values({
         flightId: flightIds[entry.key],
         organizationId,
+        startedAt: startedAt === null ? null : new Date(startedAt),
         durationSeconds: 600,
         distanceMeters: '300',
         maxAltitudeMeters: '45',
