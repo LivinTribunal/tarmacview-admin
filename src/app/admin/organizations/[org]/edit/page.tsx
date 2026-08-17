@@ -9,8 +9,8 @@ import { findOrganization } from '@/lib/tenant/scoped-organizations'
 import { withTenant } from '@/lib/tenant/tenant-context'
 
 // the organisation workspace - docs/specs/05-organization-workspace.md, the screen doc 05
-// calls the operator's compliance file. this slice is the shell and one sub-register: tab
-// 2, the UAS register of this organisation.
+// calls the operator's compliance file. which tabs are built is stated once, in
+// src/lib/organizations/workspace.ts beside the tab table itself.
 //
 // the directory is `[org]` and not `[id]`, unlike every sibling register. the oracle spells
 // the path `/admin/organizations/{org}/edit` and tests/contracts/routes.test.ts maps a

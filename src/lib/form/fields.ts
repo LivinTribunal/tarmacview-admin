@@ -15,6 +15,9 @@ export type FormField = {
   // absent on a hidden input alone, which renders no label. inventing a string nobody can
   // ever see would be a translatable message with no reader.
   labelKey?: MessageKey
+  // every member is an `<input type>` except `button`, which is the `<button type>`
+  // attribute the capture records beside `control: 'button'` - contracts/forms/maps.json,
+  // and the oracle is never edited to agree with us
   type?:
     | 'text'
     | 'number'

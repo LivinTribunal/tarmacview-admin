@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { mayManageGlobalDocuments } from '@/lib/auth/capabilities'
 import {
   generalDocumentTable,
   generalDocumentTableRow,
@@ -40,7 +41,7 @@ const entry: DocumentEntry = {
 describe('general document index columns', () => {
   it('declares the eight columns the spec lists, in order, and no ID column', () => {
     // the one register in doc 04 whose column list does not open with `ID^`
-    expect(generalDocumentTable.columns.map((column) => column.key)).toEqual([
+    expect(generalDocumentTable(true).columns.map((column) => column.key)).toEqual([
       'name',
       'file',
       'link',
@@ -54,34 +55,43 @@ describe('general document index columns', () => {
 
   it('marks sortable only the columns carrying `^`', () => {
     expect(
-      generalDocumentTable.columns.filter((column) => !column.sortable).map((column) => column.key),
+      generalDocumentTable(true).columns.filter((column) => !column.sortable).map((column) => column.key),
     ).toEqual(['file', 'link', 'category', 'created_at'])
   })
 
   it('hides the column doc 04 marks *(toggle)* until a reader enables it', () => {
     expect(
-      generalDocumentTable.columns
+      generalDocumentTable(true).columns
         .filter((column) => column.hiddenByDefault)
         .map((column) => column.key),
     ).toEqual(['created_at'])
   })
 
   it('declares no filters and no bulk action', () => {
-    expect(generalDocumentTable.filters).toBeUndefined()
-    expect(generalDocumentTable.bulkActionKey).toBeUndefined()
+    expect(generalDocumentTable(true).filters).toBeUndefined()
+    expect(generalDocumentTable(true).bulkActionKey).toBeUndefined()
   })
 
-  it('points its row action at a route that is actually served', () => {
-    expect(generalDocumentTable.editPath).toBe('/admin/general-documents/{id}/edit')
+  it('points its row action at a route that is actually served, and only for a session that could complete it', () => {
+    expect(generalDocumentTable(true).editPath).toBe('/admin/general-documents/{id}/edit')
+    expect(generalDocumentTable(false).editPath).toBeUndefined()
+  })
+
+  it('offers the row action to a superadmin and to nobody else', () => {
+    // the narrowing is of the acting session's system role, not of the capability matrix,
+    // which carries no row for the global library at all -
+    // `document_global_update_superadmin_only` is what refuses the write
+    expect(mayManageGlobalDocuments('superadmin')).toBe(true)
+    expect(mayManageGlobalDocuments('member')).toBe(false)
   })
 
   it('reaches the file through the row id and through nothing else', () => {
     // `Odkaz` renders the serving route for the row - the stored path is not in the
     // declaration, is not in the cell, and cannot reach the browser
-    const link = generalDocumentTable.columns.find((column) => column.key === 'link')
+    const link = generalDocumentTable(true).columns.find((column) => column.key === 'link')
     expect(link?.linkPath).toBe('/api/documents/{id}/file')
     expect(
-      generalDocumentTable.columns.filter((column) => column.linkPath).map((column) => column.key),
+      generalDocumentTable(true).columns.filter((column) => column.linkPath).map((column) => column.key),
     ).toEqual(['link'])
   })
 })
@@ -89,7 +99,7 @@ describe('general document index columns', () => {
 describe('general document index rows', () => {
   it('carries a cell for every declared column', () => {
     const row = generalDocumentTableRow(entry)
-    for (const column of generalDocumentTable.columns) {
+    for (const column of generalDocumentTable(true).columns) {
       expect(row, `${column.key} has no cell`).toHaveProperty(column.key)
     }
   })
@@ -245,12 +255,9 @@ describe('the workspace document tabs declare doc 05 columns, in order', () => {
     expect(keys).not.toContain('document.index.empty')
   })
 
-  it('keys the column-visibility store separately per tab, and apart from the library', () => {
-    const resources = [generalDocumentTable, ...workspaceTables.map(([, table]) => table)].map(
-      (declaration) => declaration.resource,
-    )
-    expect(new Set(resources).size).toBe(resources.length)
-  })
+  // the column-visibility key is asserted unique across every declaration in the repo, not
+  // just across this family - tests/domain/index-table-view.test.ts, the shared chrome's own
+  // suite, where the key lives
 
   it('shows `Nahrané` by default, unlike the register doc 04 marks it *(toggle)* on', () => {
     for (const [bucket, declaration] of workspaceTables) {

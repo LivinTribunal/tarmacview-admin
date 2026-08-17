@@ -55,8 +55,8 @@ const registers = [
   '/admin/general-documents',
   '/admin/maps',
   '/admin/organizations',
-  '/admin/trainings',
   '/admin/training-types',
+  '/admin/trainings',
   '/admin/users',
 ]
 

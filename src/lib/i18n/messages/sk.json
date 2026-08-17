@@ -201,6 +201,5 @@
   "map.field.slug": "Slug",
   "map.field.allow_dark_basemap": "Povoliť prepínanie tmavej mapy",
   "map.field.organizations": "Organizácie",
-  "map.darkBasemap.on": "Áno",
-  "map.darkBasemap.off": "Nie"
+  "map.darkBasemap.yes": "Áno"
 }

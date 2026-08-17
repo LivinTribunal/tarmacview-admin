@@ -1,4 +1,22 @@
 import { describe, expect, it } from 'vitest'
+import { deviceTypeTable } from '@/lib/device-types/fields'
+import { airframeTable } from '@/lib/devices/fields'
+import {
+  generalDocumentTable,
+  organizationFormTable,
+  organizationOperationsTable,
+  organizationPermitTable,
+} from '@/lib/documents/fields'
+import { flightTable } from '@/lib/flights/fields'
+import { mapTable } from '@/lib/maps/fields'
+import { organizationTable } from '@/lib/organizations/fields'
+import { trainingTypeTable } from '@/lib/training-types/fields'
+import { trainingTable } from '@/lib/trainings/fields'
+import {
+  organizationPersonTable,
+  organizationPilotTable,
+  personTable,
+} from '@/lib/users/fields'
 import {
   formatCell,
   initialState,
@@ -169,6 +187,48 @@ describe('index table: filters', () => {
 
   it('resets to the whole register when the selection is cleared', () => {
     expect(tableView(rows, declaration, state({ filters: { status: '' } })).matched).toBe(12)
+  })
+})
+
+// `resource` is the localStorage key the column-visibility store is written under
+// (src/components/index-table.tsx), so two declarations sharing one would silently share a
+// reader's hidden columns. asserted here, over every declaration in the repo, rather than
+// per family: a collision is between declarations that never meet in one suite.
+describe('index table: the column-visibility key', () => {
+  const declarations = [
+    airframeTable,
+    deviceTypeTable(true),
+    flightTable,
+    generalDocumentTable(true),
+    mapTable(true),
+    organizationFormTable,
+    organizationOperationsTable,
+    organizationPermitTable,
+    organizationPersonTable,
+    organizationPilotTable,
+    organizationTable,
+    personTable(true),
+    trainingTable,
+    trainingTypeTable,
+  ]
+
+  it('is unique across every declared register and workspace tab', () => {
+    const resources = declarations.map((table) => table.resource)
+    expect(new Set(resources).size).toBe(resources.length)
+  })
+
+  it('names every workspace tab with the prefix its siblings carry', () => {
+    // a tab's key has to stay clear of the deployment-wide register over the same entity -
+    // there is no /admin/devices today and the UAS tab must not be holding its key
+    const tabs = [
+      airframeTable,
+      organizationFormTable,
+      organizationOperationsTable,
+      organizationPermitTable,
+      organizationPersonTable,
+      organizationPilotTable,
+    ]
+    expect(tabs.every((table) => table.resource.startsWith('organization-'))).toBe(true)
   })
 })
 

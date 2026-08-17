@@ -81,8 +81,10 @@ export function mapTable(mayManage: boolean): TableDeclaration {
 
 // flattens a map into the record the chrome renders.
 //
-// `Tmavá mapa` is a stated fact in both directions, so it never renders the blank marker: a
-// map that does not offer the toggle is not a map nobody recorded a toggle for.
+// `Tmavá mapa` states the affirmative and says nothing where the flag is clear, the rule
+// docs/specs/05-organization-workspace.md §"`Hlavná` renders the flag and never a negative"
+// sets out - `allow_dark_basemap` is the same `not null default false` shape as
+// `is_primary_contact` and `is_public`, and carries no more than they do.
 //
 // `Na mape` stays the number it is, so the count of a map with no layers reads as `0` rather
 // than as a gap - there is nothing missing about a map nothing has been uploaded to yet.
@@ -91,7 +93,7 @@ export function mapTableRow(entry: MapEntry): TableRow {
     id: entry.id,
     name: entry.name,
     slug: entry.slug,
-    dark_basemap: t(entry.allowDarkBasemap ? 'map.darkBasemap.on' : 'map.darkBasemap.off'),
+    dark_basemap: entry.allowDarkBasemap ? t('map.darkBasemap.yes') : null,
     kml_files: entry.layerCount,
     created_at: formatDate(entry.createdAt),
   }

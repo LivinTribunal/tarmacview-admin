@@ -332,11 +332,15 @@ Two readings of §2 above that the capture does not settle:
   interval, so the airframe can never register a violation or a service warning — see
   [03-data-model.md](03-data-model.md) §Device.
 
-**No row action, no bulk action and no filter** on any of the three built tabs. `Upraviť`,
-`Vymazať`, `Vymazať vybrané`, the `Stav` and `Rola` filters, `Hlavná kontaktná osoba` and the
-two `Odobrať` actions are all Observed and all from a GET-only capture; no route is served for
-any of them and no write path exists, so the declarations carry none of them rather than
-offering chrome wired to nothing.
+**No row action, no bulk action and no filter** on any of the six built tabs. `Upraviť`,
+`Vymazať`, `Vymazať vybrané`, `Odstrániť`, `Odstrániť vybrané`, the `Stav`, `Rola` and
+`Verejné` filters, `Hlavná kontaktná osoba` and the two `Odobrať` actions are all Observed and
+all from a GET-only capture; no route is served for any of them and no write path exists, so
+the declarations carry none of them rather than offering chrome wired to nothing. The
+`Verejné` filter is the one with a reason of its own, two sections up.
+
+`Stiahnuť` is the exception, and it is a **read**: §3, §4 and §5 each link the filename cell
+at the one file route, so the action is served rather than deferred.
 
 When one is wired, `Odobrať z organizácie` and `Odobrať z osôb organizácie` remove a
 **membership** and never a person — [CONTEXT.md](../../CONTEXT.md) §"Attach / detach".

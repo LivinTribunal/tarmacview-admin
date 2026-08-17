@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { t } from '@/lib/i18n'
 import { formatCell } from '@/lib/table/view'
 import { mapTable, mapTableRow } from '@/lib/maps/fields'
 
@@ -75,8 +76,16 @@ describe('map index rows', () => {
     expect(formatCell(row.kml_files ?? null)).toBe('0')
   })
 
-  it('states the dark-basemap toggle in both directions, because neither is a gap', () => {
-    expect(mapTableRow(entry).dark_basemap).toBe('Áno')
-    expect(mapTableRow({ ...entry, allowDarkBasemap: false }).dark_basemap).toBe('Nie')
+  it('states `Tmavá mapa` where the toggle is offered and says nothing where it is not', () => {
+    // `allow_dark_basemap` is `not null default false`, so the column cannot tell "this map
+    // deliberately offers no dark basemap" from "nobody ever set one" - the same shape and
+    // the same rule as `Hlavná` and `Verejné`
+    expect(mapTableRow(entry).dark_basemap).toBe(t('map.darkBasemap.yes'))
+
+    const plain = mapTableRow({ ...entry, allowDarkBasemap: false })
+    expect(plain.dark_basemap).toBeNull()
+    expect(formatCell(plain.dark_basemap ?? null)).toBeNull()
+    // and the rest of the row still says which map it is
+    expect(plain.name).toBe('Placeholder Geozones')
   })
 })
