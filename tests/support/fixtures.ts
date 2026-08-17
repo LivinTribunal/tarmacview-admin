@@ -53,7 +53,7 @@ const organizations = [
 // `PHONE-PLACEHOLDER-…` cannot be mistaken for a real pilot's, and `phone_number` is
 // `text` so nothing forces a realistic value.
 //
-// one person carries a phone and a post and the other three carry neither, so the
+// one person carries a phone and a job title and the other three carry neither, so the
 // workspace's people tabs have a subject for both the filled cell and the blank one.
 const people = [
   {

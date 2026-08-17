@@ -281,17 +281,9 @@ from "nobody ever set one". The cell states the affirmative where the flag is se
 blank where it is not; a negative word in every row would state a fact the column does not
 carry. An organisation with no primary contact therefore reads as a gap, which is what it is.
 
-**No row action, no bulk action and no filter** on these two either, for the reason tab 2
-carries none. `Rola`, `Hlavná kontaktná osoba`, `Upraviť` and the two `Odobrať` actions are
-Observed from a GET-only capture and no write path exists. When one is wired, `Odobrať z
-organizácie` and `Odobrať z osôb organizácie` remove a **membership** and never a person —
-[CONTEXT.md](../../CONTEXT.md) §"Attach / detach". Detaching a pilot who has flown must leave
-the flight history that names them intact.
-
-**The two columns doc 05 needs and the schema lacked.** `Telefón` and `Pozícia` were not on
-the rebuild's `person`, because the register that landed first collects neither; migration
-`0012` adds them, and `Poznámka` is left out — see [03-data-model.md](03-data-model.md)
-§"Contact and post columns in the rebuild".
+`Telefón` and `Pozícia` were not on the rebuild's `person`; migration `0012` adds them and
+`Poznámka` is left out — see [03-data-model.md](03-data-model.md) §"Contact and job-title
+columns in the rebuild".
 
 Two readings of §2 above that the capture does not settle:
 
@@ -306,7 +298,12 @@ Two readings of §2 above that the capture does not settle:
   interval, so the airframe can never register a violation or a service warning — see
   [03-data-model.md](03-data-model.md) §Device.
 
-**No row action, no bulk action and no filter** on this tab. `Upraviť`, `Vymazať`,
-`Vymazať vybrané` and the `Stav` filter are all Observed and all from a GET-only capture; no
-airframe route is served and no write path exists, so the declaration carries none of them
-rather than offering chrome wired to nothing.
+**No row action, no bulk action and no filter** on any of the three built tabs. `Upraviť`,
+`Vymazať`, `Vymazať vybrané`, the `Stav` and `Rola` filters, `Hlavná kontaktná osoba` and the
+two `Odobrať` actions are all Observed and all from a GET-only capture; no route is served for
+any of them and no write path exists, so the declarations carry none of them rather than
+offering chrome wired to nothing.
+
+When one is wired, `Odobrať z organizácie` and `Odobrať z osôb organizácie` remove a
+**membership** and never a person — [CONTEXT.md](../../CONTEXT.md) §"Attach / detach".
+Detaching a pilot who has flown must leave the flight history that names them intact.

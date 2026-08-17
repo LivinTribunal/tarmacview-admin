@@ -1,5 +1,5 @@
 -- generator output. doc 05 §0's `Telefón` and `Pozícia` columns as two columns on `person`
--- - docs/specs/03-data-model.md §"Contact and post columns in the rebuild". doc 03 records
+-- - docs/specs/03-data-model.md §"Contact and job-title columns in the rebuild". doc 03 records
 -- all three of the predecessor's contact fields as Observed; `note` is left out here,
 -- because no column in either people tab renders it and no write path fills it.
 --

@@ -288,7 +288,7 @@ account nobody could sign in with. In code: `accountProvisioning()` in
 a resource yet, and deciding this inside the first write path that needs it would be deciding
 it in the dark.
 
-### Contact and post columns in the rebuild — decided
+### Contact and job-title columns in the rebuild — decided
 
 A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
 standing autonomy grant and recorded on issue #73. The owner has not reviewed it: settled
@@ -311,7 +311,7 @@ that shows it.
 stated here rather than discovered later. §"Organisation membership (pivot)" below records —
 Observed — that the three may live on the pivot or on the user, and the capture could not
 distinguish them; `position` is *"Job title within the organisation"*, so a column on
-`person` gives one post across every organisation a person belongs to. That row is not edited
+`person` gives one job title across every organisation a person belongs to. That row is not edited
 by this decision. Today every person holds one membership, so nothing observes the
 difference — the same footing §"Membership in the rebuild" put its own one-organisation
 semantics on, and moving a column to the pivot later is cheaper than a policy is.

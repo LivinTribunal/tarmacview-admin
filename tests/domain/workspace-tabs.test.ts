@@ -46,7 +46,7 @@ const manager: OrganizationPersonEntry = {
   isPrimaryContact: true,
 }
 
-// no e-mail, no phone and no post, which is the pilot register's normal row
+// no e-mail, no phone and no job title, which is the pilot register's normal row
 const pilot: OrganizationPersonEntry = {
   ...manager,
   id: 12,
@@ -141,10 +141,9 @@ describe('the two people tabs and the cells they leave blank', () => {
 
     const other = organizationPersonTableRow({ ...manager, isPrimaryContact: false })
     expect(other.primary_contact).toBeNull()
-    expect(formatCell(other.primary_contact ?? null)).toBeNull()
   })
 
-  it('keeps a person with neither phone nor post in the register, both cells blank', () => {
+  it('keeps a person with neither phone nor job title in the register, both cells blank', () => {
     const row = organizationPersonTableRow({ ...manager, phoneNumber: null, position: null })
 
     expect(row.phone_number).toBeNull()

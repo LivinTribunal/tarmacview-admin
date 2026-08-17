@@ -193,7 +193,7 @@ describe('the organisation filter is a selection and the policy is the boundary'
 })
 
 describe('the two people tabs of an organisation the session belongs to', () => {
-  it('lists the accountable people on tab 0, with their post and their phone', async () => {
+  it('lists the accountable people on tab 0, with their job title and their phone', async () => {
     const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, PEOPLE_TAB)
 
     expect(markup).toContain('Alpha Manager')
@@ -265,7 +265,7 @@ describe('the two tabs together cover every membership and neither lists a perso
 // be - a policy is on the table rather than on its columns - so what has to hold is that
 // the table they landed on is one `person_shared_organization_or_self` already reaches.
 describe('the columns 0012 added are readable only through the person policy', () => {
-  it('gives a shared-organisation member the post', async () => {
+  it('gives a shared-organisation member the job title', async () => {
     const rows = await withTenant(harness.app, memberOf(ids.people.alphaManager), (tx) =>
       listOrganizationPeople(tx, ids.organizations.alpha),
     )
