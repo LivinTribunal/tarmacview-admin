@@ -202,9 +202,10 @@ doc 03 §Document carries no url column, so the two are the stored name and the 
 it. An external-url column the crawl never saw is not ruled out, and a captured record whose
 two cells differ would settle it.
 
-The rebuild resolves half of the paragraph above — `category` is the bucket, which is why no
-captured form collects one — leaves `Platnosť do` a gap and renders it as one, and reaches
-the file through a route taking the row id rather than a stored path — see
+The rebuild resolves half of the `Kategória` / `Platnosť do` gap above — `category` is the
+bucket, which is why no captured form collects one — leaves `Platnosť do` a gap and renders
+it as one, and reaches the file through a route taking the row id rather than a stored
+path — see
 [03-data-model.md](03-data-model.md) §"The global document library in the rebuild" and
 §"Serving a stored file in the rebuild".
 

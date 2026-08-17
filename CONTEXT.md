@@ -142,9 +142,9 @@ predecessor system, which is the source of most of these terms, is in
 
 ## Documents
 
-- **Bucket** — which of the four document registers a document belongs to. It is set by the
-  register a document was added through and never typed by a reader, so it is a
-  discriminator on the row rather than a field on the form.
+- **Bucket** — which of the four document registers a document belongs to. It is a
+  discriminator on the row rather than a field on the form — see
+  `docs/specs/03-data-model.md`.
 - **Global document library** — the deployment-wide bucket, carrying no organisation. Every
   session reads it and only a superadmin writes it, which is the one place in the system
   where those two differ. See [docs/specs/03-data-model.md](docs/specs/03-data-model.md)
