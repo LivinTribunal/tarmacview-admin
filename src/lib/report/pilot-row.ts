@@ -224,8 +224,14 @@ export function pilotReportRow(input: PilotReportInput): PilotReportRow {
 
   // a certificate exists where either half of it was recorded. distinguishing that from a
   // person carrying none is what keeps `Bez expirácie` off a pilot who has no certificate
-  // at all - docs/specs/03-data-model.md §Person records the empty type list as a gap.
-  const certificate = pilot.certificateNumber !== null || pilot.certificateTypes.length > 0
+  // at all - docs/specs/03-data-model.md §"Certificates in the rebuild" records the empty
+  // type list as a gap. all three columns count: a row carrying only an expiry is a
+  // certificate somebody recorded badly, not a pilot who holds none, and reading it as an
+  // absence would render a lapse as a gap and print the expiry beside the denial of it.
+  const certificate =
+    pilot.certificateNumber !== null ||
+    pilot.certificateTypes.length > 0 ||
+    pilot.certificateValidUntil !== null
 
   const certificateStatus: ExpiryStatus = certificate
     ? statedExpiry(pilot.certificateValidUntil, window)

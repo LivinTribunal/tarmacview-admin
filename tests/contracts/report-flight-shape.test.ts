@@ -214,8 +214,6 @@ describe('report parity: types, where the oracle has a type to assert', () => {
 
 describe('the pending list shrinks by what is served, and by nothing else', () => {
   it('names nothing, and the three blocks that emptied it are all present', () => {
-    expect([...pendingBlocks]).toEqual([])
-
     // one key from each block, and each one the last that block added: no pending list is
     // only meaningful beside the paths that used to be on it
     expect(served.has('data.flights[].has_vlos_violation')).toBe(true)

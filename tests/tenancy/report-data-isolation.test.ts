@@ -263,7 +263,6 @@ describe('the service baseline the report serves is composed from stated reading
   })
 
   it('counts lifetime cycles all-time, so they do not move when the period narrows', async () => {
-
     const flownIn = await report(alphaSession(), ids.organizations.alpha, july)
     const quiet = await report(alphaSession(), ids.organizations.alpha, august)
     const of = (payload: typeof quiet) =>

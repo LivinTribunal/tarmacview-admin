@@ -20,8 +20,10 @@ export const REPORT_DAY = new Date('2026-08-15T00:00:00Z')
 // organisation passes something else.
 export const testWindow = (warningDays = 40): ExpiryWindow => expiryWindow(REPORT_DAY, warningDays)
 
-// no e-mail, no certificate and no contact details: the shape of a pilot who exists as the
-// subject of flight records and nothing more, which is the normal case for the register
+// no certificate and no contact details: the shape of a pilot who exists as the subject of
+// flight records and nothing more, which is the normal case for the register. the e-mail is
+// present by default because most suites want a person who can be addressed; the ones
+// exercising `email` being nullable and load-bearing pass `email: null` explicitly
 export function testPerson(overrides: Partial<Person> = {}): Person {
   return {
     id: 1,

@@ -233,8 +233,9 @@ the format it was rendered in is undecidable from the capture — it serialises 
 `flight_date`, and the page renders it through the one date format this application prints.
 
 **The status vocabularies are two, not one shared string.** §Tables below records the valid
-state as `Platné`/`Platná` — two Observed forms, because the predecessor's noun for the
-certificate inflected differently from the one for the training. The rebuild's two nouns are
+state as `Platné`/`Platná` — two Observed forms. *Which* form belonged to `ŠKOLENIE` and
+which to `OSVEDČENIE` was never captured, so that the split followed the two nouns'
+grammatical gender is *(inferred)*; the two strings themselves are Observed. The rebuild's two nouns are
 both neuter, so both read `Platné` today; the keys stay separate anyway, because sharing one
 would be right by accident and wrong the moment a translator sees it.
 

@@ -88,6 +88,24 @@ describe('an absence is never an expiry that has passed, and never a pass either
     expect(none.licence_types).toEqual([])
   })
 
+  // a row carrying only an expiry is a certificate somebody recorded badly, not a pilot who
+  // holds none. reading it as an absence rendered a lapse as a gap and printed the expiry
+  // beside the denial of it - the row contradicting itself in two keys.
+  it('reads an expiry with no number and no types as a certificate, not as an absence', () => {
+    const expiryOnly = pilotReportRow({
+      pilot: testPerson({ certificateValidUntil: '2020-01-01' }),
+      trainings: [],
+      flights: [],
+      window: testWindow(),
+    })
+
+    expect(expiryOnly.licence_status).toBe(t('report.pilot.certificateStatus.expired'))
+    expect(expiryOnly.licence_status).not.toBe(t('report.pilot.certificateStatus.none'))
+
+    // the two keys that used to disagree
+    expect(expiryOnly.licence_date).toBe('2020-01-01')
+  })
+
   it('reads no training at all as a gap, with both headline nulls beside it', () => {
     const none = pilotReportRow({
       pilot: testPerson(),

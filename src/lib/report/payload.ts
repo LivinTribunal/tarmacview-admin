@@ -131,7 +131,9 @@ function groupByPilot<T>(rows: readonly { pilotId: number | null; value: T }[]):
 
   for (const { pilotId, value } of rows) {
     if (pilotId === null) continue
-    grouped.set(pilotId, [...(grouped.get(pilotId) ?? []), value])
+    const group = grouped.get(pilotId) ?? []
+    group.push(value)
+    grouped.set(pilotId, group)
   }
   return grouped
 }
