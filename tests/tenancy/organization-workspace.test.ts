@@ -179,7 +179,11 @@ describe('the organisation filter is a selection and the policy is the boundary'
     const rows = await withTenant(harness.app, memberOf(multiOperator), (tx) =>
       listOrganizationAirframes(tx, ids.organizations.alpha),
     )
-    expect(rows.map((row) => row.serialNumber).sort()).toEqual(['SN-ALPHA-0001', 'SN-ALPHA-0002'])
+    expect(rows.map((row) => row.serialNumber).sort()).toEqual([
+      'SN-ALPHA-0001',
+      'SN-ALPHA-0002',
+      'SN-ALPHA-0004',
+    ])
   })
 
   it('without it, reaches the session own airframes across their organisations and no further', async () => {
@@ -191,6 +195,7 @@ describe('the organisation filter is a selection and the policy is the boundary'
     expect(rows.map((row) => row.serialNumber).sort()).toEqual([
       'SN-ALPHA-0001',
       'SN-ALPHA-0002',
+      'SN-ALPHA-0004',
       'SN-DELTA-0001',
     ])
   })

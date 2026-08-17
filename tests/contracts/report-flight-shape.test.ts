@@ -2,11 +2,14 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { pendingBlocks, reportPayload } from '@/lib/report/payload'
+import type { AirframeReportEntry } from '@/lib/tenant/scoped-airframes'
 import type { FlightReportEntry, FlightSelection } from '@/lib/tenant/scoped-flights'
+import { configuredType, maintenanceRecord, testAirframe } from '../support/airframes'
 import { testFlight } from '../support/flights'
 
-// schema parity over the operator report's envelope and its data.flights[] block, never
-// value parity - the rebuild has its own records (docs/rebuild/00-operating-model.md §5).
+// schema parity over the operator report's envelope and its data.devices[] and
+// data.flights[] blocks, never value parity - the rebuild has its own records
+// (docs/rebuild/00-operating-model.md §5).
 //
 // this suite walks the whole payload rather than one row's key set, because it has two
 // claims to make and the second needs the walk: **no key outside the oracle**, and **the
@@ -65,6 +68,29 @@ function entry(overrides: Partial<FlightReportEntry> = {}): FlightReportEntry {
   }
 }
 
+const asOf = new Date('2026-08-15T00:00:00Z')
+
+// a serviced airframe that is due by cycles, and one with no device type. the first is
+// deliberately overdue: `data.devices[].service_due_reasons[]` is an oracle path that only
+// exists on a row with a reason, so an entirely un-due fleet would leave it unserved and
+// fail the pending-blocks claim below.
+const airframes: AirframeReportEntry[] = [
+  {
+    device: testAirframe({}),
+    deviceType: configuredType(),
+    lifetimeFlights: 200,
+    firstFlightDate: new Date('2026-01-04T09:00:00Z'),
+    maintenance: [maintenanceRecord()],
+  },
+  {
+    device: testAirframe({ id: 2, deviceTypeId: null }),
+    deviceType: null,
+    lifetimeFlights: 0,
+    firstFlightDate: null,
+    maintenance: [],
+  },
+]
+
 // an ordinary flight and the two rows a serialiser is most likely to answer with a null the
 // oracle does not allow: one assigned to nobody, and one whose parse failed and recorded no
 // measurements at all.
@@ -91,7 +117,9 @@ const payload = reportPayload(
       firstLegStartedAt: null,
     }),
   ],
+  airframes,
   selection,
+  asOf,
 )
 
 const served = walk(payload, '$')
@@ -99,17 +127,33 @@ const oraclePaths = oracle.keys.map((key) => key.path)
 const pending = (path: string) =>
   pendingBlocks.some((block) => path === block || path.startsWith(`${block}.`) || path.startsWith(`${block}[`))
 
+// the one subtree the oracle has nothing below: every captured `maintenance_logs` was empty,
+// so the member shape is the rebuild's own and no key under it can be checked against the
+// predecessor - tests/contracts/report-device-shape.test.ts states that ceiling and asserts
+// what it does claim. declared here rather than quietly filtered, because the assertion it
+// carves an exception out of is the payload's whole no-invented-keys claim.
+const ownShape = 'data.devices[].maintenance_logs[]'
+
 describe('report parity: the payload carries the captured paths and no others', () => {
-  it('the oracle carries paths to assert against, and the payload carries flights', () => {
+  it('the oracle carries paths to assert against, and the payload carries both blocks', () => {
     expect(oraclePaths.length).toBeGreaterThan(0)
 
-    // without this the assertions below would pass over an empty array while claiming to
-    // have covered every key under it
+    // without these the assertions below would pass over empty arrays while claiming to
+    // have covered every key under them
     expect(served.has('data.flights[].id')).toBe(true)
+    expect(served.has('data.devices[].id')).toBe(true)
   })
 
-  it('serialises no key the oracle does not carry', () => {
-    expect([...served.keys()].filter((path) => !oraclePaths.includes(path)).sort()).toEqual([])
+  it('serialises no key the oracle does not carry, outside the one subtree that is ours', () => {
+    expect(
+      [...served.keys()]
+        .filter((path) => !oraclePaths.includes(path) && !path.startsWith(ownShape))
+        .sort(),
+    ).toEqual([])
+  })
+
+  it('and that subtree is served, so the exception above is not covering an empty array', () => {
+    expect(served.has(ownShape)).toBe(true)
   })
 
   it('leaves unserved exactly the declared pending blocks', () => {
@@ -128,6 +172,13 @@ describe('report parity: types, where the oracle has a type to assert', () => {
     for (const type of served.get(path) ?? []) {
       expect(key.types, `${path} was ${type}`).toContain(type)
     }
+  })
+})
+
+describe('the pending list shrinks by what is served, and by nothing else', () => {
+  it('names data.pilots only, now that the airframes block is served', () => {
+    expect([...pendingBlocks]).toEqual(['data.pilots'])
+    expect(served.has('data.devices[].service_warning')).toBe(true)
   })
 })
 

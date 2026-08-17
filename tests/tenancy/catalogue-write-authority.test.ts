@@ -63,8 +63,8 @@ describe('the catalogue every session reads', () => {
     expect(entries.map((entry) => entry.name)).toEqual(['Placeholder Quadcopter'])
 
     // the entry is deployment-wide and the count beside it is not: `device` is tenant-owned,
-    // so this member counts the one airframe of theirs that carries the type
-    expect(entries[0]?.airframeCount).toBe(1)
+    // so this member counts the two airframes of theirs that carry the type
+    expect(entries[0]?.airframeCount).toBe(2)
   })
 
   it('lists the same entry to the other operator, which is the half that makes the first mean something', async () => {
@@ -75,7 +75,7 @@ describe('the catalogue every session reads', () => {
 
   it('counts the deployment for a superadmin, so neither count above is the whole fleet', async () => {
     const entries = await withTenant(harness.app, superadminSession(), listDeviceTypes)
-    expect(entries[0]?.airframeCount).toBe(2)
+    expect(entries[0]?.airframeCount).toBe(3)
   })
 
   it('reads nothing at all from a connection with no tenant context', async () => {

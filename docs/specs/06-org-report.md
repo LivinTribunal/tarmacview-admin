@@ -108,11 +108,31 @@ is reserved for the explicit revocable share link §Access asks for — which ha
 an organisation the session is not a member of reads as absent, the same answer the
 workspace already gives. A refusal would confirm the organisation is real.
 
-**The blocks it does not serve are declared, not empty.** `data.pilots[]` and
-`data.devices[]` are absent from the payload and named in a pending list the parity test
-asserts against, so a block dropped by accident fails the suite instead of passing as "not
-built yet". Serving them as empty arrays would say this operator has no pilots and no
-airframes, which is a gap reading as a fact.
+**The block it does not serve is declared, not empty.** `data.pilots[]` is absent from the
+payload and named in a pending list the parity test asserts against, so a block dropped by
+accident fails the suite instead of passing as "not built yet". Serving it as an empty array
+would say this operator has no pilots, which is a gap reading as a fact. `data.devices[]`
+left that list on 17 Aug 2026 (issue #90) by being served.
+
+**`data.devices[]` carries two flight aggregates and they are different quantities.**
+`total_flights`, `total_flight_hours` and `last_flight_date` are **period-filtered** and are
+grouped from the same rows `data.flights[]` is serialised from, so the two blocks cannot
+disagree about which flights fall in the window a reader selected. `lifetime_flights_count`
+and `service_lifetime_cycles` are **all-time**: one cycle is one recorded flight for the life
+of the airframe, and a service interval measured over a one-month window would reset every
+month. Every airframe of the operator lists, whether or not it flew in the period; a flight
+naming no airframe belongs to no row here and still lists in `data.flights[]`. The service
+block beside them is composed from stated readings only —
+[03-data-model.md](03-data-model.md) §"Maintenance log in the rebuild".
+
+**`maintenance_logs[]` has no oracle below it, and that ceiling is stated rather than
+papered over.** The captured payloads carry no key path under the array — every captured one
+was empty (Observed) — so its member shape is the rebuild's own, mirroring
+[03-data-model.md](03-data-model.md) §MaintenanceLog's columns rather than guessing at
+oracle-shaped names. Parity claims only that the key exists and is an array, and the parity
+suite excludes that one subtree by name from its no-invented-keys assertion instead of
+filtering it quietly. It is served rather than held empty for the reason the pending list
+exists: an airframe that has been serviced reporting `[]` would be a gap reading as a fact.
 
 **An unrecognised `period` answers JSON, which is a deliberate behavioural departure** from
 the HTML error page above. `custom` without a usable `date_from`/`date_to`, and a `pilot_id`

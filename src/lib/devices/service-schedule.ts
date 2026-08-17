@@ -1,4 +1,4 @@
-import type { DeviceType } from '@/lib/db/schema'
+import type { DeviceType, MaintenanceLog } from '@/lib/db/schema'
 
 // the airframe's service state and VLOS limit, both of which live on its device type.
 // pure functions over stated figures: nothing here reads the database and nothing
@@ -58,6 +58,55 @@ function addMonths(from: Date, months: number): Date {
 
 function positiveOrNull(value: number | null): number | null {
   return value !== null && value > 0 ? value : null
+}
+
+// a `date` column arrives as `YYYY-MM-DD` and a baseline is an instant, so the two are
+// converted here in UTC - the convention formatDate already holds. handing the string on
+// untouched gets it as far as addMonths, which answers an invalid date nothing would notice.
+const utcDay = (value: string): Date => new Date(`${value}T00:00:00Z`)
+
+// what a maintenance record contributes to the baseline: the date the service happened and
+// the cycle count the technician stated, which may be none.
+export type StatedMaintenance = Pick<MaintenanceLog, 'maintenanceDate' | 'totalFlights'>
+
+export type ReadingsInput = {
+  // the airframe's maintenance history. order does not matter - this composes newest-first
+  // itself, so a caller that hands them over the other way round cannot take a baseline
+  // from an older reading than the newest.
+  maintenance: readonly StatedMaintenance[]
+  // the all-time recorded flight count, which is the all-time cycle count under CONTEXT.md's
+  // other name for it
+  lifetimeCycles: number
+  // the date of the airframe's first recorded flight, derived and not stored -
+  // docs/specs/03-data-model.md §"Flights in the rebuild". the calendar fallback where the
+  // airframe has never been serviced.
+  firstFlightDate: Date | null
+  asOf: Date
+}
+
+// the baseline, composed from **stated readings only**. every figure here was certified by
+// a technician or is absent; nothing is recomputed from the airframe's own flight history,
+// which is the rule this module exists to hold.
+//
+// the two halves come from different records on purpose. the calendar baseline is the newest
+// maintenance date, because a service that stated no cycle count still happened. the cycle
+// baseline is the newest count anybody actually stated: zeroing it because the newest record
+// omitted one would report a just-serviced airframe as hundreds of cycles overdue, and
+// carrying the lifetime count into it would invent the technician's figure. **0 where no
+// record ever stated one** is the reading itself and not a fallback - an airframe never
+// serviced had zero cycles at its last service.
+export function serviceReadings(input: ReadingsInput): ServiceReadings {
+  const history = [...input.maintenance].sort((a, b) =>
+    b.maintenanceDate.localeCompare(a.maintenanceDate),
+  )
+  const stated = history.find((entry) => entry.totalFlights !== null)
+
+  return {
+    baselineCycles: stated?.totalFlights ?? 0,
+    lifetimeCycles: input.lifetimeCycles,
+    baselineDate: history[0] ? utcDay(history[0].maintenanceDate) : input.firstFlightDate,
+    asOf: input.asOf,
+  }
 }
 
 export function serviceState(

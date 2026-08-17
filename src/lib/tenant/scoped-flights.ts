@@ -82,15 +82,21 @@ export type FlightReportEntry = Flight & {
 }
 
 // the flight's date, derived rather than stored - docs/specs/03-data-model.md §"Flights in
-// the rebuild". stated once and used twice, in the select and in the period filter below,
-// because a report that filtered on the import instant and displayed the log's date would
-// list a july flight under august and show july in the row.
+// the rebuild". stated once and used three times - in the select and the period filter
+// below, and in scoped-airframes.ts for the service calendar's fallback - because a report
+// that filtered on the import instant and displayed the log's date would list a july flight
+// under august and show july in the row, and an airframe's service clock dated from when its
+// logs were uploaded is the same error one table over.
+//
+// it groups by flight, so a caller selecting it groups by flight too.
 //
 // `mapWith` is load-bearing: the driver hands every timestamp back as text and the column
 // decoders are what turn one into a Date, so an aggregate over a timestamp needs to borrow
 // the column's decoder or it arrives as a string that nothing here would notice.
 const firstLegStart = sql<Date | null>`min(${flightLog.startedAt})`.mapWith(flightLog.startedAt)
-const flightDate = sql`coalesce(${firstLegStart}, ${flight.createdAt})`
+export const flightDate = sql<Date>`coalesce(${firstLegStart}, ${flight.createdAt})`.mapWith(
+  flight.createdAt,
+)
 
 // a bound parameter in a raw fragment carries no column to take its type from, so the
 // instant is sent as text and cast rather than handed to the driver as a Date
