@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { mayManageDeviceTypes } from '@/lib/auth/capabilities'
 import { deviceTypeTable, deviceTypeTableRow } from '@/lib/device-types/fields'
 import { formatCell } from '@/lib/table/view'
 
@@ -20,7 +21,7 @@ const entry = {
 
 describe('device-type index columns', () => {
   it('declares the seven columns the spec lists, in order', () => {
-    expect(deviceTypeTable.columns.map((column) => column.key)).toEqual([
+    expect(deviceTypeTable(true).columns.map((column) => column.key)).toEqual([
       'id',
       'name',
       'max_vlos',
@@ -32,29 +33,37 @@ describe('device-type index columns', () => {
   })
 
   it('marks every one of them sortable, as the spec does with `^`', () => {
-    expect(deviceTypeTable.columns.every((column) => column.sortable)).toBe(true)
+    expect(deviceTypeTable(true).columns.every((column) => column.sortable)).toBe(true)
   })
 
   it('declares no toggle column, because the spec marks none', () => {
-    expect(deviceTypeTable.columns.some((column) => column.hiddenByDefault)).toBe(false)
+    expect(deviceTypeTable(true).columns.some((column) => column.hiddenByDefault)).toBe(false)
   })
 
   it('declares no filters and no bulk action', () => {
-    expect(deviceTypeTable.filters).toBeUndefined()
+    expect(deviceTypeTable(true).filters).toBeUndefined()
     // Observed as `Odstrániť vybrané`, but no write path exists and a checkbox wired to
     // nothing is worse than no checkbox
-    expect(deviceTypeTable.bulkActionKey).toBeUndefined()
+    expect(deviceTypeTable(true).bulkActionKey).toBeUndefined()
   })
 
-  it('points its row action at a route that is actually served', () => {
-    expect(deviceTypeTable.editPath).toBe('/admin/device-types/{id}/edit')
+  it('points its row action at a route that is actually served, and only for a session that could complete it', () => {
+    expect(deviceTypeTable(true).editPath).toBe('/admin/device-types/{id}/edit')
+    expect(deviceTypeTable(false).editPath).toBeUndefined()
+  })
+
+  it('offers the row action to a superadmin and to nobody else', () => {
+    // the narrowing is of the acting session's system role, not of the capability matrix -
+    // `device_type_deployment_wide` is what refuses the write
+    expect(mayManageDeviceTypes('superadmin')).toBe(true)
+    expect(mayManageDeviceTypes('member')).toBe(false)
   })
 })
 
 describe('device-type index rows', () => {
   it('carries a cell for every declared column', () => {
     const row = deviceTypeTableRow(entry)
-    for (const column of deviceTypeTable.columns) {
+    for (const column of deviceTypeTable(true).columns) {
       expect(row, `${column.key} has no cell`).toHaveProperty(column.key)
     }
   })

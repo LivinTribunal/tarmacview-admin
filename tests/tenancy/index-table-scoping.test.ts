@@ -25,7 +25,10 @@ import { seedFixtures, type SeededIds } from '../support/fixtures'
 // declaration is proved, over the scoped read it is actually rendered with.
 
 const airframeTable: TableDeclaration = {
-  resource: 'airframes',
+  // plainly a fixture's key and not a register's: this declaration never reaches a browser,
+  // and the repo-wide uniqueness assertion in tests/domain/index-table-view.test.ts covers
+  // the real ones
+  resource: 'scoping-fixture',
   emptyKey: 'device.index.empty',
   bulkActionKey: 'device.action.deleteSelected',
   columns: [

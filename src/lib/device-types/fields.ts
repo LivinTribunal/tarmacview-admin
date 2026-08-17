@@ -62,27 +62,33 @@ export const deviceTypeFormFields: readonly FormField[] = [
 // GET-only and no write path exists yet, and checkboxes wired to nothing are worse than
 // no checkboxes. `Zobraziť` is likewise Observed and likewise not declared: no
 // /admin/device-types/{id} path is served, so the row action would be a live 404.
-export const deviceTypeTable: TableDeclaration = {
-  resource: 'device-types',
-  emptyKey: 'deviceType.index.empty',
-  editPath: '/admin/device-types/{id}/edit',
-  columns: [
-    { key: 'id', labelKey: 'deviceType.column.id', sortable: true },
-    { key: 'name', labelKey: 'deviceType.field.name', sortable: true },
-    { key: 'max_vlos', labelKey: 'deviceType.field.max_vlos', sortable: true },
-    { key: 'service_interval', labelKey: 'deviceType.field.service_interval', sortable: true },
-    {
-      key: 'service_interval_months',
-      labelKey: 'deviceType.field.service_interval_months',
-      sortable: true,
-    },
-    {
-      key: 'battery_service_interval',
-      labelKey: 'deviceType.field.battery_service_interval',
-      sortable: true,
-    },
-    { key: 'devices', labelKey: 'deviceType.column.devices', sortable: true },
-  ],
+//
+// `Upraviť` is offered only to a session that could complete it, which is why this is a
+// function - the shape the people and maps registers use, and mayManageDeviceTypes in
+// src/lib/auth/capabilities.ts holds why.
+export function deviceTypeTable(mayManage: boolean): TableDeclaration {
+  return {
+    resource: 'device-types',
+    emptyKey: 'deviceType.index.empty',
+    editPath: mayManage ? '/admin/device-types/{id}/edit' : undefined,
+    columns: [
+      { key: 'id', labelKey: 'deviceType.column.id', sortable: true },
+      { key: 'name', labelKey: 'deviceType.field.name', sortable: true },
+      { key: 'max_vlos', labelKey: 'deviceType.field.max_vlos', sortable: true },
+      { key: 'service_interval', labelKey: 'deviceType.field.service_interval', sortable: true },
+      {
+        key: 'service_interval_months',
+        labelKey: 'deviceType.field.service_interval_months',
+        sortable: true,
+      },
+      {
+        key: 'battery_service_interval',
+        labelKey: 'deviceType.field.battery_service_interval',
+        sortable: true,
+      },
+      { key: 'devices', labelKey: 'deviceType.column.devices', sortable: true },
+    ],
+  }
 }
 
 // flattens a catalogue entry into the record the chrome renders. numbers stay numbers,

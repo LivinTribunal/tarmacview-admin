@@ -60,20 +60,26 @@ const documentFilePath = '/api/documents/{id}/file'
 // no filters and no bulk action, following all six siblings - doc 04 records `Odstrániť
 // vybrané`, the capture was GET-only, and a checkbox wired to nothing is worse than no
 // checkbox.
-export const generalDocumentTable: TableDeclaration = {
-  resource: 'general-documents',
-  emptyKey: 'document.index.empty',
-  editPath: '/admin/general-documents/{id}/edit',
-  columns: [
-    { key: 'name', labelKey: 'document.column.name', sortable: true },
-    { key: 'file', labelKey: 'document.field.file_path' },
-    { key: 'link', labelKey: 'document.column.link', linkPath: documentFilePath },
-    { key: 'size', labelKey: 'document.column.size', sortable: true },
-    { key: 'category', labelKey: 'document.column.category' },
-    { key: 'valid_until', labelKey: 'document.field.valid_until', sortable: true },
-    { key: 'uploaded_by', labelKey: 'document.column.uploaded_by', sortable: true },
-    { key: 'created_at', labelKey: 'document.column.created_at', hiddenByDefault: true },
-  ],
+//
+// `Upraviť` is offered only to a session that could complete it, which is why this is a
+// function - the shape the people and maps registers use, and mayManageGlobalDocuments in
+// src/lib/auth/capabilities.ts holds why.
+export function generalDocumentTable(mayManage: boolean): TableDeclaration {
+  return {
+    resource: 'general-documents',
+    emptyKey: 'document.index.empty',
+    editPath: mayManage ? '/admin/general-documents/{id}/edit' : undefined,
+    columns: [
+      { key: 'name', labelKey: 'document.column.name', sortable: true },
+      { key: 'file', labelKey: 'document.field.file_path' },
+      { key: 'link', labelKey: 'document.column.link', linkPath: documentFilePath },
+      { key: 'size', labelKey: 'document.column.size', sortable: true },
+      { key: 'category', labelKey: 'document.column.category' },
+      { key: 'valid_until', labelKey: 'document.field.valid_until', sortable: true },
+      { key: 'uploaded_by', labelKey: 'document.column.uploaded_by', sortable: true },
+      { key: 'created_at', labelKey: 'document.column.created_at', hiddenByDefault: true },
+    ],
+  }
 }
 
 // `size` is bytes on the row and human-readable in the cell - doc 03 §Document. SI steps,

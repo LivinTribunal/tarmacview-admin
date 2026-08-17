@@ -95,6 +95,14 @@ export const organizationFormFields: readonly FormField[] = [
 // for the reason the two sibling registers give: `Vymazať vybrané` is Observed, the
 // capture was GET-only, and a checkbox wired to nothing is worse than no checkbox. What
 // the delete rule actually is lives in the schema, where no call path can skip it.
+//
+// **this `editPath` is deliberately ungated**, unlike the four sibling superadmin-write
+// registers. the rule those follow is that chrome a member can click and cannot finish is
+// worse than absent chrome, and this link is not that: it reaches the organisation
+// workspace (doc 05), which is a **read** a member is entitled to, and doc 04's
+// organisation form is not on that page yet. `findOrganization` returns no row for an
+// organisation they hold no membership of, so the link either lands or is not-found. it
+// gains a gate when the form does.
 export const organizationTable: TableDeclaration = {
   resource: 'organizations',
   emptyKey: 'organization.index.empty',

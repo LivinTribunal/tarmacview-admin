@@ -88,3 +88,21 @@ export function mayManagePeople(systemRole: SystemRole): boolean {
 export function mayManageMaps(systemRole: SystemRole): boolean {
   return systemRole === 'superadmin'
 }
+
+// the global document library is on no row of the matrix at all: it carries no organisation,
+// so no organisation role reaches it, and `document_global_update_superadmin_only` is what
+// decides the write. docs/specs/03-data-model.md §"The global document library in the
+// rebuild".
+//
+// a fourth one-line function rather than a shared one, for the reason stated above the
+// maps narrowing: each answers a different question, and this one is waiting on nothing.
+export function mayManageGlobalDocuments(systemRole: SystemRole): boolean {
+  return systemRole === 'superadmin'
+}
+
+// and the device-type catalogue, which is deployment-wide - `device_type_deployment_wide`
+// admits the read to every session and the write to a superadmin.
+// docs/specs/03-data-model.md §"Device types in the rebuild".
+export function mayManageDeviceTypes(systemRole: SystemRole): boolean {
+  return systemRole === 'superadmin'
+}
