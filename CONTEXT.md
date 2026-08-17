@@ -73,6 +73,12 @@ predecessor system, which is the source of most of these terms, is in
   else; see `docs/specs/03-data-model.md`.
 - **Organisation role** — the post held in one organisation, one per membership:
   `accountable_manager`, `operations`, `pilot`, `viewer`.
+- **Job title (`position`)** — free text naming the job a person holds within an
+  organisation. Distinct from the **organisation role**, which is the membership's typed post;
+  in the rebuild `position` sits on the person, so one job title covers every organisation
+  they belong to — see
+  [docs/specs/03-data-model.md](docs/specs/03-data-model.md) §"Contact and job-title columns
+  in the rebuild".
 - **System role** — deployment-wide authority, exactly one per person: `superadmin`
   (cross-tenant) or `member` (none whatsoever). Authority is the combination of the system
   role and the person's memberships. The predecessor instead had five *combinable* global
