@@ -46,7 +46,7 @@ export async function GET(
   // the clock is injected rather than read inside the period resolution, so "this month" is
   // testable - the reasoning `ServiceReadings.asOf` records in service-schedule.ts
   const selection = resolveSelection(new URL(request.url).searchParams, new Date())
-  if (selection === null) return json({ success: false, error: t('report.error.period') }, 400)
+  if (selection === null) return json({ success: false, error: t('report.error.query') }, 400)
 
   const entries = await withTenant(db, session, async (tx) => {
     const organization = await findOrganization(tx, id)

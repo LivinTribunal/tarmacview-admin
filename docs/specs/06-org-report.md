@@ -138,6 +138,14 @@ not, and gets a label naming the nothing-was-parsed case — a null status is th
 case, and reporting a parsed state or a blank would state an outcome that never happened
 ([03-data-model.md](03-data-model.md) §"Flights in the rebuild").
 
+**So this null renders two ways, and the difference is recorded rather than left to a code
+comment.** The flights register in [04-admin-resources.md](04-admin-resources.md)
+§FlightResource renders the same null `parsing_status` as a **blank cell**, which is right
+there: a table cell that is empty says nothing, and the column beside it carries the failure
+where a parse failed. A contract key has no empty available to it — the oracle types this one
+non-null on every captured row — so the absence has to be named instead of shown. Two
+renderings of one value, for the reason each surface can carry.
+
 **Where the flight's date comes from.** Derived, not stored — the derivation and what is
 Inferred about it are in [03-data-model.md](03-data-model.md) §"Flights in the rebuild".
 

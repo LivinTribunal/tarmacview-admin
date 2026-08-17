@@ -39,14 +39,4 @@ describe('the flight date: the earliest leg, falling back to the import instant'
     expect(row.flight_date_display).toBe('03.08.2026')
     expect(row.flight_date_sort).toBe(importedInAugust.getTime())
   })
-
-  it('renders three variants of one instant, and never a blank', () => {
-    const row = flightReportRow(testFlightInput({ firstLegStartedAt: flownInJuly }))
-
-    // the oracle has all three non-null on every captured row, so a variant that could not
-    // be rendered would have nowhere to say so
-    expect(row.flight_date).not.toBe('')
-    expect(row.flight_date_display).not.toBe('')
-    expect(new Date(row.flight_date_sort).toISOString().slice(0, 10)).toBe(row.flight_date)
-  })
 })

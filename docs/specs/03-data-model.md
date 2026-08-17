@@ -816,7 +816,7 @@ line above about presentation variants of one instant stays as it was.
 
 The rebuild's own derivation: a flight's date is its **earliest `flight_log.started_at`**,
 falling back to `created_at` where no leg states one. `created_at` is the import instant, so
-a july flight imported in august reports july; a flight with legs takes the leg's date,
+a July flight imported in August reports July; a flight with legs takes the leg's date,
 always. `flight_log.started_at` is nullable, so the fallback keys on there being no earliest
 start rather than on there being no legs. **No `flight_date` column**: the parsers are
 blocked (#6) and no form collects one, so it would be a column with no writer. The report's

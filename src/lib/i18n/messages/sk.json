@@ -150,7 +150,7 @@
   "report.flight.pilot.unassigned": "Bez pilota",
   "report.flight.device.unassigned": "Bez zariadenia",
   "report.flight.device.noModel": "Bez modelu",
-  "report.error.period": "Neplatné obdobie.",
+  "report.error.query": "Neplatné parametre dotazu.",
   "document.index.title": "Všeobecné dokumenty",
   "document.index.empty": "Žiadne dokumenty",
   "document.create.title": "Nový dokument",

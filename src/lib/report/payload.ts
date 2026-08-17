@@ -77,7 +77,13 @@ export function resolveSelection(query: URLSearchParams, asOf: Date): FlightSele
     case 'custom': {
       const from = boundary(query.get('date_from'), false)
       const to = boundary(query.get('date_to'), true)
-      return from === null || to === null ? null : { from, to, ...filters }
+
+      // a range ending before it starts is unusable in exactly the way a missing one is, so
+      // it answers the same error rather than an empty report. `total_flights: 0` there would
+      // read as "nothing was flown in this window" when what happened is that the two dates
+      // arrived the wrong way round - a gap reading as a fact.
+      if (from === null || to === null || from > to) return null
+      return { from, to, ...filters }
     }
     default:
       return null

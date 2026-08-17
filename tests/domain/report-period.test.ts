@@ -45,6 +45,10 @@ describe('what answers a JSON error rather than a payload', () => {
     ['custom with no dates at all', 'period=custom'],
     ['custom missing one end', 'period=custom&date_from=2026-07-01'],
     ['custom with an unparseable date', 'period=custom&date_from=01.07.2026&date_to=14.07.2026'],
+    [
+      'custom with the range the wrong way round, which would otherwise answer an empty report',
+      'period=custom&date_from=2026-08-14&date_to=2026-08-01',
+    ],
     ['a pilot filter that is not an id', 'pilot_id=all'],
     ['a device filter that is not an id', 'device_id=1e3'],
   ])('%s', (_label, query) => {
