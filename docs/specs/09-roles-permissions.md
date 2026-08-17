@@ -133,11 +133,17 @@ a controller.
 The table is the intent. The database is currently narrower for the two people rows — see
 [03-data-model.md](03-data-model.md) §"The shared-organisation read in the rebuild".
 
-It is also wider for *Manage trainings*. The matrix and the database agree on **who** — the
-tenant — but the policies behind `training_type`, `device` and now `training` key off
+It is also wider for *Manage trainings*, and for *Manage permits & operations docs*. The
+matrix and the database agree on **who** — the tenant — but the policies behind
+`training_type`, `device`, `training` and now `document`'s tenant-owned buckets key off
 **membership, not organisation role**, so Postgres admits a `pilot` or `viewer` membership
 the matrix denies. Narrowing it needs a policy predicate over a per-membership role, which is
 the same missing piece the people rows are waiting on.
+
+The **global** document library is on no row of this table, and that is not an omission: it
+carries no organisation, so no organisation role reaches it. Every session reads it and only
+a superadmin writes it, which is Axis A — [03-data-model.md](03-data-model.md) §"The global
+document library in the rebuild".
 
 ### Person is not account
 

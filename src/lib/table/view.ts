@@ -26,6 +26,10 @@ export type ColumnDef = {
   // `{id}` substituted per row, the way `editPath` below is. a column declaring one renders
   // that route as an image, and its cell text becomes the image's accessible name
   imagePath?: string
+  // the same shape for a file a reader fetches rather than one the page renders - doc 04
+  // §OrganizationDocumentResource's `Odkaz`. the cell's text becomes the link's text, so the
+  // row id is still the only thing that reaches the url and the stored path never does.
+  linkPath?: string
 }
 
 export type FilterDef = {

@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { extname } from 'node:path'
-import { resolveStoredFile } from '@/lib/files/storage'
+import { resolveStoredFile, type StoredFile } from '@/lib/files/storage'
 import { findOrganization } from '@/lib/tenant/scoped-organizations'
 import type { TenantTransaction } from '@/lib/tenant/tenant-context'
 
@@ -13,8 +13,6 @@ const contentTypes: Readonly<Record<string, string>> = {
   '.jpeg': 'image/jpeg',
   '.webp': 'image/webp',
 }
-
-export type StoredFile = { bytes: Uint8Array; contentType: string }
 
 // the logo of one organisation, read the way every other scoped read is: the row first,
 // inside the tenant transaction. another operator's id finds no row, so this answers null

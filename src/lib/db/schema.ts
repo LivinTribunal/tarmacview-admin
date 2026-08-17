@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import {
   boolean,
+  check,
   date,
   foreignKey,
   index,
@@ -72,6 +73,19 @@ export const entryMode = pgEnum('entry_mode', [
 // list belongs to `MobileLogUpload`, a different entity. minimal on purpose: a pending
 // state joins it when the parsers land (#6) and have something to be pending about.
 export const parsingStatus = pgEnum('parsing_status', ['processed', 'failed'])
+
+// which bucket a document belongs to - docs/specs/03-data-model.md §Document lists four,
+// and §"The global document library in the rebuild" is what the table below carries. it is
+// never typed by a user: a document takes the category of the register it was added
+// through, which is why contracts/forms/general-documents.json has no field for it.
+// `general` first, because it is the one bucket that is not an operator's own; the other
+// three are doc 05's tab order.
+export const documentCategory = pgEnum('document_category', [
+  'general',
+  'forms',
+  'permits',
+  'operations',
+])
 
 // the tenant. `logo_path` holds where the file lives, never the bytes -
 // docs/specs/03-data-model.md §"Organisation deletion and the logo in the rebuild".
@@ -560,6 +574,103 @@ export const flightLog = pgTable(
   ],
 )
 
+// one table for four document buckets - docs/specs/03-data-model.md §"The global document
+// library in the rebuild". `organization_id` is **nullable** here and nowhere else in this
+// schema: a null is the deployment-wide library every session reads, a value is one
+// operator's own bucket.
+//
+// `restrict` for the reason the airframe's and the flight's are: an operator's compliance
+// pack is the evidence a tenant delete must not sweep away. `uploaded_by` restricts for the
+// reason `flight.imported_by` does - the record cannot lose the person who filed it - and is
+// nullable, because a row the history migration brings across may name nobody.
+export const document = pgTable(
+  'document',
+  {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organization.id, {
+      onDelete: 'restrict',
+    }),
+    category: documentCategory('category').notNull(),
+    name: text('name').notNull(),
+
+    // `file_path` and not doc 03's `file`: contracts/forms/general-documents.json gives
+    // `data.file_path`, and the name is `organization.logo_path`'s shape - the bytes are on
+    // disk and the column says where. read only through src/lib/files/general-document.ts,
+    // never as a static path.
+    filePath: text('file_path').notNull(),
+    note: text('note'),
+
+    // nullable, and a null is a gap - no expiry was recorded, never an expiry that passed.
+    // what the register prints for one is src/lib/documents/fields.ts's.
+    validUntil: date('valid_until'),
+
+    // permits only, exposed on the operator report. nothing in the rebuild sets or reads it
+    // yet; it exists because the column is a fact about the table and not about this
+    // register - docs/specs/05-organization-workspace.md §"Letové povolenia (flight permits)".
+    isPublic: boolean('is_public').notNull().default(false),
+    uploadedBy: integer('uploaded_by').references(() => person.id, { onDelete: 'restrict' }),
+
+    // bytes. doc 04 §OrganizationDocumentResource displays it human-readable, which is
+    // src/lib/documents/fields.ts's job and not a second column here.
+    size: integer('size'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('document_organization_idx').on(table.organizationId),
+
+    // the two discriminators tied together, in the database and not in a convention: a
+    // global document cannot be tenant-owned and a bucket document cannot be global. stated
+    // as an equality so it fails in **both** directions - the same instinct as the composite
+    // foreign keys above, which put the invariant where no later writer can forget it.
+    //
+    // it is also what stops a member capturing a global row: the only update the policies
+    // below would admit on one is setting `organization_id` to their own, and this refuses
+    // that unless they change the category too - which the restrictive policy then refuses.
+    check(
+      'document_general_is_global',
+      sql`(${table.category} = 'general') = (${table.organizationId} is null)`,
+    ),
+
+    // **`USING` and `WITH CHECK` are deliberately not equal here**, unlike every other
+    // tenant_isolation policy in this file, where equality is the correct answer. the null
+    // branch on the read is what makes the global library readable by every session; the
+    // same branch on the write would let any member publish a document into every
+    // operator's library in the deployment. a member writing a null fails `WITH CHECK`
+    // because `null in (…)` is null and not true.
+    //
+    // the read branch asks for an acting person as well as for the null, so a connection
+    // with no tenant context still reads nothing at all - the invariant the header of this
+    // file states and tests/tenancy/airframe-isolation.test.ts asserts. every session has a
+    // person; nothing that is not a session does.
+    pgPolicy('document_tenant_isolation', {
+      for: 'all',
+      using: sql`${actingIsSuperadmin}
+        or (${actingPerson} is not null and ${table.organizationId} is null)
+        or ${table.organizationId} in (${actingOrganizations})`,
+      withCheck: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
+    }),
+
+    // Postgres decides `UPDATE` and `DELETE` by `USING`, and the null branch above admits a
+    // global row to both. so the library is writable by nobody but a superadmin only once
+    // these two say so - restrictive, because permissive policies OR together and a
+    // narrower permissive one would narrow nothing. docs/specs/03-data-model.md §"Delete
+    // authority in the rebuild", and #42 is what happens without them.
+    //
+    // two policies and not one: `for: 'all'` restrictive would apply to `SELECT` as well and
+    // take the global library away from the sessions it exists for.
+    pgPolicy('document_global_update_superadmin_only', {
+      as: 'restrictive',
+      for: 'update',
+      using: sql`${actingIsSuperadmin} or ${table.organizationId} is not null`,
+    }),
+    pgPolicy('document_global_delete_superadmin_only', {
+      as: 'restrictive',
+      for: 'delete',
+      using: sql`${actingIsSuperadmin} or ${table.organizationId} is not null`,
+    }),
+  ],
+)
+
 // auth tables
 //
 // credentials are a separate optional concern attached to a person, so the account
@@ -642,3 +753,5 @@ export type EntryMode = (typeof entryMode.enumValues)[number]
 export type ParsingStatus = (typeof parsingStatus.enumValues)[number]
 export type Flight = typeof flight.$inferSelect
 export type FlightLog = typeof flightLog.$inferSelect
+export type DocumentCategory = (typeof documentCategory.enumValues)[number]
+export type Document = typeof document.$inferSelect
