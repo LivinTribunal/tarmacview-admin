@@ -9,9 +9,6 @@ import type { TenantTransaction } from '@/lib/tenant/tenant-context'
 // it still runs inside withTenant: what admits these rows is the policy, and a register
 // reading outside a tenant transaction would be one whose scoping is a decision in
 // application code rather than a property of the database.
-//
-// filed here and not under src/lib/tenant/, where the scoped reads live: this one names
-// no organisation, and that directory would claim a scoping it does not do.
 
 export type MapEntry = GeozoneMap & { layerCount: number }
 

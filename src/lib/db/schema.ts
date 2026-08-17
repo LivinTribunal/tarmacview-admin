@@ -847,7 +847,6 @@ export const mapKmlFile = pgTable(
     defaultTitle: text('default_title'),
     defaultDescription: text('default_description'),
 
-    // nullable: *no type (grey)* is the absence of a classification, not a seventh value
     layerType: layerType('layer_type'),
     priority: integer('priority').notNull().default(0),
     isActive: boolean('is_active').notNull().default(true),
