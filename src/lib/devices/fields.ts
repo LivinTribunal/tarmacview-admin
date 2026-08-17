@@ -21,6 +21,7 @@ import type { AirframeEntry } from '@/lib/tenant/scoped-airframes'
 // left out for the same kind of reason and a different one: it is Observed, and no register
 // in this repo declares a filter yet, so the first one to do so is a decision about the
 // filter panel rather than about this tab.
+//
 // `resource` carries the `organization-` prefix its five sibling workspace tabs carry: it is
 // the column-visibility key, and a bare `airframes` would be shared with any future
 // `/admin/devices` register - src/components/index-table.tsx.
