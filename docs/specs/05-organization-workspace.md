@@ -202,10 +202,10 @@ filters `Vypršané` / `Platné`; actions `Pridať školenie`, `Upraviť`, `Odst
 ## The workspace in the rebuild — decided
 
 A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
-standing autonomy grant and recorded on issues #70 and #73. The owner has not reviewed it:
-settled enough to build on, open enough to overturn. Everything above this line is what was
-Observed of the predecessor, and nothing here may be edited into it — in particular the tab
-table and the two *"columns not observed"* notes stay exactly as they are.
+standing autonomy grant and recorded on issues #70, #73 and #75. The owner has not reviewed
+it: settled enough to build on, open enough to overturn. Everything above this line is what
+was Observed of the predecessor, and nothing here may be edited into it — in particular the
+tab table and the two *"columns not observed"* notes stay exactly as they are.
 
 **The route segment is `{org}`, and so the directory is `[org]`.** Every sibling register is
 served from an `[id]` directory, and this one is not: `tests/contracts/routes.test.ts` maps a
@@ -247,10 +247,24 @@ allowed — refusing would confirm the organisation is real. A `superadmin` reac
 organisation. This is the workspace's one security property and it is asserted against a
 real database and the real policies.
 
-**Tabs 0, 1 and 2 are built.** Each is an index table over an organisation-scoped read and
-nothing more; there is still no relation-manager abstraction, because two of the three are
-the same read of the same entity and one entity cannot show what varies. The other four
-render their label and query nothing.
+**Tabs 0 through 5 are built.** Each is an index table over an organisation-scoped read and
+nothing more. Tab 6, the occurrence register, renders its label and queries nothing.
+
+**There is no relation-manager abstraction, and the document buckets settled that rather
+than deferring it.** Six tabs was where a shape was expected to become visible. What
+generalised is the **read**: §3, §4 and §5 select `document` by organisation and by bucket,
+differing only in the constant, so they share one function and each states its own bucket.
+What did not generalise is the **declaration**. §4 is not shaped like §3 and §5 — it carries
+`Verejné`, which no other bucket has, and its first column is the filename rather than the
+name, per [03-data-model.md](03-data-model.md) §Document's *required (except permits, which
+take the filename)* and §4's own helper text. One declaration over a bucket constant would
+have had to either hide `Verejné` or invent it for the other two. So: three declarations,
+one read.
+
+§3 and §5 do agree column for column, and are still declared separately, because the two
+lists have different provenance — §5's is Observed and §3's is the *(inferred)* shape this
+document assumes for an empty register. Sharing one list would let a later correction to the
+inferred one silently rewrite the observed one.
 
 **Tabs 0 and 1 are disjoint on the organisation role** *(inferred)*. §0 and §1 do not say
 which memberships each lists, and two readings fit: tab 0 lists every membership and tab 1
@@ -274,6 +288,26 @@ tab's *read* contradicts it: a pilot with no e-mail lists normally in tab 1 and 
 cell reads as a gap, never as a broken row. See
 [03-data-model.md](03-data-model.md) §"Account provisioning in the rebuild" for what the
 write path will do with it.
+
+**`is_public` is surfaced and nothing about it is decided.** §4's tab renders `Verejné`,
+stating the affirmative where the flag is set and nothing where it is clear — the shape and
+the reasoning §"`Hlavná` renders the flag and never a negative" below already sets out, plus
+one reason of its own: it puts the word on the rows that carry the exposure rather than on
+the rows that do not.
+
+The ambiguity §4 records above — the toggle says *public page* while the operator report
+requires a session — is **not** reconciled by showing the flag. That reconciliation belongs
+to [06-org-report.md](06-org-report.md), when the report is built, and no handler reads
+`is_public` yet: the file route serves every byte to a resolved session and has no branch for
+it, which is what [03-data-model.md](03-data-model.md) §"Serving a stored file in the rebuild"
+means by a public read being an explicit opt-in.
+
+**The `Verejné` filter is deferred, and it is the natural first one.** No register in the
+rebuild declares a filter yet. `Pilot` and `Zariadenie` were deferred on `FlightResource`
+because the filter type takes a static option list and those need per-tenant options;
+`Verejné` is the opposite case — two fixed values, which is the shape that type already has.
+Declaring it is a decision about the filter panel rather than about this tab, so it waits,
+and the tab's declaration says so rather than leaving the omission silent.
 
 **`Hlavná` renders the flag and never a negative.** `is_primary_contact` is
 `not null default false`, so the column cannot tell "this person is not the primary contact"

@@ -261,8 +261,14 @@ const flights = [
 // tests/tenancy/flight-isolation.test.ts asserts *which* constraint refuses a delete of that
 // person - a second one on the same row would leave the answer to Postgres's ordering.
 //
-// only the first names a file that is actually on disk. the second is the row that proves a
-// stored path pointing at nothing is a gap and never a crash.
+// two of these name a file that is actually on disk - the global manual and the alpha
+// permit, which are the global library's half and an operator's half of the one file route.
+// the rest are the rows that prove a stored path pointing at nothing is a gap and never a
+// crash.
+//
+// all four categories appear, and every one of doc 05's three workspace tabs has an alpha row
+// to list: the buckets partition this table, and a fixture set missing one of them could not
+// tell a tab reading its own bucket from a tab reading them all.
 const documents = [
   {
     key: 'globalManual',
@@ -272,6 +278,7 @@ const documents = [
     filePath: 'general-documents/placeholder-operations-manual.pdf',
     note: 'Placeholder template note.',
     validUntil: null,
+    isPublic: false,
     uploadedBy: 'systemAdmin',
     size: 12800,
   },
@@ -286,6 +293,7 @@ const documents = [
     filePath: 'general-documents/placeholder-reporting-form.docx',
     note: null,
     validUntil: '2027-12-31',
+    isPublic: false,
     uploadedBy: null,
     size: null,
   },
@@ -297,8 +305,58 @@ const documents = [
     filePath: 'operations-documents/placeholder-alpha-manual.pdf',
     note: null,
     validUntil: '2027-06-30',
+    isPublic: false,
     uploadedBy: 'alphaPilot',
     size: 2400000,
+  },
+
+  // doc 05 §3's tab, with both of its gaps on one row: nobody named as the uploader and no
+  // size recorded. `Nahral` blank is the *normal* row for the global library and is not
+  // normal here, which is what makes it worth seeding on a tenant-owned bucket.
+  {
+    key: 'alphaForm',
+    organization: 'alpha',
+    category: 'forms',
+    name: 'Alpha Occurrence Form',
+    filePath: 'forms/placeholder-alpha-form.pdf',
+    note: null,
+    validUntil: null,
+    isPublic: false,
+    uploadedBy: null,
+    size: null,
+  },
+
+  // the public permit, and the only tenant-owned row naming a file on disk: an operator's own
+  // bytes reached through the one file route are what #75 consolidated, and a fixture pointing
+  // at nothing could not tell that route working from that route refusing.
+  //
+  // `is_public` is set here and read by no handler. doc 05 §4's tab shows the flag; whether a
+  // public permit is exposed without a session is doc 06's to settle.
+  {
+    key: 'alphaPermit',
+    organization: 'alpha',
+    category: 'permits',
+    name: 'placeholder-alpha-permit.pdf',
+    filePath: 'permits/placeholder-alpha-permit.pdf',
+    note: null,
+    validUntil: '2027-09-30',
+    isPublic: true,
+    uploadedBy: 'alphaPilot',
+    size: 51200,
+  },
+
+  // and the permit nobody ticked, so the column has a row that must *not* read as public
+  {
+    key: 'alphaPrivatePermit',
+    organization: 'alpha',
+    category: 'permits',
+    name: 'placeholder-alpha-restricted.pdf',
+    filePath: 'permits/placeholder-alpha-restricted.pdf',
+    note: null,
+    validUntil: null,
+    isPublic: false,
+    uploadedBy: 'alphaPilot',
+    size: 8192,
   },
   {
     key: 'bravoForm',
@@ -308,6 +366,7 @@ const documents = [
     filePath: 'forms/placeholder-bravo-form.pdf',
     note: null,
     validUntil: null,
+    isPublic: false,
     uploadedBy: 'bravoManager',
     size: 4096,
   },
@@ -550,6 +609,7 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
           filePath: entry.filePath,
           note: entry.note,
           validUntil: entry.validUntil,
+          isPublic: entry.isPublic,
           uploadedBy: entry.uploadedBy ? personIds[entry.uploadedBy] : null,
           size: entry.size,
         })

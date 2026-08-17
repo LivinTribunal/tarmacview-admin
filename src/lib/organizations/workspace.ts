@@ -1,8 +1,17 @@
 import { airframeTable, airframeTableRow } from '@/lib/devices/fields'
+import {
+  organizationFormTable,
+  organizationFormTableRow,
+  organizationOperationsTable,
+  organizationOperationsTableRow,
+  organizationPermitTable,
+  organizationPermitTableRow,
+} from '@/lib/documents/fields'
 import type { MessageKey } from '@/lib/i18n'
 import { identifier } from '@/lib/routes/identifier'
 import type { TableDeclaration, TableRow } from '@/lib/table/view'
 import { listOrganizationAirframes } from '@/lib/tenant/scoped-airframes'
+import { listOrganizationDocuments } from '@/lib/tenant/scoped-documents'
 import { listOrganizationPeople, listOrganizationPilots } from '@/lib/tenant/scoped-people'
 import type { TenantTransaction } from '@/lib/tenant/tenant-context'
 import {
@@ -17,11 +26,13 @@ import {
 // and without a container. the workspace is addressed as `?activeRelationManager={n}`,
 // exactly as contracts/routes.json records it - a query parameter, not a path segment.
 //
-// no relation-manager abstraction here, deliberately. a sub-register is an `IndexTable`
-// over an organisation-scoped read, which is the three lines every register since the
-// shared table has used. three tabs is where a shape would become visible, but two of the
-// three are the same read of the same entity, so there is still nothing to generalise over
-// - the extraction waits for the document buckets, which differ only by a constant.
+// no relation-manager abstraction here, and now deliberately for good. a sub-register is an
+// `IndexTable` over an organisation-scoped read, which is the three lines every register
+// since the shared table has used. the document buckets were where #70 and #73 expected a
+// shape to become visible, and what generalised turned out to be the *read* and not the
+// declaration - src/lib/documents/fields.ts says why. so the extraction landed in
+// scoped-documents.ts's `listOrganizationDocuments`, and six tabs still state their own
+// three lines.
 
 export type TabRegister = {
   declaration: TableDeclaration
@@ -36,7 +47,7 @@ export type WorkspaceTab = {
 }
 
 // doc 05's tab table, in its order - the index is the address, so the order is not
-// cosmetic. tabs 0, 1 and 2 are built.
+// cosmetic. tabs 0 through 5 are built; tab 6 is the occurrence register and its own slice.
 //
 // three of the labels come out of `document.category.*` rather than a key of their own.
 // those tabs manage a document bucket and nothing else, so the bucket's name is the tab's
@@ -67,9 +78,36 @@ export const workspaceTabs: readonly WorkspaceTab[] = [
         (await listOrganizationAirframes(tx, organizationId)).map(airframeTableRow),
     },
   },
-  { labelKey: 'document.category.forms' },
-  { labelKey: 'document.category.permits' },
-  { labelKey: 'document.category.operations' },
+  {
+    labelKey: 'document.category.forms',
+    register: {
+      declaration: organizationFormTable,
+      load: async (tx, organizationId) =>
+        (await listOrganizationDocuments(tx, organizationId, 'forms')).map(
+          organizationFormTableRow,
+        ),
+    },
+  },
+  {
+    labelKey: 'document.category.permits',
+    register: {
+      declaration: organizationPermitTable,
+      load: async (tx, organizationId) =>
+        (await listOrganizationDocuments(tx, organizationId, 'permits')).map(
+          organizationPermitTableRow,
+        ),
+    },
+  },
+  {
+    labelKey: 'document.category.operations',
+    register: {
+      declaration: organizationOperationsTable,
+      load: async (tx, organizationId) =>
+        (await listOrganizationDocuments(tx, organizationId, 'operations')).map(
+          organizationOperationsTableRow,
+        ),
+    },
+  },
   { labelKey: 'organization.workspace.tab.incidents' },
 ]
 

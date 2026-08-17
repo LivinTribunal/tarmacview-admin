@@ -660,8 +660,8 @@ export const document = pgTable(
 
     // `file_path` and not doc 03's `file`: contracts/forms/general-documents.json gives
     // `data.file_path`, and the name is `organization.logo_path`'s shape - the bytes are on
-    // disk and the column says where. read only through src/lib/files/general-document.ts,
-    // never as a static path.
+    // disk and the column says where. read only through src/lib/files/document.ts, never as
+    // a static path.
     filePath: text('file_path').notNull(),
     note: text('note'),
 

@@ -58,6 +58,9 @@ vi.mock('next/navigation', () => ({
 const PEOPLE_TAB = '0'
 const PILOTS_TAB = '1'
 const UAS_TAB = '2'
+const FORMS_TAB = '3'
+const PERMITS_TAB = '4'
+const OPERATIONS_TAB = '5'
 
 let harness: TestDatabase
 let ids: SeededIds
@@ -303,6 +306,89 @@ describe('the people filter is a selection and the policy is the boundary', () =
   })
 })
 
+// docs/specs/05-organization-workspace.md §3, §4 and §5. the three tabs read one table
+// through one predicate that differs by a constant, so the failure worth pinning is not a
+// missing row but a row on the wrong tab - which no single-tab assertion can see.
+describe('the three document tabs list their own bucket and their own operator', () => {
+  it('lists the operator forms on tab 3, and neither the other buckets nor the library', async () => {
+    const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, FORMS_TAB)
+
+    expect(markup).toContain('Alpha Occurrence Form')
+    expect(markup).not.toContain('Alpha Operations Manual')
+    expect(markup).not.toContain('placeholder-alpha-permit.pdf')
+    expect(markup).not.toContain('Placeholder Operations Manual Template')
+  })
+
+  it('lists the operator permits by filename, and states `Verejné` on the one that carries it', async () => {
+    // doc 03 §Document: a permit takes the filename for its name, and doc 05 §4 names the
+    // column `Názov súboru` where the other two name it `Názov`.
+    //
+    // two permits are seeded and one is ticked, so the count is what says the flag is read
+    // off the row rather than printed for every permit. a shared declaration would have had
+    // to hide this column or invent it for the other two tabs.
+    const markup = await open(
+      memberOf(ids.people.alphaManager),
+      ids.organizations.alpha,
+      PERMITS_TAB,
+    )
+
+    expect(markup).toContain(t('document.column.file_name'))
+    expect(markup).toContain('placeholder-alpha-permit.pdf')
+    expect(markup).toContain('placeholder-alpha-restricted.pdf')
+    expect(markup).not.toContain('Alpha Occurrence Form')
+
+    expect(markup).toContain(t('document.column.is_public'))
+    expect(markup.match(new RegExp(t('document.isPublic.yes'), 'g'))).toHaveLength(1)
+  })
+
+  it('lists the operator compliance pack on tab 5', async () => {
+    const markup = await open(
+      memberOf(ids.people.alphaManager),
+      ids.organizations.alpha,
+      OPERATIONS_TAB,
+    )
+
+    expect(markup).toContain('Alpha Operations Manual')
+    expect(markup).not.toContain('Alpha Occurrence Form')
+  })
+
+  it('reaches every listed file through the one route and through a row id', async () => {
+    // the stored path never reaches the browser - `permits/` and `forms/` are directories on
+    // the server's disk and appear in no href
+    for (const tab of [FORMS_TAB, PERMITS_TAB, OPERATIONS_TAB]) {
+      const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, tab)
+
+      expect(markup, `tab ${tab}`).toMatch(/href="\/api\/documents\/\d+\/file"/)
+      expect(markup, `tab ${tab}`).not.toContain('/api/general-documents/')
+      expect(markup, `tab ${tab}`).not.toContain('permits/placeholder')
+      expect(markup, `tab ${tab}`).not.toContain('forms/placeholder')
+    }
+  })
+
+  it('lists none of the other operator documents on any of the three', async () => {
+    for (const tab of [FORMS_TAB, PERMITS_TAB, OPERATIONS_TAB]) {
+      const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, tab)
+      expect(markup, `tab ${tab}`).not.toContain('Bravo Occurrence Form')
+    }
+  })
+
+  it('shows the other operator their own, which is the half that makes the first mean something', async () => {
+    const markup = await open(memberOf(ids.people.bravoManager), ids.organizations.bravo, FORMS_TAB)
+
+    expect(markup).toContain('Bravo Occurrence Form')
+    expect(markup).not.toContain('Alpha')
+  })
+
+  it('reads an operator with no documents in a bucket as empty rather than as everyone else', async () => {
+    // delta holds nothing at all. the wording is the tab's own and not `Žiadne dokumenty`,
+    // which is `/admin/general-documents`'s sentence
+    const markup = await open(superadmin(), delta, PERMITS_TAB)
+
+    expect(markup).toContain(t('organization.workspace.permits.empty'))
+    expect(markup).not.toContain('placeholder-alpha-permit.pdf')
+  })
+})
+
 describe('an organisation the session holds no membership of', () => {
   it('is not-found for a member, because the read returns no row to render', async () => {
     // not a refusal: a forbidden response would confirm the organisation is real
@@ -330,13 +416,16 @@ describe('which tab the request opened', () => {
   it('renders the first tab when no tab is named, and runs that tab query alone', async () => {
     const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha)
 
-    // tab 0's own register and no other: the absence of every serial is the evidence that
-    // the fleet loader was never awaited
+    // tab 0's own register and no other: the absence of every serial and of every stored
+    // filename is the evidence that neither the fleet loader nor any of the three document
+    // loaders was ever awaited
     expect(markup).toContain('Alpha Manager')
     expect(markup).not.toContain('SN-')
+    expect(markup).not.toContain('placeholder-alpha-permit.pdf')
+    expect(markup).not.toContain('Alpha Occurrence Form')
   })
 
-  it('renders every tab label, so the four unbuilt ones are addressable', async () => {
+  it('renders every tab label, so the one unbuilt tab is still addressable', async () => {
     const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, UAS_TAB)
 
     expect(markup).toContain(t('organization.workspace.tab.uas'))

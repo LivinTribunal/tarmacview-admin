@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { airframeTable, airframeTableRow } from '@/lib/devices/fields'
+import {
+  organizationFormTable,
+  organizationOperationsTable,
+  organizationPermitTable,
+} from '@/lib/documents/fields'
 import { t } from '@/lib/i18n'
 import { activeTabIndex, workspaceTabs } from '@/lib/organizations/workspace'
 import { formatCell } from '@/lib/table/view'
@@ -16,6 +21,10 @@ import {
 // request is looking at, what the UAS tab renders for an airframe with no device type,
 // and what the two people tabs render for the cells a person may leave empty. no dom and
 // no container, so it runs in the `unit` project.
+//
+// the three document tabs declare their columns and their cells in
+// tests/domain/document-columns.test.ts, beside the register they are the same entity as.
+// what is asserted here is only which declaration each tab carries.
 
 const airframe: AirframeEntry = {
   id: 9,
@@ -89,16 +98,20 @@ describe('the seven tabs doc 05 records', () => {
     expect(workspaceTabs).toHaveLength(7)
   })
 
-  it('carries three sub-registers, and they are tabs 0, 1 and 2', () => {
+  it('carries six sub-registers, and they are tabs 0 through 5', () => {
     // this is what makes "only the active tab's query runs" true: the page awaits the
-    // resolved tab's loader and there is no other loader to await. four tabs render a
-    // label and query nothing.
+    // resolved tab's loader and there is no other loader to await. tab 6 renders a label
+    // and queries nothing.
     const built = workspaceTabs.flatMap((tab, index) => (tab.register ? [index] : []))
-    expect(built).toEqual([0, 1, 2])
+    expect(built).toEqual([0, 1, 2, 3, 4, 5])
     expect(workspaceTabs[0]?.register?.declaration).toBe(organizationPersonTable)
     expect(workspaceTabs[1]?.register?.declaration).toBe(organizationPilotTable)
     expect(workspaceTabs[2]?.register?.declaration).toBe(airframeTable)
+    expect(workspaceTabs[3]?.register?.declaration).toBe(organizationFormTable)
+    expect(workspaceTabs[4]?.register?.declaration).toBe(organizationPermitTable)
+    expect(workspaceTabs[5]?.register?.declaration).toBe(organizationOperationsTable)
   })
+
 
   it('gives each people tab its own empty wording', () => {
     // *Žiadni používatelia* is the deployment-wide register's sentence and reads wrong

@@ -39,6 +39,12 @@ export const generalDocumentFormFields: readonly FormField[] = [
   },
 ]
 
+// the one route that serves a stored document, of any bucket - docs/specs/03-data-model.md
+// §"Serving a stored file in the rebuild". four declarations state it now, which is the
+// whole of what #75 consolidated: a path shape written once cannot be written four
+// different ways.
+const documentFilePath = '/api/documents/{id}/file'
+
 // docs/specs/04-admin-resources.md §OrganizationDocumentResource is the source: eight
 // columns, of which `Súbor`, `Odkaz` and `Kategória` carry no `^` and so are not sortable.
 // the one column doc 04 marks *(toggle)* is `created_at`, which is last here and is neither
@@ -61,11 +67,7 @@ export const generalDocumentTable: TableDeclaration = {
   columns: [
     { key: 'name', labelKey: 'document.column.name', sortable: true },
     { key: 'file', labelKey: 'document.field.file_path' },
-    {
-      key: 'link',
-      labelKey: 'document.column.link',
-      linkPath: '/api/general-documents/{id}/file',
-    },
+    { key: 'link', labelKey: 'document.column.link', linkPath: documentFilePath },
     { key: 'size', labelKey: 'document.column.size', sortable: true },
     { key: 'category', labelKey: 'document.column.category' },
     { key: 'valid_until', labelKey: 'document.field.valid_until', sortable: true },
@@ -121,6 +123,131 @@ export function generalDocumentTableRow(entry: DocumentEntry): TableRow {
     size: fileSize(entry.size),
     category: t(`document.category.${entry.category}`),
     valid_until: formatDate(entry.validUntil),
+    uploaded_by: entry.uploadedByName,
+    created_at: formatDate(entry.createdAt),
+  }
+}
+
+// the workspace's three document buckets - docs/specs/05-organization-workspace.md §3, §4
+// and §5. filed here rather than in a module of their own because they are the register
+// above's own entity in three more registers, which is why src/lib/users/fields.ts holds the
+// workspace's people tables beside the deployment-wide one.
+//
+// **three declarations and not one over a bucket constant.** §4 is not shaped like the other
+// two: it carries `Verejné`, which no other bucket has, and its first column is the filename
+// rather than the name - doc 03 §Document's *required (except permits, which take the
+// filename)*, and doc 05 §4's own *"The filename will be used as the permit name"*. one
+// shared declaration would either hide `Verejné` or invent it for the other two. what is
+// genuinely shared is the read, and that is scoped-documents.ts's `listOrganizationDocuments`.
+//
+// §3 and §5 do agree, column for column, and are still written out twice: the two lists have
+// different provenance. §5's is Observed; §3's the doc records as *not observed - the
+// register was empty for the inspected organisation*, so it is **inferred** and marked so
+// below. one shared array would let a later correction to the inferred list silently rewrite
+// the observed one.
+//
+// none of the three declares a filter, a row action or a bulk action, the same absence
+// `airframeTable` and the two people tables state: doc 05 records `Stiahnuť`, `Upraviť`,
+// `Odstrániť`, the bulk removals and §4's `Verejné` filter, all Observed from a GET-only
+// capture. the filter is deferred with the filter panel - doc 05 §"The workspace in the
+// rebuild" says why it is the natural first one - and the rest are writes with no write path.
+// `Stiahnuť` alone is a **read**, so it is served: the filename cell links to the file route
+// the way `Odkaz` does above, and the row id is still the only thing that reaches the url.
+//
+// `Nahrané` is a plain column here and *(toggle)* on the register above. that is doc 05's
+// tab table against doc 04's, not an inconsistency to tidy away.
+
+// §3, and the column list is *(inferred)*: doc 05 records the register as empty for the
+// inspected organisation and assumes the document shape.
+export const organizationFormTable: TableDeclaration = {
+  resource: 'organization-forms',
+  emptyKey: 'organization.workspace.forms.empty',
+  columns: [
+    { key: 'name', labelKey: 'document.column.name' },
+    { key: 'file', labelKey: 'document.field.file_path', linkPath: documentFilePath },
+    { key: 'size', labelKey: 'document.column.size' },
+    { key: 'uploaded_by', labelKey: 'document.column.uploaded_by' },
+    { key: 'created_at', labelKey: 'document.column.created_at' },
+  ],
+}
+
+// §4, Observed. `Názov súboru` and not `Názov`, and `Verejné` between it and `Veľkosť`.
+export const organizationPermitTable: TableDeclaration = {
+  resource: 'organization-permits',
+  emptyKey: 'organization.workspace.permits.empty',
+  columns: [
+    { key: 'file', labelKey: 'document.column.file_name', linkPath: documentFilePath },
+    { key: 'is_public', labelKey: 'document.column.is_public' },
+    { key: 'size', labelKey: 'document.column.size' },
+    { key: 'uploaded_by', labelKey: 'document.column.uploaded_by' },
+    { key: 'created_at', labelKey: 'document.column.created_at' },
+  ],
+}
+
+// §5, Observed - the operator's standing compliance pack.
+export const organizationOperationsTable: TableDeclaration = {
+  resource: 'organization-operations',
+  emptyKey: 'organization.workspace.operations.empty',
+  columns: [
+    { key: 'name', labelKey: 'document.column.name' },
+    { key: 'file', labelKey: 'document.field.file_path', linkPath: documentFilePath },
+    { key: 'size', labelKey: 'document.column.size' },
+    { key: 'uploaded_by', labelKey: 'document.column.uploaded_by' },
+    { key: 'created_at', labelKey: 'document.column.created_at' },
+  ],
+}
+
+// tab 3. `Súbor` carries the file's own name and never the path it sits at, the narrower rule
+// `generalDocumentTableRow` states above and for the same reason.
+//
+// `Nahral` is a gap wherever the session cannot read the uploader. that is the *normal* case
+// for the global library, whose uploader is a superadmin no member shares an organisation
+// with; here the uploader is usually one of the operator's own people, so a gap on these
+// tabs means the document names nobody - and it is still a gap and never a pass.
+export function organizationFormTableRow(entry: DocumentEntry): TableRow {
+  return {
+    id: entry.id,
+    name: entry.name,
+    file: basename(entry.filePath),
+    size: fileSize(entry.size),
+    uploaded_by: entry.uploadedByName,
+    created_at: formatDate(entry.createdAt),
+  }
+}
+
+// tab 5, and its own function rather than tab 3's: the two declarations are separate because
+// §3's column list is inferred and §5's is Observed, and one shared row function would put
+// back exactly the coupling that split exists to prevent - a correction to the inferred cells
+// silently rewriting the observed ones. src/lib/users/fields.ts writes one per declaration for
+// its two overlapping tabs on the same reasoning.
+export function organizationOperationsTableRow(entry: DocumentEntry): TableRow {
+  return {
+    id: entry.id,
+    name: entry.name,
+    file: basename(entry.filePath),
+    size: fileSize(entry.size),
+    uploaded_by: entry.uploadedByName,
+    created_at: formatDate(entry.createdAt),
+  }
+}
+
+// and tab 4. no `name` cell: a permit's name *is* its filename, so a second cell repeating
+// it would state a distinction the bucket does not have.
+//
+// `Verejné` states the affirmative and says nothing where the flag is clear - the shape
+// `organizationPersonTableRow`'s `Hlavná` uses and for the reason stated there, plus one of
+// its own: it puts the word on the rows that carry the exposure rather than on the rows that
+// do not.
+//
+// whether a public permit is exposed to a session-less reader at all is doc 06's to settle -
+// doc 05 §4 flags the predecessor's own wording against the report's, and this cell shows
+// the flag without resolving any of it.
+export function organizationPermitTableRow(entry: DocumentEntry): TableRow {
+  return {
+    id: entry.id,
+    file: basename(entry.filePath),
+    is_public: entry.isPublic ? t('document.isPublic.yes') : null,
+    size: fileSize(entry.size),
     uploaded_by: entry.uploadedByName,
     created_at: formatDate(entry.createdAt),
   }

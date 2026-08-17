@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { document, organization } from '@/lib/db/schema'
-import { readGeneralDocumentFile } from '@/lib/files/general-document'
+import { readDocumentFile } from '@/lib/files/document'
 import { readOrganizationLogo } from '@/lib/files/organization-logo'
 import { withTenant, type TenantSession } from '@/lib/tenant/tenant-context'
 import { startTestDatabase, type TestDatabase } from '../support/database'
@@ -26,11 +26,19 @@ import { FIXTURE_STORAGE_ROOT, seedFixtures, type SeededIds } from '../support/f
 // this file should fail rather than follow it.
 const ALPHA_LOGO = 'organization-logos/alpha.png'
 const GLOBAL_MANUAL = 'general-documents/placeholder-operations-manual.pdf'
+const ALPHA_PERMIT = 'permits/placeholder-alpha-permit.pdf'
+
+// the one extension the two allow-lists still disagree about. `.png` was that extension until
+// #75 gave the document route the union of the four buckets' lists, and doc 03 §Document puts
+// `.png` on the permits bucket - so the claim that the lists are two lists needs the type no
+// document bucket was ever seen to take.
+const LOGO_WEBP = 'organization-logos/placeholder-mark.webp'
 
 let harness: TestDatabase
 let ids: SeededIds
 let logoBytes: Uint8Array
 let manualBytes: Uint8Array
+let permitBytes: Uint8Array
 let outsideRoot: string
 let outsideFile: string
 
@@ -42,6 +50,7 @@ beforeAll(async () => {
 
   logoBytes = await readFile(join(FIXTURE_STORAGE_ROOT, ALPHA_LOGO))
   manualBytes = await readFile(join(FIXTURE_STORAGE_ROOT, GLOBAL_MANUAL))
+  permitBytes = await readFile(join(FIXTURE_STORAGE_ROOT, ALPHA_PERMIT))
 
   // the same bytes, one directory tree away from the storage root. a temporary directory
   // and not a second committed file: what matters is only that it is outside and readable.
@@ -156,6 +165,16 @@ describe('what the stored path itself is not allowed to do', () => {
     expect(logo).toBeNull()
   })
 
+  it('serves a webp, which is on this list and on no document bucket', async () => {
+    // the positive half of *the two allow-lists are two lists*. without it the refusal in
+    // the document block below would be satisfied by a reader that serves nothing at all.
+    const logo = await withStoredPath(LOGO_WEBP, () =>
+      readLogo(alphaSession(), ids.organizations.alpha),
+    )
+    expect(logo?.contentType).toBe('image/webp')
+    expect(Array.from(logo?.bytes.subarray(0, 4) ?? [])).toEqual([0x52, 0x49, 0x46, 0x46])
+  })
+
   it('left the fixture as it found it, or every read above this line is suspect', async () => {
     const logo = await readLogo(alphaSession(), ids.organizations.alpha)
     expect(logo?.bytes).toEqual(logoBytes)
@@ -163,16 +182,20 @@ describe('what the stored path itself is not allowed to do', () => {
 })
 
 // the second consumer of the same boundary, and the one doc 03 §"Serving a stored file in
-// the rebuild" wrote the nosniff paragraph for. what changes is which sessions the read
-// answers for - a global document belongs to no operator and every session may read it.
-// what does not change is that the row is resolved first, inside the tenant transaction.
+// the rebuild" wrote the nosniff paragraph for. it now reads **every bucket** of `document`
+// and not only the global library - #75, recorded in that section - so what changes between
+// one row and the next is only which sessions the policy answers for. what does not change
+// is that the row is resolved first, inside the tenant transaction.
 //
-// the containment cases are not repeated here: both readers reach the storage root through
-// the same resolveStoredFile(), which the block above proves is on the path to the disk and
-// tests/domain/stored-file-containment.test.ts covers the arithmetic of.
+// the containment *arithmetic* is not repeated here - tests/domain/stored-file-containment.test.ts
+// covers which shapes escape. this reader's own call to resolveStoredFile is, and was not
+// before #75: the logo's case proves the check is on the logo's path to the disk and says
+// nothing about this one, and the two readers having been written alike is not an assertion.
+// it matters more now than it did, because this route reaches tenant-owned rows whose
+// `file_path` the history migration (#14) imports from the predecessor's database.
 
 const readDocument = (session: TenantSession, id: number) =>
-  withTenant(harness.app, session, (tx) => readGeneralDocumentFile(tx, id))
+  withTenant(harness.app, session, (tx) => readDocumentFile(tx, id))
 
 // only a superadmin may write a global row at all, so the poison and its removal both go
 // through one - which is the policy under test in tests/tenancy/document-isolation.test.ts
@@ -194,7 +217,7 @@ async function withDocumentPath<T>(storedPath: string, run: () => Promise<T>): P
   }
 }
 
-describe('the global library reaches its file through the row too, for every session', () => {
+describe('one route, every bucket: the row is what decides which session it answers', () => {
   it('serves a member the bytes of a global document, and its allow-listed content type', async () => {
     const file = await readDocument(alphaSession(), ids.documents.globalManual)
     expect(file?.contentType).toBe('application/pdf')
@@ -211,12 +234,32 @@ describe('the global library reaches its file through the row too, for every ses
     expect(file?.bytes).toEqual(manualBytes)
   })
 
-  it('answers not-found for a document in another bucket, even to the operator that owns it', async () => {
-    // alpha may read its own operations manual; this route may not serve it. the route sits
-    // under the resource that owns the file, and a bucket reached through the wrong one is
-    // the generic file route doc 03 refuses to have
-    const file = await readDocument(alphaSession(), ids.documents.alphaOperations)
+  it('serves the operator their own permit, which is the bucket #75 stopped refusing', async () => {
+    // this route answered null for a permit before #75, on the reading that a bucket reached
+    // through the wrong route was the generic file route doc 03 refuses to have. what that
+    // section actually forbids is a handler taking a path from the request, and this one
+    // still takes an id and reads the path as a column - so the bucket filter came off and
+    // the policy is what scopes the read, as it always was.
+    const file = await readDocument(alphaSession(), ids.documents.alphaPermit)
+    expect(file?.contentType).toBe('application/pdf')
+    expect(file?.bytes).toEqual(permitBytes)
+
+    // a different file from the global manual, or this would pass on the wrong bytes
+    expect(permitBytes).not.toEqual(manualBytes)
+    expect(Array.from(permitBytes.subarray(0, 4))).toEqual([0x25, 0x50, 0x44, 0x46])
+  })
+
+  it('answers another operator with not-found, on the same permit and the same file', async () => {
+    // the boundary, and the one the dropped bucket filter never carried: bravo holds no
+    // membership of alpha, so the read returns no row and the bytes on disk are unreachable.
+    // one row and two sessions, so the null is the policy rather than a missing file.
+    const file = await readDocument(bravoSession(), ids.documents.alphaPermit)
     expect(file).toBeNull()
+  })
+
+  it('serves a superadmin that same permit, so the exclusion above is not an empty read', async () => {
+    const file = await readDocument(superadminSession(), ids.documents.alphaPermit)
+    expect(file?.bytes).toEqual(permitBytes)
   })
 
   it('answers an id no document has at all', async () => {
@@ -230,14 +273,42 @@ describe('the global library reaches its file through the row too, for every ses
     expect(file).toBeNull()
   })
 
-  it('refuses an extension the logo route serves and this one does not, on a file that is there', async () => {
-    // the two allow-lists are different lists, and this is what says so: a png is readable,
-    // is served under the route above, and is refused here. copy the logo's map onto this
-    // reader and only this case notices.
-    const file = await withDocumentPath(ALPHA_LOGO, () =>
+  it('refuses a stored path outside the storage root, on a file that is there and readable', async () => {
+    // readable, so the null is this reader's containment check and not a missing file. the
+    // escape is a `.png`, which the union above now serves - so the allow-list does not
+    // refuse it first and the check is genuinely what answers. before #75 an out-of-root
+    // `.png` was refused by the extension, and a test here could not have told the two apart.
+    expect(await readFile(outsideFile)).toEqual(logoBytes)
+
+    const file = await withDocumentPath(outsideFile, () =>
       readDocument(alphaSession(), ids.documents.globalManual),
     )
     expect(file).toBeNull()
+  })
+
+  it('refuses an extension the logo route serves and this one does not, on a file that is there', async () => {
+    // the two allow-lists are still two lists, and this is what says so. it was a `.png`
+    // until #75, and a png is now on both: doc 03 §Document gives the permits bucket
+    // `.jpg,.jpeg,.png`, and this reader takes the union of the four buckets. `.webp` is what
+    // is left - the logo route serves it above, no document bucket was ever seen to take one,
+    // and copying the logo's map onto this reader is what only this case notices.
+    expect(await readFile(join(FIXTURE_STORAGE_ROOT, LOGO_WEBP))).toHaveLength(34)
+
+    const file = await withDocumentPath(LOGO_WEBP, () =>
+      readDocument(alphaSession(), ids.documents.globalManual),
+    )
+    expect(file).toBeNull()
+  })
+
+  it('serves the png the permits bucket accepts, which is the half of the union that is new', async () => {
+    // doc 03 §Document: permits take `.pdf,.jpg,.jpeg,.png,.doc,.docx`. the union is a
+    // deliberate widening of what this reader serves and not an accident, so it is asserted
+    // rather than left to be discovered by a permit that will not open.
+    const file = await withDocumentPath(ALPHA_LOGO, () =>
+      readDocument(alphaSession(), ids.documents.globalManual),
+    )
+    expect(file?.contentType).toBe('image/png')
+    expect(file?.bytes).toEqual(logoBytes)
   })
 
   it('left the library as it found it, or the read above this line is suspect', async () => {
