@@ -1,4 +1,4 @@
-import type { Device, DeviceType } from '@/lib/db/schema'
+import type { Device, DeviceType, MaintenanceLog } from '@/lib/db/schema'
 import {
   serviceState,
   vlosLimit,
@@ -15,8 +15,24 @@ export type AirframeReportInput = {
   device: Device
   deviceType: DeviceType | null
   readings: ServiceReadings
-  // period-filtered totals, which the flight register supplies once it exists
+  // period-filtered totals, grouped from the same rows data.flights[] is serialised from
   totals: { flights: number; flightHours: number; lastFlightDate: Date | null }
+  // the maintenance history as the technician stated it, newest first
+  maintenance: readonly MaintenanceLog[]
+}
+
+// the oracle carries no key path below `maintenance_logs[]` - every captured one was empty,
+// Observed - so this member shape is the rebuild's own and parity claims only that the key
+// exists and is an array. it mirrors docs/specs/03-data-model.md §MaintenanceLog's field
+// list rather than guessing at oracle-shaped names for keys nothing ever observed.
+export type MaintenanceLogRow = {
+  id: number
+  maintenance_date: string
+  total_flight_hours: string
+  total_flights: number | null
+  maintenance_performed_by: string | null
+  fault_and_maintenance_description: string | null
+  preflight_check_performed_by: string | null
 }
 
 export type DeviceReportRow = {
@@ -30,7 +46,7 @@ export type DeviceReportRow = {
   status: string
   max_vlos_meters: string | null
   maintenance_instructions: string | null
-  maintenance_logs: readonly unknown[]
+  maintenance_logs: readonly MaintenanceLogRow[]
   last_flight_date: string | null
   lifetime_flights_count: number
   total_flights: number
@@ -74,6 +90,20 @@ function warning(state: ServiceState): string | null {
   return state.due ? t('device.warning.serviceDue') : null
 }
 
+// the record as stated, never recomputed: `total_flights` stays null where the technician
+// stated none, because a zero there would be a reading nobody took.
+function statedMaintenance(log: MaintenanceLog): MaintenanceLogRow {
+  return {
+    id: log.id,
+    maintenance_date: log.maintenanceDate,
+    total_flight_hours: log.totalFlightHours,
+    total_flights: log.totalFlights,
+    maintenance_performed_by: log.maintenancePerformedBy,
+    fault_and_maintenance_description: log.faultAndMaintenanceDescription,
+    preflight_check_performed_by: log.preflightCheckPerformedBy,
+  }
+}
+
 export function airframeReportRow(input: AirframeReportInput): DeviceReportRow {
   const { device, deviceType, readings, totals } = input
   const state = serviceState(deviceType, readings)
@@ -95,10 +125,10 @@ export function airframeReportRow(input: AirframeReportInput): DeviceReportRow {
 
     maintenance_instructions: deviceType?.maintenanceInstructions ?? null,
 
-    // the oracle carries no key path below this array, so every captured one was empty
-    // - Observed. the maintenance log is a later slice; the key exists from the start
-    // because the report screen reads it.
-    maintenance_logs: [],
+    // the history itself and not an empty array: an airframe that has been serviced
+    // serialising `[]` here would be a gap reading as a fact, which is why R1 declared this
+    // whole block pending rather than sending it empty. the member shape above is ours.
+    maintenance_logs: input.maintenance.map(statedMaintenance),
 
     last_flight_date: isoDate(totals.lastFlightDate),
 

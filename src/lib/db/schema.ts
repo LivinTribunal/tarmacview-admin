@@ -353,9 +353,9 @@ export const device = pgTable(
     // a fleet is the operator's own record and deleting an airframe is the same authority
     // as writing one - docs/specs/03-data-model.md §"Delete authority in the rebuild".
     // that holds only while an airframe carries no history. `training_device` was the first
-    // dependent to restrict on that reasoning and `flight` below is the second, so an
-    // airframe that flew cannot be deleted out from under the record. `maintenance_log`
-    // must do the same when it lands, or a member deletes the evidence with the row.
+    // dependent to restrict on that reasoning, `flight` below is the second and
+    // `maintenance_log` is the third, so neither an airframe that flew nor one that was
+    // serviced can be deleted out from under the record.
     pgPolicy('device_tenant_isolation', {
       for: 'all',
       using: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
@@ -504,6 +504,64 @@ export const trainingDevice = pgTable(
     }).onDelete('restrict'),
 
     pgPolicy('training_device_tenant_isolation', {
+      for: 'all',
+      using: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
+      withCheck: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
+    }),
+  ],
+)
+
+// one service performed on an airframe - docs/specs/03-data-model.md §"Maintenance log in
+// the rebuild". the readings on it are **stated by the technician at the time of service**
+// and never recomputed, which is what src/lib/devices/service-schedule.ts composes the
+// service baseline from.
+//
+// `total_flight_hours` is `text` and not a number, because the figure accepts `h:mm` as
+// well as a decimal - a numeric column would throw the technician's own notation away
+// before it was ever parsed. `total_flights` stays nullable: doc 03 marks it optional, and
+// a record stating no cycle count is a record all the same.
+export const maintenanceLog = pgTable(
+  'maintenance_log',
+  {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'restrict' }),
+
+    // no `references()`: the tenant travels with the airframe, in the composite foreign key
+    // below. not null, unlike `flight.device_id` and `incident.flight_id` - a service is
+    // performed *on* an airframe, so there is no row here that names none and the composite
+    // key is enforced on every one of them rather than left unenforced by a null.
+    deviceId: integer('device_id').notNull(),
+    maintenanceDate: date('maintenance_date').notNull(),
+    totalFlightHours: text('total_flight_hours').notNull(),
+    totalFlights: integer('total_flights'),
+    maintenancePerformedBy: text('maintenance_performed_by'),
+    faultAndMaintenanceDescription: text('fault_and_maintenance_description'),
+    preflightCheckPerformedBy: text('preflight_check_performed_by'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('maintenance_log_organization_idx').on(table.organizationId),
+
+    // the tenant boundary as a foreign key, exactly as `flight.device_id` carries it. a
+    // plain references(device.id) would let a maintenance record name another operator's
+    // airframe and no policy would notice, because the row's own `organization_id` would be
+    // perfectly correct.
+    //
+    // `restrict` is the promise `device` above makes: an airframe carrying maintenance
+    // history cannot be deleted out from under the airworthiness record.
+    foreignKey({
+      columns: [table.deviceId, table.organizationId],
+      foreignColumns: [device.id, device.organizationId],
+      name: 'maintenance_log_device_id_organization_id_fk',
+    }).onDelete('restrict'),
+
+    // tenant-scoped on both halves and no restrictive delete policy, like `flight` and
+    // `incident`: a maintenance record is the operator's own, and deleting one is the same
+    // authority as writing one. what protects the airframe's history is the `restrict`
+    // above, not a policy on this table.
+    pgPolicy('maintenance_log_tenant_isolation', {
       for: 'all',
       using: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
       withCheck: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
@@ -1039,6 +1097,7 @@ export type TrainingType = typeof trainingType.$inferSelect
 export type Training = typeof training.$inferSelect
 export type EntryMode = (typeof entryMode.enumValues)[number]
 export type ParsingStatus = (typeof parsingStatus.enumValues)[number]
+export type MaintenanceLog = typeof maintenanceLog.$inferSelect
 export type Flight = typeof flight.$inferSelect
 export type FlightLog = typeof flightLog.$inferSelect
 export type DocumentCategory = (typeof documentCategory.enumValues)[number]

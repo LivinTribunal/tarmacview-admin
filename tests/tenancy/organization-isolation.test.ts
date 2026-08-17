@@ -88,7 +88,7 @@ describe('tenant isolation: the organisation register under a member session', (
 describe('tenant isolation: the two counts beside each organisation', () => {
   it('counts the acting tenant own fleet, scoped by the airframe policy', async () => {
     const [alpha] = await list(alphaSession())
-    expect(alpha?.airframeCount).toBe(2)
+    expect(alpha?.airframeCount).toBe(3)
   })
 
   it('leaves the people count blank for a member, rather than reporting their own row as a roster', async () => {
@@ -123,7 +123,7 @@ describe('what the organisation schema itself decides: deleting a tenant', () =>
       .select()
       .from(device)
       .where(eq(device.organizationId, ids.organizations.alpha))
-    expect(airframes).toHaveLength(2)
+    expect(airframes).toHaveLength(3)
   })
 
   it('refuses to delete an organisation that owns a training type', async () => {

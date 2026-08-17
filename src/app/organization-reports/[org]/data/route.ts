@@ -3,6 +3,7 @@ import { db } from '@/lib/db/client'
 import { t } from '@/lib/i18n'
 import { reportPayload, resolveSelection } from '@/lib/report/payload'
 import { identifier } from '@/lib/routes/identifier'
+import { listOrganizationAirframeReport } from '@/lib/tenant/scoped-airframes'
 import { listOrganizationFlights } from '@/lib/tenant/scoped-flights'
 import { findOrganization } from '@/lib/tenant/scoped-organizations'
 import { withTenant } from '@/lib/tenant/tenant-context'
@@ -44,16 +45,25 @@ export async function GET(
   if (id === null) return notFound()
 
   // the clock is injected rather than read inside the period resolution, so "this month" is
-  // testable - the reasoning `ServiceReadings.asOf` records in service-schedule.ts
-  const selection = resolveSelection(new URL(request.url).searchParams, new Date())
+  // testable - the reasoning `ServiceReadings.asOf` records in service-schedule.ts. the same
+  // instant answers both questions the payload asks of a clock: which month the period is,
+  // and how overdue a service is as of now.
+  const asOf = new Date()
+  const selection = resolveSelection(new URL(request.url).searchParams, asOf)
   if (selection === null) return json({ success: false, error: t('report.error.query') }, 400)
 
-  const entries = await withTenant(db, session, async (tx) => {
+  // both reads inside the one transaction, so one payload is one consistent read and both
+  // blocks are scoped by the same acting session
+  const read = await withTenant(db, session, async (tx) => {
     const organization = await findOrganization(tx, id)
     if (!organization) return null
-    return listOrganizationFlights(tx, organization.id, selection)
-  })
-  if (entries === null) return notFound()
 
-  return json(reportPayload(entries, selection), 200)
+    return {
+      entries: await listOrganizationFlights(tx, organization.id, selection),
+      airframes: await listOrganizationAirframeReport(tx, organization.id),
+    }
+  })
+  if (read === null) return notFound()
+
+  return json(reportPayload(read.entries, read.airframes, selection, asOf), 200)
 }

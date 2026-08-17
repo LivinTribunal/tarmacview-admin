@@ -35,6 +35,7 @@ describe('an airframe with no device type reports no limit configured', () => {
       deviceType: null,
       readings: readings({ lifetimeCycles: 5_000 }),
       totals: { flights: 12, flightHours: 9.5, lastFlightDate: new Date('2026-08-01T00:00:00Z') },
+      maintenance: [],
     })
 
     expect(row.service_is_configured).toBe(false)
@@ -49,12 +50,14 @@ describe('an airframe with no device type reports no limit configured', () => {
       deviceType: null,
       readings: readings({ lifetimeCycles: 5_000 }),
       totals: { flights: 0, flightHours: 0, lastFlightDate: null },
+      maintenance: [],
     })
     const withinInterval = airframeReportRow({
       device: testAirframe({}),
       deviceType: configuredType(),
       readings: readings({ lifetimeCycles: 10 }),
       totals: { flights: 0, flightHours: 0, lastFlightDate: null },
+      maintenance: [],
     })
 
     // both are "not due", and that is exactly why service_due cannot be the field a

@@ -7,6 +7,7 @@ import {
   flight,
   flightLog,
   incident,
+  maintenanceLog,
   map,
   mapKmlFile,
   mapOrganization,
@@ -107,7 +108,69 @@ const airframes = [
   { key: 'alphaOne', organization: 'alpha', serialNumber: 'SN-ALPHA-0001', typed: true },
   // no device type: no VLOS limit and no service interval, which must read as a gap
   { key: 'alphaTwo', organization: 'alpha', serialNumber: 'SN-ALPHA-0002', typed: false },
+
+  // the serviced airframe, and the one fixture row that carries **only** maintenance: no
+  // training covers it and no flight names it, so the delete a maintenance record refuses is
+  // unambiguously that record's doing. `alphaOne` could not hold this - a training already
+  // restricts its delete, and tests/tenancy/training-isolation.test.ts names which
+  // constraint refused. the serial skips 0003, which delete-authority inserts inline.
+  { key: 'alphaServiced', organization: 'alpha', serialNumber: 'SN-ALPHA-0004', typed: true },
   { key: 'bravoOne', organization: 'bravo', serialNumber: 'SN-BRAVO-0001', typed: true },
+] as const
+
+// the maintenance history - docs/specs/03-data-model.md §"Maintenance log in the rebuild".
+// alpha and bravo only, for the reason every register below gives: charlie is deleted to
+// prove the dependent block lifts, and `maintenance_log.organization_id` is `restrict`.
+//
+// the two alpha rows are one case between them, and it is the case the composed baseline
+// exists for: the **newer** service states no cycle count and the older one does, so the
+// calendar baseline and the cycle baseline have to come from different records. collapse
+// them into one row and nothing can tell a composed baseline from a naive one.
+//
+// the technician names are obvious placeholders. `maintenance_performed_by` and
+// `preflight_check_performed_by` hold real people in the predecessor, and a plausible-looking
+// name survives review in a way `PLACEHOLDER-…` cannot.
+//
+// `total_flight_hours` is stated `h:mm` on two rows and with a decimal comma on the third.
+// both are real inputs and the column is `text` so that neither is thrown away before R5
+// parses it - a fixture carrying only one notation would not say so.
+const maintenance = [
+  {
+    key: 'alphaFirstService',
+    organization: 'alpha',
+    airframe: 'alphaServiced',
+    maintenanceDate: '2026-05-20',
+    totalFlightHours: '41:30',
+    totalFlights: 120,
+    performedBy: 'PLACEHOLDER-TECHNICIAN-0001',
+    description: 'Placeholder maintenance description.',
+    preflightCheckBy: 'PLACEHOLDER-INSPECTOR-0001',
+  },
+
+  // the newest service on this airframe, and it states no cycle count. everything but the
+  // date is a gap, which is the shape of a record filed in a hurry and is not an error.
+  {
+    key: 'alphaLatestService',
+    organization: 'alpha',
+    airframe: 'alphaServiced',
+    maintenanceDate: '2026-07-05',
+    totalFlightHours: '43,5',
+    totalFlights: null,
+    performedBy: null,
+    description: null,
+    preflightCheckBy: null,
+  },
+  {
+    key: 'bravoService',
+    organization: 'bravo',
+    airframe: 'bravoOne',
+    maintenanceDate: '2026-06-10',
+    totalFlightHours: '12:15',
+    totalFlights: 8,
+    performedBy: 'PLACEHOLDER-TECHNICIAN-0002',
+    description: 'Placeholder maintenance description.',
+    preflightCheckBy: null,
+  },
 ] as const
 
 const trainingTypes = [
@@ -498,6 +561,7 @@ const maps = [
 export type OrganizationKey = (typeof organizations)[number]['key']
 export type PersonKey = (typeof people)[number]['key']
 export type AirframeKey = (typeof airframes)[number]['key']
+export type MaintenanceKey = (typeof maintenance)[number]['key']
 export type TrainingTypeKey = (typeof trainingTypes)[number]['key']
 export type TrainingKey = (typeof trainings)[number]['key']
 export type FlightKey = (typeof flights)[number]['key']
@@ -509,6 +573,7 @@ export type SeededIds = {
   organizations: Record<OrganizationKey, number>
   people: Record<PersonKey, number>
   airframes: Record<AirframeKey, number>
+  maintenance: Record<MaintenanceKey, number>
   trainingTypes: Record<TrainingTypeKey, number>
   trainings: Record<TrainingKey, number>
   flights: Record<FlightKey, number>
@@ -598,6 +663,25 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
           deviceTypeId: entry.typed ? deviceTypeId : null,
         })
         .returning({ id: device.id }),
+    )
+  }
+
+  const maintenanceIds = {} as Record<MaintenanceKey, number>
+  for (const entry of maintenance) {
+    maintenanceIds[entry.key] = await insertOne(
+      db
+        .insert(maintenanceLog)
+        .values({
+          organizationId: organizationIds[entry.organization],
+          deviceId: airframeIds[entry.airframe],
+          maintenanceDate: entry.maintenanceDate,
+          totalFlightHours: entry.totalFlightHours,
+          totalFlights: entry.totalFlights,
+          maintenancePerformedBy: entry.performedBy,
+          faultAndMaintenanceDescription: entry.description,
+          preflightCheckPerformedBy: entry.preflightCheckBy,
+        })
+        .returning({ id: maintenanceLog.id }),
     )
   }
 
@@ -754,6 +838,7 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
     organizations: organizationIds,
     people: personIds,
     airframes: airframeIds,
+    maintenance: maintenanceIds,
     trainingTypes: trainingTypeIds,
     trainings: trainingIds,
     flights: flightIds,

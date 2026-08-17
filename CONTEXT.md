@@ -127,8 +127,13 @@ predecessor system, which is the source of most of these terms, is in
 - **Service interval** — the maintenance period, expressible two ways at once: in cycles
   and in calendar months. When both are set, **whichever limit is reached first** triggers
   the warning. In code: `serviceState()` in `src/lib/devices/service-schedule.ts`.
-- **Service baseline** — the cycle count and date at last maintenance, from which the next
-  service is measured. Logging maintenance resets it.
+- **Service baseline** — the cycle count and date from which the next service is measured.
+  Logging maintenance resets it, and its two halves may come from **different** maintenance
+  records: the date is the newest one, the cycle count is the newest one that actually stated
+  a count, and zero where none ever did. Never recomputed from the airframe's own flight
+  history. In code: `serviceReadings()` in `src/lib/devices/service-schedule.ts`; see
+  [docs/specs/03-data-model.md](docs/specs/03-data-model.md) §"Maintenance log in the
+  rebuild".
 - **Maintenance log** — a record of service performed, capturing the flight hours and
   cycle count **as stated by the technician at the time of service**, not recomputed. It
   records what was certified, which is the point of it.

@@ -1,3 +1,5 @@
+import { serviceReadings } from '@/lib/devices/service-schedule'
+import { airframeReportRow, type DeviceReportRow } from '@/lib/report/device-row'
 import {
   flightHours,
   flightReportRow,
@@ -5,11 +7,12 @@ import {
   type FlightReportRow,
 } from '@/lib/report/flight-row'
 import { identifier } from '@/lib/routes/identifier'
+import type { AirframeReportEntry } from '@/lib/tenant/scoped-airframes'
 import type { FlightReportEntry, FlightSelection } from '@/lib/tenant/scoped-flights'
 
 // the operator report's JSON envelope - doc 06 §"Data endpoint". the period, the four
-// totals and the flights block; the two blocks it does not serve yet are named below rather
-// than sent as empty arrays.
+// totals, the airframes and the flights; the one block it does not serve yet is named below
+// rather than sent as an empty array.
 
 export type ReportPayload = {
   success: true
@@ -19,15 +22,16 @@ export type ReportPayload = {
     total_flight_minutes: number
     total_flight_hours: number
     active_pilots: number
+    devices: DeviceReportRow[]
     flights: FlightReportRow[]
   }
 }
 
-// the oracle paths this endpoint does not serve yet. served as an empty array they would
-// read as "this operator has no pilots and no airframes", which is a gap reading as a fact -
-// so they are absent and declared, and tests/contracts/report-flight-shape.test.ts fails if
-// any *other* oracle path goes unserved. the list shrinks as R2 and R3 land.
-export const pendingBlocks = ['data.pilots', 'data.devices'] as const
+// the oracle paths this endpoint does not serve yet. served as an empty array it would read
+// as "this operator has no pilots", which is a gap reading as a fact - so it is absent and
+// declared, and tests/contracts/report-flight-shape.test.ts fails if any *other* oracle path
+// goes unserved. the list empties when R3 lands.
+export const pendingBlocks = ['data.pilots'] as const
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/
 
@@ -90,9 +94,16 @@ export function resolveSelection(query: URLSearchParams, asOf: Date): FlightSele
   }
 }
 
+// the period-filtered totals one airframe carries, accumulated from the flight entries the
+// report already has in hand. the all-time figures are a different quantity and are not here -
+// docs/specs/06-org-report.md §"The data endpoint in the rebuild" owns the distinction.
+type PeriodTotals = { flights: number; seconds: number; lastFlightDate: Date | null }
+
 export function reportPayload(
   entries: readonly FlightReportEntry[],
+  airframes: readonly AirframeReportEntry[],
   selection: FlightSelection,
+  asOf: Date,
 ): ReportPayload {
   const seconds = entries.reduce((total, entry) => total + (entry.totalFlightTimeSeconds ?? 0), 0)
 
@@ -100,6 +111,39 @@ export function reportPayload(
   // flight names nobody and so contributes to no count, which is the honest answer rather
   // than a pilot invented to hold it.
   const pilots = new Set(entries.map((entry) => entry.pilotId).filter((id) => id !== null))
+
+  // serialised once and read twice, so the two blocks cannot disagree about the period: the
+  // per-airframe totals below are grouped from these very rows rather than queried again,
+  // and the date they group on is the row's own `flight_date_sort`.
+  const flights = entries.map((entry) => ({
+    entry,
+    row: flightReportRow({
+      flight: entry,
+      pilotName: entry.pilotName,
+      airframe:
+        entry.deviceSerialNumber === null
+          ? null
+          : { serialNumber: entry.deviceSerialNumber, model: entry.deviceModel },
+      deviceType: { maxVlos: entry.deviceMaxVlos },
+      firstLegStartedAt: entry.firstLegStartedAt,
+    }),
+  }))
+
+  // a flight naming no airframe groups under none and belongs to no device row, which is the
+  // correct answer rather than a dropped flight - it still lists in data.flights[]
+  const period = new Map<number, PeriodTotals>()
+  for (const { entry, row } of flights) {
+    if (entry.deviceId === null) continue
+    const totals = period.get(entry.deviceId) ?? { flights: 0, seconds: 0, lastFlightDate: null }
+    const at = new Date(row.flight_date_sort)
+
+    period.set(entry.deviceId, {
+      flights: totals.flights + 1,
+      seconds: totals.seconds + (entry.totalFlightTimeSeconds ?? 0),
+      lastFlightDate:
+        totals.lastFlightDate === null || at > totals.lastFlightDate ? at : totals.lastFlightDate,
+    })
+  }
 
   return {
     success: true,
@@ -116,18 +160,32 @@ export function reportPayload(
       total_flight_hours: flightHours(seconds),
 
       active_pilots: pilots.size,
-      flights: entries.map((entry) =>
-        flightReportRow({
-          flight: entry,
-          pilotName: entry.pilotName,
-          airframe:
-            entry.deviceSerialNumber === null
-              ? null
-              : { serialNumber: entry.deviceSerialNumber, model: entry.deviceModel },
-          deviceType: { maxVlos: entry.deviceMaxVlos },
-          firstLegStartedAt: entry.firstLegStartedAt,
-        }),
-      ),
+
+      // every airframe of the operator, whether or not it flew in the period. one that flew
+      // nothing reports zero totals; dropping it would hide an airframe from the fleet the
+      // report is evidence about.
+      devices: airframes.map((airframe) => {
+        const totals = period.get(airframe.device.id)
+
+        return airframeReportRow({
+          device: airframe.device,
+          deviceType: airframe.deviceType,
+          readings: serviceReadings({
+            maintenance: airframe.maintenance,
+            lifetimeCycles: airframe.lifetimeFlights,
+            firstFlightDate: airframe.firstFlightDate,
+            asOf,
+          }),
+          totals: {
+            flights: totals?.flights ?? 0,
+            flightHours: flightHours(totals?.seconds ?? 0),
+            lastFlightDate: totals?.lastFlightDate ?? null,
+          },
+          maintenance: airframe.maintenance,
+        })
+      }),
+
+      flights: flights.map(({ row }) => row),
     },
   }
 }

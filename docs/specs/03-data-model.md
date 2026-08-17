@@ -244,7 +244,8 @@ must reference the device with `ON DELETE restrict`, the way the organisation's 
 already do. `training_device` was the first to do so: a training that says it covered an
 airframe is exactly that history, and deleting the airframe is refused while one says it.
 `Flight` has now landed and does the same, so an airframe that flew cannot be deleted out
-from under the record. `MaintenanceLog` must follow when it lands.
+from under the record. `MaintenanceLog` has landed and is the third, so neither an airframe
+that flew nor one that was serviced can be deleted out from under its own record.
 
 ---
 
@@ -600,6 +601,60 @@ Created from the operator report, against a device.
 `total_flight_hours` and `total_flights` are captured as **stated readings at time of
 service**, not recomputed. That is the correct behaviour for a maintenance record — it
 records what the technician certified — so keep it.
+
+### Maintenance log in the rebuild — decided
+
+A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #90. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. The field list above is what was Observed and it
+stays standing; the tenant column, the composite key, the policy and the whole of the
+baseline rule below are the rebuild's own and promote nothing. **No captured payload sits
+under any of it** — `contracts/report-schema.json` carries no key path below
+`data.devices[].maintenance_logs`, so every captured one was empty, so nothing here is
+agreement with the predecessor and it must not be read as such.
+
+**Tenant-owned, `organization_id` not null, `restrict`,** on the shape §Flight and §Incident
+established. A maintenance record is airworthiness evidence, so a tenant delete must be a
+deliberate act against an emptied organisation. `USING` and `WITH CHECK` are equal and
+tenant-scoped, with no restrictive delete beside them: an operator files its own maintenance
+and deleting one is the same authority as writing one — §"Delete authority in the rebuild".
+What protects the history is the `restrict` below, not a policy on this table.
+
+**`device_id` carries `organization_id` into a composite foreign key** against
+`device (id, organization_id)`, so a record naming another operator's airframe is refused by
+Postgres rather than merely hidden — the reasoning §"Flights in the rebuild" gives for
+`flight.device_id`, unchanged. Unlike that one it is **not null**: a service is performed on
+an airframe, so there is no row here that names none, and the constraint is enforced on every
+one of them rather than left unenforced by a null. `ON DELETE restrict`, which is the promise
+§Device's dependents make — an airframe that was serviced cannot be deleted out from under
+its own record.
+
+**`total_flights` stays nullable and `total_flight_hours` is text.** The field list marks
+neither required beyond the hours, and the history migration (#14) is a real source of rows
+nobody stated a cycle count on — the reasoning that left `incident.injuries` nullable. The
+hours are a string because the figure accepts `h:mm` **or** a decimal, comma included: a
+numeric column would throw the technician's own notation away before anything parsed it.
+
+**The service baseline is composed from stated readings only, and its two halves come from
+different records.** This is the rule the table exists to serve and it has three wrong
+answers, so it is written out rather than left to be re-derived:
+
+- the **calendar** baseline is the newest maintenance record's `maintenance_date`, stated
+  cycle count or not — a service that recorded no count still happened;
+- the **cycle** baseline is the newest record that actually stated a `total_flights`;
+- **0 where no record ever stated one**, which is the reading itself rather than a fallback:
+  an airframe never serviced had zero cycles at its last service.
+
+Zeroing the cycle baseline because the newest record omitted a count would report a
+just-serviced airframe as hundreds of cycles overdue, and carrying the airframe's lifetime
+count into it would invent the technician's figure — the one thing the stated-readings rule
+above forbids. In code: `serviceReadings()` in `src/lib/devices/service-schedule.ts`.
+
+**The calendar fallback uses the derived flight date.** §"Service tracking (derived)" counts
+months from the first recorded flight where there is no maintenance entry; *which* date that
+is is settled by §"Flights in the rebuild" — the earliest `flight_log.started_at`, falling
+back to `created_at`. Keying it on `created_at` alone would date an airframe's service clock
+from when its logs were uploaded.
 
 ---
 

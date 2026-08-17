@@ -43,11 +43,12 @@ describe('tenant isolation: the boundary is actually in force', () => {
     const rows = await harness.owner.execute(
       sql`select relname, relrowsecurity, relforcerowsecurity from pg_class
           where relname in ('organization', 'person', 'membership', 'device', 'training_type',
-                            'training', 'training_device', 'flight', 'flight_log', 'document',
-                            'incident', 'map', 'map_organization', 'map_kml_file')
+                            'training', 'training_device', 'maintenance_log', 'flight',
+                            'flight_log', 'document', 'incident', 'map', 'map_organization',
+                            'map_kml_file')
           order by relname`,
     )
-    expect(rows).toHaveLength(14)
+    expect(rows).toHaveLength(15)
     for (const row of rows) {
       expect(row, `${row.relname} is not fully protected`).toMatchObject({
         relrowsecurity: true,
@@ -67,7 +68,11 @@ describe('tenant isolation: the airframe register under a member session', () =>
 
   it('an unscoped query returns only the acting tenant rows', async () => {
     const rows = await withTenant(harness.app, alphaSession(), listAirframes)
-    expect(rows.map((row) => row.serialNumber).sort()).toEqual(['SN-ALPHA-0001', 'SN-ALPHA-0002'])
+    expect(rows.map((row) => row.serialNumber).sort()).toEqual([
+      'SN-ALPHA-0001',
+      'SN-ALPHA-0002',
+      'SN-ALPHA-0004',
+    ])
   })
 
   it('finds an airframe of the acting tenant by id', async () => {
@@ -112,6 +117,7 @@ describe('tenant isolation: the airframe register under a member session', () =>
     expect(rows.map((row) => row.serialNumber).sort()).toEqual([
       'SN-ALPHA-0001',
       'SN-ALPHA-0002',
+      'SN-ALPHA-0004',
       'SN-BRAVO-0001',
     ])
   })

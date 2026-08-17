@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { airframeReportRow, type DeviceReportRow } from '@/lib/report/device-row'
-import { configuredType, readings, testAirframe } from '../support/airframes'
+import { configuredType, maintenanceRecord, readings, testAirframe } from '../support/airframes'
 
 // schema parity over the operator report's data.devices[] block, never value parity -
 // the rebuild has its own records (docs/rebuild/00-operating-model.md §5). two ceilings
@@ -39,6 +39,7 @@ const serviced = airframeReportRow({
     asOf: new Date('2026-08-15T00:00:00Z'),
   }),
   totals: { flights: 60, flightHours: 41.25, lastFlightDate: new Date('2026-08-14T00:00:00Z') },
+  maintenance: [maintenanceRecord()],
 })
 
 const unconfigured = airframeReportRow({
@@ -46,6 +47,7 @@ const unconfigured = airframeReportRow({
   deviceType: null,
   readings: readings({ lifetimeCycles: 4 }),
   totals: { flights: 4, flightHours: 2, lastFlightDate: null },
+  maintenance: [],
 })
 
 describe('report parity: the data.devices[] block carries the captured key set', () => {
@@ -98,5 +100,36 @@ describe('report parity: the three keys the walking skeleton exists to prove', (
   it('max_vlos_meters is a string, as the oracle serialises it', () => {
     expect(typeof serviced.max_vlos_meters).toBe('string')
     expect(unconfigured.max_vlos_meters).toBeNull()
+  })
+})
+
+// the third ceiling in this file, and the one worth stating loudest: the oracle carries no
+// key path below `maintenance_logs[]`, so there is nothing under it parity can be claimed
+// against. what is asserted here is the ceiling itself - the key exists and is an array -
+// and that a serviced airframe does not serialise its history as empty. the member shape is
+// the rebuild's own and is asserted as ours, never as agreement with the predecessor.
+describe('report parity: maintenance_logs[] has no oracle below it', () => {
+  it('the oracle carries no key path under the array', () => {
+    expect(oracle.keys.filter((key) => key.path.startsWith(`${prefix}maintenance_logs[]`))).toEqual(
+      [],
+    )
+  })
+
+  it('is an array on both rows, which is all parity can claim of it', () => {
+    expect(Array.isArray(serviced.maintenance_logs)).toBe(true)
+    expect(unconfigured.maintenance_logs).toEqual([])
+  })
+
+  it('carries the stated record on an airframe that was serviced, and not an empty array', () => {
+    // `[]` on an airframe carrying history would be a gap reading as a fact - the rule that
+    // had R1 declare this whole block pending rather than serve it empty
+    const [log] = serviced.maintenance_logs
+    expect(serviced.maintenance_logs).toHaveLength(1)
+    expect(log?.maintenance_date).toBe('2026-05-20')
+
+    // stated and not recomputed, `h:mm` notation included: the column is text so the
+    // technician's own figure survives
+    expect(log?.total_flight_hours).toBe('41:30')
+    expect(log?.total_flights).toBe(120)
   })
 })
