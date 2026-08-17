@@ -50,7 +50,8 @@ reproducing; make the panel root redirect properly.
 
 `/data` query parameters: `period` (`this_month` \| `last_month` \| `custom`),
 `pilot_id`, `device_id`, `date_from`, `date_to`. An unrecognised `period` falls through
-to an HTML error rather than a JSON error — worth handling properly in the rebuild.
+to an HTML error rather than a JSON error; what the rebuild answers instead is decided in
+[06-org-report.md](06-org-report.md) §"The data endpoint in the rebuild".
 
 ## Maps
 
