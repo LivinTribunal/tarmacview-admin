@@ -839,8 +839,9 @@ Buckets: **Prevádzková dokumentácia** (operations manuals), **Formuláre** (b
 **Letové povolenia** (flight permits — the only bucket with `is_public`), and the global
 document library.
 
-Permits accept `.pdf,.jpg,.jpeg,.png,.doc,.docx`; incident files additionally allow
-`.docx` up to 50 MB.
+Permits accept `.pdf,.jpg,.jpeg,.png,.doc,.docx`. The incident file is §Incident's and not
+this table's — what it accepts is in
+[05-organization-workspace.md](05-organization-workspace.md) §6.
 
 The column is `file_path` and not `file`, corrected 17 Aug 2026. The name is **Observed**:
 `contracts/forms/general-documents.json` captures this register's create and edit pages and
