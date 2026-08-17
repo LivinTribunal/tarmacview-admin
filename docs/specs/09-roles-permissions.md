@@ -134,17 +134,13 @@ The table is the intent. The database is currently narrower for the two people r
 [03-data-model.md](03-data-model.md) §"The shared-organisation read in the rebuild".
 
 It is also wider for *Manage trainings*, *Manage permits & operations docs*, *Manage aircraft
-register*, *Assign pilot/aircraft to flight* and *Upload flight logs*. The matrix and the
-database agree on **who** — the tenant — but the policies behind `training_type`, `device`,
-`training`, `flight`, `flight_log` and `document`'s tenant-owned buckets key off
-**membership, not organisation role**, so Postgres admits a `pilot` or `viewer` membership
-the matrix denies. Narrowing it needs a policy predicate over a per-membership role, which is
-the same missing piece the people rows are waiting on.
-
-*Record maintenance* is not on that list only because `maintenance_log` has not landed —
-[03-data-model.md](03-data-model.md) §"Delete authority in the rebuild" says it must restrict
-the airframe delete when it does. It joins the divergence the moment it carries the same
-tenant-keyed policy.
+register*, *Assign pilot/aircraft to flight*, *Upload flight logs*, *File occurrence report*
+and *Record maintenance*. The matrix and the database agree on **who** — the tenant — but the
+policies behind `training_type`, `device`, `training`, `flight`, `flight_log`, `incident`,
+`maintenance_log` and `document`'s tenant-owned buckets key off **membership, not organisation
+role**, so Postgres admits a `pilot` or `viewer` membership the matrix denies. Narrowing it needs a policy
+predicate over a per-membership role, which is the same missing piece the people rows are
+waiting on.
 
 The **global** document library is on no row of this table, and that is not an omission: it
 carries no organisation, so no organisation role reaches it. Every session reads it and only

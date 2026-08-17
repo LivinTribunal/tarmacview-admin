@@ -129,9 +129,8 @@ predecessor system, which is the source of most of these terms, is in
   the warning. In code: `serviceState()` in `src/lib/devices/service-schedule.ts`.
 - **Service baseline** — the cycle count and date from which the next service is measured.
   Logging maintenance resets it, and its two halves may come from **different** maintenance
-  records: the date is the newest one, the cycle count is the newest one that actually stated
-  a count, and zero where none ever did. Never recomputed from the airframe's own flight
-  history. In code: `serviceReadings()` in `src/lib/devices/service-schedule.ts`; see
+  records. In code: `serviceReadings()` in `src/lib/devices/service-schedule.ts`; which
+  record each half comes from is in
   [docs/specs/03-data-model.md](docs/specs/03-data-model.md) §"Maintenance log in the
   rebuild".
 - **Maintenance log** — a record of service performed, capturing the flight hours and
