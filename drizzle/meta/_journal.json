@@ -71,6 +71,13 @@
       "when": 1786925888307,
       "tag": "0009_document",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786932176677,
+      "tag": "0010_catalogue_write_authority",
+      "breakpoints": true
     }
   ]
 }

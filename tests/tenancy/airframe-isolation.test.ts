@@ -118,16 +118,41 @@ describe('tenant isolation: what the schema itself decides', () => {
     expect(rows.map((row) => row.column_name)).not.toContain('organization_id')
   })
 
-  it('the device-type catalogue is deployment-wide: no organisation column, no policy', async () => {
+  // this test was rewritten by #65 and `relrowsecurity` flipped to true here on purpose.
+  // what it protects is unchanged - the catalogue is not tenant-scoped, and nothing can
+  // scope it by an organisation it does not have - and that is what the assertions below
+  // say. what changed is the mechanism: *no row-level security at all* was carrying
+  // that claim and a second one nobody chose, because it also meant no policy narrowed
+  // 0001's schema-wide write grant. so the table now carries policies, and neither of them
+  // asks about an organisation. what they do instead is
+  // tests/tenancy/catalogue-write-authority.test.ts.
+  it('the device-type catalogue is deployment-wide: no organisation column, and no policy scopes it by one', async () => {
     const columns = await harness.owner.execute(
       sql`select column_name from information_schema.columns where table_name = 'device_type'`,
     )
     expect(columns.map((row) => row.column_name)).not.toContain('organization_id')
 
     const [table] = await harness.owner.execute(
-      sql`select relrowsecurity from pg_class where relname = 'device_type'`,
+      sql`select relrowsecurity, relforcerowsecurity from pg_class where relname = 'device_type'`,
     )
-    expect(table).toMatchObject({ relrowsecurity: false })
+    expect(table).toMatchObject({ relrowsecurity: true, relforcerowsecurity: true })
+
+    // `app_acting_organizations()` is the only way anything in this schema asks which
+    // organisations a session holds, so a policy here naming it would be the tenant scoping
+    // this table cannot have. the count is asserted too: an empty result would pass the loop
+    // below and is the state the whole slice is about.
+    const policies = await harness.owner.execute(
+      sql`select polname, pg_get_expr(polqual, polrelid) as qual,
+                 pg_get_expr(polwithcheck, polrelid) as with_check
+          from pg_policy where polrelid = 'device_type'::regclass`,
+    )
+    expect(policies).toHaveLength(2)
+    for (const policy of policies) {
+      expect(
+        `${policy.qual} ${policy.with_check}`,
+        `${policy.polname} scopes the catalogue by a tenant`,
+      ).not.toContain('app_acting_organizations')
+    }
   })
 
   it('detaching a person from an organisation does not delete the person', async () => {
