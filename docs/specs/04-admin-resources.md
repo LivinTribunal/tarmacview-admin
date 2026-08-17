@@ -221,8 +221,7 @@ path — see
 `/map/{slug}`; `Povoliť prepínanie tmavej mapy` toggle) and *Organizácie* (searchable
 multi-select controlling which tenants see the map).
 
-`Duplikovať` clones a map with all its layers — observed in the wild as
-`uas-oblasti-copy-cyfzo9`. See doc 08.
+`Duplikovať` — see doc 08.
 
 **Relation manager:** *KML súbory* — see doc 08.
 

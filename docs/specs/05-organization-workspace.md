@@ -233,8 +233,7 @@ the behaviour is preserved, the mechanism is not.
 says it deliberately does not have. Both are true, and the distinction is the point:
 row-level security decides which rows the acting session **may** see at all; this clause
 decides which of those it is **looking at**. It is the same line
-[03-data-model.md](03-data-model.md) §"The global document library in the rebuild" draws for
-the document bucket.
+`src/lib/tenant/scoped-documents.ts` draws for the document bucket.
 
 Concretely, and asserted rather than claimed for the fleet and for the people alike: dropping
 the clause widens the register to what the acting session already reads across their *own*

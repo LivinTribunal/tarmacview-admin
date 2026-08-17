@@ -142,8 +142,9 @@ the matrix denies. Narrowing it needs a policy predicate over a per-membership r
 the same missing piece the people rows are waiting on.
 
 *Record maintenance* is not on that list only because `maintenance_log` has not landed —
-[03-data-model.md](03-data-model.md) §Device says it must restrict the airframe delete when
-it does. It joins the divergence the moment it carries the same tenant-keyed policy.
+[03-data-model.md](03-data-model.md) §"Delete authority in the rebuild" says it must restrict
+the airframe delete when it does. It joins the divergence the moment it carries the same
+tenant-keyed policy.
 
 The **global** document library is on no row of this table, and that is not an omission: it
 carries no organisation, so no organisation role reaches it. Every session reads it and only
