@@ -6,6 +6,7 @@ import {
   document,
   flight,
   flightLog,
+  incident,
   map,
   mapKmlFile,
   mapOrganization,
@@ -372,6 +373,73 @@ const documents = [
   },
 ] as const
 
+// the occurrence register - docs/specs/05-organization-workspace.md §6. alpha and bravo
+// only, for the reason the trainings, the flights and the documents above give: charlie is
+// deleted to prove the dependent block lifts, and `incident.organization_id` is `restrict`.
+//
+// **three alpha rows and not one**, because `injuries` is the schema's only nullable boolean
+// and its three states are three different cells - yes, an answered no, and nobody answered.
+// drop any one of them and the other two stop being distinguishable from each other.
+//
+// one names a flight and the rest name none. a null `flight_id` is the case doc 05 §6 calls
+// *optional* and `MATCH SIMPLE` keeps writable, so it is the normal row rather than an edge.
+// the linked one names `alphaFailed` and deliberately not `alphaImported`, which
+// tests/tenancy/flight-isolation.test.ts deletes to prove its legs cascade - a `restrict`
+// from here would turn that proof into a failure, the same collision the flights above avoid
+// with the airframes the trainings cover.
+//
+// one file on disk and two rows carrying none: `incident.file_path` is nullable where
+// `document.file_path` is not, so a report attached to no file at all is a state this
+// register has to survive rather than an omission.
+const incidents = [
+  {
+    key: 'alphaInjury',
+    organization: 'alpha',
+    title: 'Placeholder Occurrence With Injury',
+    description: 'Placeholder occurrence description.',
+    incidentDate: '2026-05-14',
+    flight: 'alphaFailed',
+    injuries: true,
+    notes: 'Placeholder occurrence note.',
+    filePath: 'incidents/placeholder-alpha-incident.pdf',
+  },
+  {
+    key: 'alphaNoInjury',
+    organization: 'alpha',
+    title: 'Placeholder Occurrence Without Injury',
+    description: 'Placeholder occurrence description.',
+    incidentDate: '2026-06-02',
+    flight: null,
+    injuries: false,
+    notes: null,
+    filePath: null,
+  },
+
+  // nobody answered the injury question, which is not the same fact as answering no
+  {
+    key: 'alphaUnanswered',
+    organization: 'alpha',
+    title: 'Placeholder Occurrence Unanswered',
+    description: 'Placeholder occurrence description.',
+    incidentDate: '2026-06-19',
+    flight: null,
+    injuries: null,
+    notes: null,
+    filePath: null,
+  },
+  {
+    key: 'bravoReport',
+    organization: 'bravo',
+    title: 'Placeholder Bravo Occurrence',
+    description: 'Placeholder occurrence description.',
+    incidentDate: '2026-07-08',
+    flight: null,
+    injuries: false,
+    notes: null,
+    filePath: null,
+  },
+] as const
+
 // the geozone maps. every value is invented, the slugs included: the predecessor's own
 // slugs live in contracts/routes.json as capture and are never reseeded here as if they
 // were ours.
@@ -421,6 +489,7 @@ export type TrainingTypeKey = (typeof trainingTypes)[number]['key']
 export type TrainingKey = (typeof trainings)[number]['key']
 export type FlightKey = (typeof flights)[number]['key']
 export type DocumentKey = (typeof documents)[number]['key']
+export type IncidentKey = (typeof incidents)[number]['key']
 export type MapKey = (typeof maps)[number]['key']
 
 export type SeededIds = {
@@ -431,6 +500,7 @@ export type SeededIds = {
   trainings: Record<TrainingKey, number>
   flights: Record<FlightKey, number>
   documents: Record<DocumentKey, number>
+  incidents: Record<IncidentKey, number>
   maps: Record<MapKey, number>
   deviceType: number
 }
@@ -617,6 +687,25 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
     )
   }
 
+  const incidentIds = {} as Record<IncidentKey, number>
+  for (const entry of incidents) {
+    incidentIds[entry.key] = await insertOne(
+      db
+        .insert(incident)
+        .values({
+          organizationId: organizationIds[entry.organization],
+          title: entry.title,
+          description: entry.description,
+          incidentDate: entry.incidentDate,
+          flightId: entry.flight ? flightIds[entry.flight] : null,
+          injuries: entry.injuries,
+          notes: entry.notes,
+          filePath: entry.filePath,
+        })
+        .returning({ id: incident.id }),
+    )
+  }
+
   const mapIds = {} as Record<MapKey, number>
   for (const entry of maps) {
     mapIds[entry.key] = await insertOne(
@@ -654,6 +743,7 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
     trainings: trainingIds,
     flights: flightIds,
     documents: documentIds,
+    incidents: incidentIds,
     maps: mapIds,
     deviceType: deviceTypeId,
   }

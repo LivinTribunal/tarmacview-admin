@@ -8,10 +8,15 @@ import {
   organizationPermitTableRow,
 } from '@/lib/documents/fields'
 import type { MessageKey } from '@/lib/i18n'
+import {
+  organizationIncidentTable,
+  organizationIncidentTableRow,
+} from '@/lib/incidents/fields'
 import { identifier } from '@/lib/routes/identifier'
 import type { TableDeclaration, TableRow } from '@/lib/table/view'
 import { listOrganizationAirframes } from '@/lib/tenant/scoped-airframes'
 import { listOrganizationDocuments } from '@/lib/tenant/scoped-documents'
+import { listOrganizationIncidents } from '@/lib/tenant/scoped-incidents'
 import { listOrganizationPeople, listOrganizationPilots } from '@/lib/tenant/scoped-people'
 import type { TenantTransaction } from '@/lib/tenant/tenant-context'
 import {
@@ -31,7 +36,7 @@ import {
 // since the shared table has used. the document buckets were where #70 and #73 expected a
 // shape to become visible, and what generalised turned out to be the *read* and not the
 // declaration - src/lib/documents/fields.ts says why. so the extraction landed in
-// scoped-documents.ts's `listOrganizationDocuments`, and six tabs still state their own
+// scoped-documents.ts's `listOrganizationDocuments`, and seven tabs still state their own
 // three lines.
 
 export type TabRegister = {
@@ -41,13 +46,14 @@ export type TabRegister = {
 
 export type WorkspaceTab = {
   labelKey: MessageKey
-  // the sub-register this tab renders, on the tabs that have one. the rest carry a label
-  // and nothing else in this slice, and a tab with no register runs no query at all.
-  register?: TabRegister
+  // the sub-register this tab renders. required rather than optional now that the last of
+  // doc 05's seven is built: an optional one described the slices in between, and a tab with
+  // no register would be a label the page renders an empty screen under.
+  register: TabRegister
 }
 
 // doc 05's tab table, in its order - the index is the address, so the order is not
-// cosmetic. tabs 0 through 5 are built; tab 6 is the occurrence register and its own slice.
+// cosmetic. all seven are built; tab 6 is the occurrence register and the last of them.
 //
 // three of the labels come out of `document.category.*` rather than a key of their own.
 // those tabs manage a document bucket and nothing else, so the bucket's name is the tab's
@@ -108,7 +114,14 @@ export const workspaceTabs: readonly WorkspaceTab[] = [
         ),
     },
   },
-  { labelKey: 'organization.workspace.tab.incidents' },
+  {
+    labelKey: 'organization.workspace.tab.incidents',
+    register: {
+      declaration: organizationIncidentTable,
+      load: async (tx, organizationId) =>
+        (await listOrganizationIncidents(tx, organizationId)).map(organizationIncidentTableRow),
+    },
+  },
 ]
 
 // absent or unparseable is the first tab, which is what a bare `{org}/edit` opens.

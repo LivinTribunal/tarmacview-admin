@@ -94,9 +94,9 @@ only dependents are memberships still deletes.
 A **decision about the rebuild**, taken on 16 Aug 2026 by the rebuild loop under the owner's
 standing autonomy grant and recorded on issues #56 and #75. The owner has not reviewed it:
 settled enough to build on, open enough to overturn. It governs every stored file and not only
-the logo above — the organisation logo was the first consumer and the document library the
-second, §Document's three workspace buckets joined the library on that same route, and §Map's
-KML layers are still to come.
+the logo above — the organisation logo was the first consumer, the document library the second
+and §Incident's own file the third, §Document's three workspace buckets joined the library on
+that same route, and §Map's KML layers are still to come.
 
 **The bytes stay on disk and the row holds the path**, unchanged from the section above.
 Hosting is one small instance with the application and Postgres co-located, so an object
@@ -122,8 +122,8 @@ what this section forbids is a **request-supplied path**, and a route keyed on a
 table supplies none. Every property asked for above survives — the handler takes an id,
 resolves the row inside the tenant transaction, reads the path as a column, and inherits the
 row's row-level security. The generic file route this section refuses is one that serves *any*
-stored file, which needs a path to say which; `document`, `organization` and `map` each keep
-their own.
+stored file, which needs a path to say which; `document`, `organization`, `incident` and `map`
+each keep their own.
 
 What the consolidation is for is the count. `nosniff`, the extension allow-list, the storage-root
 containment check and `Cache-Control: private` are four guards that a fifth handler carries only
@@ -133,10 +133,26 @@ five; they took it to two. Four routes over one table is §"The global document 
 rebuild"'s *four tables would repeat the file-serving integration four times*, through the
 other door.
 
-**The allow-list is then the union of what the buckets accept:** `.pdf`, `.doc`, `.docx`,
-`.jpg`, `.jpeg`, `.png` — §Document gives the permits bucket the image types. It stays a
-different list from the logo's, and `.webp` is what still separates them: it is the logo's and
-no document bucket was ever seen to take one.
+**The mechanics are one function, and the third route is what earned it** — added 17 Aug 2026,
+on issue #82. §Incident carries a file of its own on a table of its own, so it takes a route of
+its own under the rule above, and three copies is the threshold this repo states for itself.
+The session, the row id, the tenant transaction, the containment check, the read off the disk
+and both response headers are written once; what each route states is which **reader** it
+takes, and a reader is one scoped read plus one allow-list. The last consolidation is why this
+is worth spelling out: it dropped the containment check from one of two readers with the whole
+suite green, because two readers having been written alike was being treated as coverage. It is
+not, so each of the three routes carries its own assertion for each of the four guards.
+
+**The allow-list is per reader, and there are three lists.** The document route takes the union
+of what the four buckets accept — `.pdf`, `.doc`, `.docx`, `.jpg`, `.jpeg`, `.png`, since
+§Document gives the permits bucket the image types. The logo's is the narrowest and the only
+one carrying `.webp`, which is what separates it from the other two: no document bucket and no
+occurrence report was ever seen to take one, and it takes no office type or PDF in return.
+[05-organization-workspace.md](05-organization-workspace.md) §6 gives the occurrence register
+`PDF, DOC, DOCX, images`, whose extensions arrive at exactly the document union's six — so
+those two are separated by the **table** each reads and not by a type, and it stays its own
+list rather than a shared constant, because the two are read off different documents and a
+correction to either must not rewrite the other.
 
 The file inherits the row's row-level security for free: another operator's file is not
 refused, it **reads as absent**, because the read that would have found it returned nothing
@@ -205,6 +221,7 @@ may delete is answered per table rather than left to fall out of that:
 | `flight` | the owning tenant | The operator's own record, on the same reasoning — see §"Flights in the rebuild" |
 | `flight_log` | the owning tenant | A leg is not evidence apart from its flight, and cascades with it |
 | `document` | the owning tenant, and a **superadmin** for the global library | An operator's own bucket is their own record. A document with no organisation belongs to the deployment, and one member must not withdraw it from every other operator — see §"The global document library in the rebuild" |
+| `incident` | the owning tenant | An occurrence report is the operator's own record, on the same reasoning as the flight it may name — see §"Incidents in the rebuild" |
 
 The superadmin-only rows are **restrictive** delete policies added beside the existing
 ones. Permissive policies OR together, so a narrower *permissive* policy would restrict
@@ -914,6 +931,53 @@ and the upload endpoint itself to the write path, which still does not exist.
 | `injuries` | bool | "Došlo k zraneniu osôb?" |
 | `notes` | text | |
 | `file` | file | ≤50 MB |
+
+### Incidents in the rebuild — decided
+
+A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #82. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. Everything above this line is what was Observed;
+the nullability, the composite key and the column names below are the rebuild's own and
+promote nothing.
+
+**Tenant-owned, `organization_id` not null, `restrict`.** An occurrence report is compliance
+evidence, so a tenant delete must be a deliberate act against an emptied organisation rather
+than a sweep that takes the reports with it — the airframe's and the flight's reasoning
+unchanged. `USING` and `WITH CHECK` are equal and tenant-scoped, as on `flight` and `training`
+and unlike §Document: an operator files its own reports, and deleting one is the same
+authority as writing one, so no restrictive delete policy sits beside it.
+
+**`flight_id` is nullable and carries `organization_id` into a composite foreign key** against
+`flight (id, organization_id)` — the pair `0008` already created for `flight_log`. A plain
+reference would let a report name another operator's flight with the row's own
+`organization_id` perfectly correct and no policy noticing; carrying the column into the
+reference makes that row unwritable rather than merely hidden. `MATCH SIMPLE` is the default
+and is wanted here more than anywhere it has been used before:
+[05-organization-workspace.md](05-organization-workspace.md) §6 calls the link *optional*, so a
+null is the **normal** case rather than the edge, and a null leaves the constraint unenforced
+rather than failing. `ON DELETE restrict`, because a report naming a flight is exactly the
+evidence the flight's other dependents restrict to protect — and `set null` would leave the
+report standing with no way back to what it reports on.
+
+**`injuries` is nullable, and it is the only boolean in this schema that is.** The three this
+application renders as flags — `membership.is_primary_contact`, `document.is_public` and
+`map.allow_dark_basemap` — are all `not null default false` and all render the affirmative
+only, because such a column cannot tell *"not this"* from *"nobody ever set one"*. This one
+can, and the exception is recorded beside that rule in
+[05-organization-workspace.md](05-organization-workspace.md) §"`Zranenia` is the exception, and
+states three things", which is where the rule lives. What belongs here is only the column: a
+`false` default would make an unanswered question indistinguishable from an answered *no* on
+the one record where injury is the question, and the history migration (#14) is a real source
+of rows nobody ever answered it on.
+
+**`file_path`, nullable, and one route of its own.** The column is `file_path` and not the
+table's `file`, matching `document.file_path` and `organization.logo_path` — the bytes are on
+disk and the column says where; §Map made the same correction for the same reason. It is
+nullable where §Document's is not, because §6 marks the file optional, so a report attached to
+nothing is a state and never a broken row. That makes `incident` the third consumer of
+§"Serving a stored file in the rebuild" and its own table, so it takes its own route under the
+one-route-per-table rule — and being the third is what earned the shared handler recorded
+there.
 
 ---
 

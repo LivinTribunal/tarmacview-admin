@@ -1,6 +1,4 @@
-import { readFile } from 'node:fs/promises'
-import { extname } from 'node:path'
-import { resolveStoredFile, type StoredFile } from '@/lib/files/storage'
+import { readStoredFile, type StoredFile } from '@/lib/files/storage'
 import { findDocument } from '@/lib/tenant/scoped-documents'
 import type { TenantTransaction } from '@/lib/tenant/tenant-context'
 
@@ -36,8 +34,8 @@ const contentTypes: Readonly<Record<string, string>> = {
 //
 // every gap is the same null and the caller cannot tell them apart: no row, a path that
 // escapes the storage root, an extension nothing serves, or no file on the disk.
-// `file_path` is not null on this table, so the logo's fifth gap - a row naming no file at
-// all - cannot arise.
+// `file_path` is not null on this table, so the fifth gap the logo and the occurrence
+// register both have - a row naming no file at all - cannot arise here.
 //
 // `is_public` is not read here, and that is the point: doc 03 §"Serving a stored file in the
 // rebuild" wants a public read to be an explicit opt-in on a handler whose default branch
@@ -50,16 +48,5 @@ export async function readDocumentFile(
   const found = await findDocument(tx, id)
   if (!found) return null
 
-  const contentType = contentTypes[extname(found.filePath).toLowerCase()]
-  if (!contentType) return null
-
-  const file = resolveStoredFile(found.filePath)
-  if (file === null) return null
-
-  try {
-    return { bytes: await readFile(file), contentType }
-  } catch {
-    // a row naming a file the disk does not have is a gap, not a crash
-    return null
-  }
+  return readStoredFile(found.filePath, contentTypes)
 }

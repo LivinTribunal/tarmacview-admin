@@ -736,6 +736,77 @@ export const document = pgTable(
   ],
 )
 
+// one occurrence report - docs/specs/03-data-model.md §"Incidents in the rebuild".
+// `organization_id` is `restrict` for the reason the flight's is: an occurrence report is
+// compliance evidence, and a tenant delete must be a deliberate act against an emptied
+// organisation rather than a sweep that takes the reports with it.
+//
+// `injuries` is **nullable**, and it is the only boolean in this schema that is. the three
+// this application renders as flags - `membership.is_primary_contact`, `document.is_public`
+// and `map.allow_dark_basemap` - are `not null default false` and render the affirmative
+// only, because such a column cannot tell *"not this"* from *"nobody ever set one"*. this
+// one is the deliberate exception
+// docs/specs/05-organization-workspace.md records beside that rule: doc 05 §6 asks
+// *"Došlo k zraneniu osôb?"* on a form somebody filled in, so an answered **no** is a
+// recorded answer and not an absence - and on the one record where injury is the question,
+// collapsing the two into one blank loses the distinction that matters most.
+//
+// `file_path` and not doc 03's `file`, matching `document.file_path` and
+// `organization.logo_path` - the bytes are on disk and the column says where. nullable,
+// because doc 05 §6 marks the file optional where the three document buckets mark theirs
+// required; so this is the one served table where a row naming no file at all is a normal
+// state, which `organization.logo_path` also has and `document.file_path` does not.
+export const incident = pgTable(
+  'incident',
+  {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'restrict' }),
+    title: text('title').notNull(),
+    description: text('description').notNull(),
+    incidentDate: date('incident_date').notNull(),
+
+    // no `references()`: the tenant travels with the flight, in the composite foreign key
+    // below
+    flightId: integer('flight_id'),
+    injuries: boolean('injuries'),
+    notes: text('notes'),
+    filePath: text('file_path'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('incident_organization_idx').on(table.organizationId),
+
+    // the tenant boundary as a foreign key, exactly as `flight.device_id` carries it. a
+    // plain references(flight.id) would let an incident name another operator's flight and
+    // no policy would notice, because the row's own `organization_id` would be perfectly
+    // correct.
+    //
+    // MATCH SIMPLE is the default and is what is wanted here more than anywhere: doc 05 §6
+    // calls the link *optional*, so a null `flight_id` is the **normal** case, and it leaves
+    // the constraint unenforced rather than failing.
+    //
+    // `restrict`, not `set null`: an incident naming a flight is exactly the evidence the
+    // flight's other dependents restrict to protect, and losing the link would leave the
+    // report standing with no way back to what it reports on.
+    foreignKey({
+      columns: [table.flightId, table.organizationId],
+      foreignColumns: [flight.id, flight.organizationId],
+      name: 'incident_flight_id_organization_id_fk',
+    }).onDelete('restrict'),
+
+    // tenant-scoped on both halves and no restrictive delete policy, like `flight` and
+    // `training`: an occurrence report is the operator's own record, and deleting one is the
+    // same authority as writing one.
+    pgPolicy('incident_tenant_isolation', {
+      for: 'all',
+      using: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
+      withCheck: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
+    }),
+  ],
+)
+
 // a geozone map. **deployment-wide and owned by no operator**: a map is not an
 // organisation's own record, it is assigned to organisations - docs/specs/03-data-model.md
 // §"Maps in the rebuild". so it carries no `organization_id`, and it takes `device_type`'s
@@ -972,6 +1043,7 @@ export type Flight = typeof flight.$inferSelect
 export type FlightLog = typeof flightLog.$inferSelect
 export type DocumentCategory = (typeof documentCategory.enumValues)[number]
 export type Document = typeof document.$inferSelect
+export type Incident = typeof incident.$inferSelect
 export type LayerType = (typeof layerType.enumValues)[number]
 
 // `GeozoneMap` and not `Map`, which is the one row type here whose obvious name is a

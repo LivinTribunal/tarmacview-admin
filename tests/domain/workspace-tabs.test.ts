@@ -6,6 +6,7 @@ import {
   organizationPermitTable,
 } from '@/lib/documents/fields'
 import { t } from '@/lib/i18n'
+import { organizationIncidentTable } from '@/lib/incidents/fields'
 import { activeTabIndex, workspaceTabs } from '@/lib/organizations/workspace'
 import { formatCell } from '@/lib/table/view'
 import type { AirframeEntry } from '@/lib/tenant/scoped-airframes'
@@ -22,9 +23,11 @@ import {
 // and what the two people tabs render for the cells a person may leave empty. no dom and
 // no container, so it runs in the `unit` project.
 //
-// the three document tabs declare their columns and their cells in
-// tests/domain/document-columns.test.ts, beside the register they are the same entity as.
-// what is asserted here is only which declaration each tab carries.
+// the three document tabs and the occurrence tab declare their columns and their cells in
+// tests/domain/document-columns.test.ts and tests/domain/incident-columns.test.ts, each
+// beside the entity it belongs to. what is asserted here is only which declaration each tab
+// carries; the two people tabs' own column pins are in tests/domain/person-columns.test.ts,
+// on the same rule.
 
 const airframe: AirframeEntry = {
   id: 9,
@@ -98,18 +101,19 @@ describe('the seven tabs doc 05 records', () => {
     expect(workspaceTabs).toHaveLength(7)
   })
 
-  it('carries six sub-registers, and they are tabs 0 through 5', () => {
+  it('gives every one of them a sub-register, in doc 05 order', () => {
     // this is what makes "only the active tab's query runs" true: the page awaits the
-    // resolved tab's loader and there is no other loader to await. tab 6 renders a label
-    // and queries nothing.
-    const built = workspaceTabs.flatMap((tab, index) => (tab.register ? [index] : []))
-    expect(built).toEqual([0, 1, 2, 3, 4, 5])
-    expect(workspaceTabs[0]?.register?.declaration).toBe(organizationPersonTable)
-    expect(workspaceTabs[1]?.register?.declaration).toBe(organizationPilotTable)
-    expect(workspaceTabs[2]?.register?.declaration).toBe(airframeTable)
-    expect(workspaceTabs[3]?.register?.declaration).toBe(organizationFormTable)
-    expect(workspaceTabs[4]?.register?.declaration).toBe(organizationPermitTable)
-    expect(workspaceTabs[5]?.register?.declaration).toBe(organizationOperationsTable)
+    // resolved tab's loader and there is no other loader to await. the index is the address,
+    // so a declaration on the wrong tab is a register at the wrong url.
+    expect(workspaceTabs.map((tab) => tab.register.declaration)).toEqual([
+      organizationPersonTable,
+      organizationPilotTable,
+      airframeTable,
+      organizationFormTable,
+      organizationPermitTable,
+      organizationOperationsTable,
+      organizationIncidentTable,
+    ])
   })
 
 
