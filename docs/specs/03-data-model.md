@@ -887,6 +887,61 @@ and the upload endpoint itself to the write path, which still does not exist.
 `5 km ring` (light orange), `LZR` (ochre), `CTR` (light blue), `ATZ` (yellow),
 `CHKO` (green — protected landscape area).
 
+### Maps in the rebuild — decided
+
+A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #67. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. Everything above this line is what was Observed;
+the table shape below — a pivot table, a unique `slug`, the cascades and the enum's
+nullability — is the rebuild's own and promotes nothing.
+
+**A map belongs to no operator.** It is *assigned* to them, so `map` carries no
+`organization_id` and takes the write authority §"Catalogue write authority in the rebuild"
+decided rather than the tenant-scoped template every register since #51 has followed: a
+permissive `FOR ALL` whose `USING` asks only for a resolved acting person, a flat `superadmin`
+`WITH CHECK`, and a restrictive `FOR DELETE`. No restrictive `UPDATE` beside it, for the
+reason that section gives — `UPDATE` is decided by `USING` **and** `WITH CHECK`, so a member
+passes the read and then fails the check, because no value of a map row makes them a
+superadmin. Stated here too, because its absence otherwise reads as an oversight.
+
+`slug` is unique deployment-wide: it is the whole address of `/map/{slug}`.
+
+**`map_organization` is the assignment, and it reads like `membership`.** It carries an
+organisation, so it is the one table of the three that is tenant-scoped — `USING` is
+`superadmin` or `organization_id in (…)`, `WITH CHECK` is a flat `superadmin`, and a
+restrictive `FOR DELETE` closes the verb `USING` alone decides. Without that last one the
+tenant-scoped read lets a member unassign their own organisation from a map. What the scoping
+protects is not the map, which every session reads: it is **which other operators hold it**.
+
+**No composite foreign keys here, and that is decided rather than missed.** Every tenant-owned
+slice since #51 carried `organization_id` into a composite key so a row could not name another
+operator's record. `map` has no `organization_id` to carry, so both references are plain. Both
+cascade — an assignment is not evidence, which is `membership.organization_id`'s reasoning read
+from the other end — and detach is still not delete: removing the row removes the assignment
+and leaves the map and the operator standing.
+
+**`map_kml_file` follows its map**: deployment-wide, the same policy pair, and `ON DELETE
+cascade` on `flight_log`'s reasoning — a layer is not evidence apart from the map it details.
+Two judgement calls the field table above does not settle. `layer_type` is **nullable** over
+six enum members, because the seventh entry is *no type (grey)*, which is the absence of a
+classification and not a value of one — the same shape as an airframe with no device type; and
+the members take identifier-safe codes with the label resolving through the message catalogue,
+following `certificate_type`'s `A1_A3`. The colour is **not** a column: it is bound to the
+type, so the legend stays consistent across maps and branding restyles the palette centrally.
+The file column is `file_path`, not the table's `file`, matching `document.file_path` — the
+bytes are on disk and the column says where.
+
+**The assignment is not an access control, and nothing in the rebuild may imply it is.**
+[08-maps.md](08-maps.md) says it outright: it controls *which tenants see a map in their
+report*, never who may reach the URL, and the captured `/map/{slug}` routes serve anonymously
+across every captured map. A tenant-scoped policy sitting beside a deployment-wide map invites
+the opposite conclusion, which is why it is written down here. **Whether those routes should
+stay public is doc 08's open question and this decision does not close it.**
+
+**Nothing here serves a layer or renders one.** The viewer, the public routes, `Duplikovať`
+and the KML relation manager are each their own feature; what exists is the register at
+`/admin/maps` and the schema under it.
+
 ---
 
 ## Mobile sync entities

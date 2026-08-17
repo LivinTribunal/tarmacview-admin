@@ -5,6 +5,7 @@ import { deviceTypeFormFields } from '@/lib/device-types/fields'
 import { generalDocumentFormFields } from '@/lib/documents/fields'
 import { flightFormFields } from '@/lib/flights/fields'
 import type { FormField } from '@/lib/form/fields'
+import { mapFormFields } from '@/lib/maps/fields'
 import { organizationFormFields } from '@/lib/organizations/fields'
 import { trainingTypeFormFields } from '@/lib/training-types/fields'
 import { trainingFormFields } from '@/lib/trainings/fields'
@@ -35,6 +36,7 @@ const registers: readonly {
   { resource: 'device-types', fields: deviceTypeFormFields },
   { resource: 'flights', fields: flightFormFields, captureDiffers: true },
   { resource: 'general-documents', fields: generalDocumentFormFields },
+  { resource: 'maps', fields: mapFormFields },
   { resource: 'organizations', fields: organizationFormFields },
   { resource: 'training-types', fields: trainingTypeFormFields },
   { resource: 'trainings', fields: trainingFormFields },

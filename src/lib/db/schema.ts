@@ -87,6 +87,24 @@ export const documentCategory = pgEnum('document_category', [
   'operations',
 ])
 
+// the geozone classification a KML layer carries, which fixes its legend colour -
+// CONTEXT.md §Geozones and docs/specs/08-maps.md §"Layer types". identifier-safe codes for
+// the observed labels, following `certificate_type`'s `A1_A3`: the label a reader sees
+// resolves through src/lib/i18n, so the stored value and the word for it stay separable.
+//
+// six members for doc 03's seven entries. the seventh is *no type (grey)*, which is the
+// **absence** of a type rather than a value of one - so it is a null in the column below,
+// the same shape as an airframe with no device type - docs/specs/03-data-model.md §"Maps in
+// the rebuild".
+export const layerType = pgEnum('layer_type', [
+  'no_fly_3_7km',
+  'ring_5km',
+  'lzr',
+  'ctr',
+  'atz',
+  'chko',
+])
+
 // the tenant. `logo_path` holds where the file lives, never the bytes -
 // docs/specs/03-data-model.md §"Organisation deletion and the logo in the rebuild".
 // deleting one is blocked while dependents exist, and the block is the `restrict` on the
@@ -707,6 +725,159 @@ export const document = pgTable(
   ],
 )
 
+// a geozone map. **deployment-wide and owned by no operator**: a map is not an
+// organisation's own record, it is assigned to organisations - docs/specs/03-data-model.md
+// §"Maps in the rebuild". so it carries no `organization_id`, and it takes `device_type`'s
+// write-authority shape rather than the register template's.
+//
+// `slug` is unique deployment-wide, because it is the whole address of `/map/{slug}`.
+export const map = pgTable(
+  'map',
+  {
+    id: serial('id').primaryKey(),
+    name: text('name').notNull(),
+    slug: text('slug').notNull(),
+
+    // `allow_dark_basemap` and not the form's `allow_dark_basemap_toggle`: the wire name
+    // belongs to contracts/forms/maps.json and stays there, the column is doc 03's
+    allowDarkBasemap: boolean('allow_dark_basemap').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('map_slug_key').on(table.slug),
+
+    // `device_type_deployment_wide`, verbatim in shape: no tenant predicate on either half,
+    // because there is no organisation to ask about. every session reads the maps and a
+    // superadmin maintains them - §"Catalogue write authority in the rebuild" is the
+    // decision this inherits.
+    pgPolicy('map_deployment_wide', {
+      for: 'all',
+      using: sql`${actingPerson} is not null`,
+      withCheck: sql`${actingIsSuperadmin}`,
+    }),
+
+    // and no restrictive `UPDATE` beside it, for the reason the catalogue has none: `UPDATE`
+    // is decided by `USING` **and** `WITH CHECK`, so a member passes the read above and then
+    // fails the flat check, because no value of a map row makes them a superadmin. `DELETE`
+    // has no `WITH CHECK` to fail - #42 - so the read admits every session to it, and this is
+    // what does not. without the note the next reader assumes one was forgotten.
+    pgPolicy('map_delete_superadmin_only', {
+      as: 'restrictive',
+      for: 'delete',
+      using: actingIsSuperadmin,
+    }),
+  ],
+)
+
+// which operators see a map. **the only tenant-scoped table of the three**, and it is scoped
+// on the read alone: a member must not learn which other operators a map is assigned to,
+// because that discloses the operator rather than the map.
+//
+// it is not an access control. the assignment decides which tenants see the map in their
+// report, never who may reach `/map/{slug}` - docs/specs/08-maps.md, and
+// §"Maps in the rebuild" says so in those terms.
+//
+// both references are **plain**, unlike every tenant-owned pivot since `training_device`.
+// that is decided rather than missed: a composite foreign key carries `organization_id` into
+// the reference so a row cannot name another operator's record, and `map` has no
+// `organization_id` to carry.
+export const mapOrganization = pgTable(
+  'map_organization',
+  {
+    id: serial('id').primaryKey(),
+    mapId: integer('map_id')
+      .notNull()
+      .references(() => map.id, { onDelete: 'cascade' }),
+
+    // cascade on both ends: an assignment is not evidence of anything, so it goes with
+    // whichever end is dissolved. that is `membership.organization_id`'s reasoning read from
+    // the other end, and detach is still not delete - removing this row removes the
+    // assignment and leaves the map and the organisation standing.
+    organizationId: integer('organization_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+  },
+  (table) => [
+    uniqueIndex('map_organization_map_organization_key').on(table.mapId, table.organizationId),
+    index('map_organization_organization_idx').on(table.organizationId),
+
+    // `membership_tenant_isolation`'s shape and not the map's above: a tenant-scoped read
+    // beside a superadmin write. `membership` is the precedent - the other pivot a member
+    // reads their own rows of and writes none of.
+    pgPolicy('map_organization_tenant_isolation', {
+      for: 'all',
+      using: sql`${actingIsSuperadmin} or ${table.organizationId} in (${actingOrganizations})`,
+      withCheck: sql`${actingIsSuperadmin}`,
+    }),
+
+    // and `USING` alone decides `DELETE`, so without this the tenant-scoped read above lets a
+    // member unassign their own organisation from a map. restrictive, because permissive
+    // policies OR together.
+    pgPolicy('map_organization_delete_superadmin_only', {
+      as: 'restrictive',
+      for: 'delete',
+      using: actingIsSuperadmin,
+    }),
+  ],
+)
+
+// one KML layer of a map. deployment-wide like the map it belongs to, so it carries no
+// organisation column and takes the same policy pair.
+//
+// `ON DELETE cascade` from the map, on `flight_log`'s reasoning: a layer is not evidence
+// apart from the map it details, so it goes with it.
+//
+// no colour column, deliberately. the colour is bound to `layer_type` and not chosen per
+// layer, which is what keeps the legend consistent across maps - CONTEXT.md §Geozones. the
+// palette is branding and is defined centrally.
+export const mapKmlFile = pgTable(
+  'map_kml_file',
+  {
+    id: serial('id').primaryKey(),
+    mapId: integer('map_id')
+      .notNull()
+      .references(() => map.id, { onDelete: 'cascade' }),
+
+    // `file_path` and not doc 03's `file`, matching `document.file_path` and
+    // `organization.logo_path`: the bytes are on disk and the column says where. served only
+    // through the row that owns it when a route for it lands - §"Serving a stored file in the
+    // rebuild".
+    filePath: text('file_path').notNull(),
+    displayName: text('display_name'),
+    defaultTitle: text('default_title'),
+    defaultDescription: text('default_description'),
+
+    // nullable: *no type (grey)* is the absence of a classification, not a seventh value
+    layerType: layerType('layer_type'),
+    priority: integer('priority').notNull().default(0),
+    isActive: boolean('is_active').notNull().default(true),
+
+    // the two flags click resolution is defined by, together with `priority` -
+    // docs/specs/08-maps.md. nothing resolves a click yet; the viewer is its own feature.
+    isNotGeozone: boolean('is_not_geozone').notNull().default(false),
+    defaultWhenNoGeozone: boolean('default_when_no_geozone').notNull().default(false),
+
+    // doc 08's `Nahrané`
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('map_kml_file_map_idx').on(table.mapId),
+
+    pgPolicy('map_kml_file_deployment_wide', {
+      for: 'all',
+      using: sql`${actingPerson} is not null`,
+      withCheck: sql`${actingIsSuperadmin}`,
+    }),
+
+    // the layers are the map, so a member able to delete them is a member able to empty it
+    pgPolicy('map_kml_file_delete_superadmin_only', {
+      as: 'restrictive',
+      for: 'delete',
+      using: actingIsSuperadmin,
+    }),
+  ],
+)
+
 // auth tables
 //
 // credentials are a separate optional concern attached to a person, so the account
@@ -791,3 +962,9 @@ export type Flight = typeof flight.$inferSelect
 export type FlightLog = typeof flightLog.$inferSelect
 export type DocumentCategory = (typeof documentCategory.enumValues)[number]
 export type Document = typeof document.$inferSelect
+export type LayerType = (typeof layerType.enumValues)[number]
+
+// `GeozoneMap` and not `Map`, which is the one row type here whose obvious name is a
+// built-in every consumer would then be unable to reach. the table stays `map`.
+export type GeozoneMap = typeof map.$inferSelect
+export type MapKmlFile = typeof mapKmlFile.$inferSelect

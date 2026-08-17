@@ -171,6 +171,10 @@ predecessor system, which is the source of most of these terms, is in
   protected landscape areas.
 - **Layer type** — the geozone classification, which fixes the legend colour. Colour is
   bound to type, not chosen per file, so the legend stays consistent across maps.
+- **Map assignment** — the link between a map and the operators it is offered to. A map is
+  deployment-wide and owned by no operator; the assignment decides **which tenants see it in
+  their report**, never who may reach it. It is not an access control. See
+  [docs/specs/03-data-model.md](docs/specs/03-data-model.md) §"Maps in the rebuild".
 - **Layer priority** — draw order; higher is on top. Together with the geozone flags it
   defines click resolution.
 - **Non-geozone layer** — a layer shown as supplementary information rather than a

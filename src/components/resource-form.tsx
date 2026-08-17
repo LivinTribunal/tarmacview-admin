@@ -59,14 +59,30 @@ function Control({ field }: { field: FormField }) {
 
 // one field, with the wrapper its control actually wants. the labelled <div> is the shape
 // every register used until `flights`, which is the first to need the two that do not fit
-// it - a hidden input has nothing to label, and a radio is one input per choice.
+// it - a hidden input has nothing to label, and a radio is one input per choice. `maps`
+// adds the other two: a checkbox group, and a toggle that is a button rather than an input.
 function Field({ field }: { field: FormField }) {
   // no wrapper and no label: it is not a control a reader interacts with
   if (field.type === 'hidden') return <input name={field.name} type="hidden" />
 
+  // a switch and not a checkbox, per the capture. it labels itself, so there is no
+  // <label for> and no wrapper - the accessible name is the button's own text. inert like
+  // every other control here: there is still no submit handler anywhere in the rebuild, so
+  // `aria-checked` states the stored value and nothing flips it yet.
+  if (field.control === 'button') {
+    return (
+      <button type="button" role="switch" aria-checked={false} name={field.name}>
+        {field.labelKey && t(field.labelKey)}
+      </button>
+    )
+  }
+
   // a fieldset and a legend rather than a <label for>, because the group's caption belongs
   // to the set and not to any one of the inputs in it. each choice keeps its own label.
-  if (field.type === 'radio') {
+  // one branch for both, because a checkbox group is a radio group that admits more than
+  // one answer - and a group declaring no options renders the caption and nothing under it,
+  // which is what `organizations` does until a scoped read can supply them.
+  if (field.type === 'radio' || field.type === 'checkbox') {
     return (
       <fieldset>
         {field.labelKey && <legend>{t(field.labelKey)}</legend>}
@@ -75,7 +91,7 @@ function Field({ field }: { field: FormField }) {
             <input
               id={`${field.name}-${option.value}`}
               name={field.name}
-              type="radio"
+              type={field.type}
               value={option.value}
               required={field.required}
             />

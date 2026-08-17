@@ -145,6 +145,14 @@ carries no organisation, so no organisation role reaches it. Every session reads
 a superadmin writes it, which is Axis A — [03-data-model.md](03-data-model.md) §"The global
 document library in the rebuild".
 
+*Manage geozone maps* **is** on a row, and the database is narrower than it in a way the two
+rows above are not: a map carries no organisation either, so neither `accountable_manager` nor
+`operations` reaches one however the row reads. `map`'s `WITH CHECK` is a flat `superadmin`,
+which is Axis A again — [03-data-model.md](03-data-model.md) §"Maps in the rebuild". Unlike
+the people rows, this one is not waiting on a per-membership predicate: the assignment on
+`map_organization` is a deployment-level act by design, so the row is what needs revisiting
+rather than the policy.
+
 ### Person is not account
 
 The predecessor's own split, recorded under "Account provisioning" above, is kept
