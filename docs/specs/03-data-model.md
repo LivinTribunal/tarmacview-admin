@@ -244,7 +244,8 @@ must reference the device with `ON DELETE restrict`, the way the organisation's 
 already do. `training_device` was the first to do so: a training that says it covered an
 airframe is exactly that history, and deleting the airframe is refused while one says it.
 `Flight` has now landed and does the same, so an airframe that flew cannot be deleted out
-from under the record. `MaintenanceLog` must follow when it lands.
+from under the record. `MaintenanceLog` has landed and is the third, so neither an airframe
+that flew nor one that was serviced can be deleted out from under its own record.
 
 ---
 
@@ -608,9 +609,9 @@ standing autonomy grant and recorded on issue #90. The owner has not reviewed it
 enough to build on, open enough to overturn. The field list above is what was Observed and it
 stays standing; the tenant column, the composite key, the policy and the whole of the
 baseline rule below are the rebuild's own and promote nothing. **No captured payload sits
-under any of it** — every captured `maintenance_logs[]` was empty (§"Service tracking
-(derived)"), so nothing here is agreement with the predecessor and it must not be read as
-such.
+under any of it** — `contracts/report-schema.json` carries no key path below
+`data.devices[].maintenance_logs`, so every captured one was empty, so nothing here is
+agreement with the predecessor and it must not be read as such.
 
 **Tenant-owned, `organization_id` not null, `restrict`,** on the shape §Flight and §Incident
 established. A maintenance record is airworthiness evidence, so a tenant delete must be a

@@ -95,9 +95,8 @@ export function resolveSelection(query: URLSearchParams, asOf: Date): FlightSele
 }
 
 // the period-filtered totals one airframe carries, accumulated from the flight entries the
-// report already has in hand. `service_lifetime_cycles` and `lifetime_flights_count` are a
-// different quantity and are not here - they are all-time, because one cycle is one recorded
-// flight for the life of the airframe.
+// report already has in hand. the all-time figures are a different quantity and are not here -
+// docs/specs/06-org-report.md §"The data endpoint in the rebuild" owns the distinction.
 type PeriodTotals = { flights: number; seconds: number; lastFlightDate: Date | null }
 
 export function reportPayload(
