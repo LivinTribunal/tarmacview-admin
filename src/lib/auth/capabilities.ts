@@ -106,3 +106,18 @@ export function mayManageGlobalDocuments(systemRole: SystemRole): boolean {
 export function mayManageDeviceTypes(systemRole: SystemRole): boolean {
   return systemRole === 'superadmin'
 }
+
+// and the admin panel as a whole, which is a **surface** rather than a register - the one
+// question none of the four above answers. docs/specs/06-org-report.md §Layout item 1 puts
+// an `Administrácia` link in the report header and docs/specs/09-roles-permissions.md
+// records that whether the predecessor gated it was never tested, so there is nothing to
+// reproduce here. `can()` wants an `OrganizationRole` and nothing in `src/` resolves the
+// acting session's membership role yet, which is #48's blocked ground.
+//
+// so: deny by default and superadmin-only, the narrowest answer that is certainly not too
+// wide. it is one line to widen when the real matrix is recovered, and borrowing one of the
+// register narrowings above for a surface-wide question would have been a predicate
+// answering something it was never written to answer.
+export function mayReachAdmin(systemRole: SystemRole): boolean {
+  return systemRole === 'superadmin'
+}
