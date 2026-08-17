@@ -12,9 +12,9 @@ import type { TenantTransaction } from '@/lib/tenant/tenant-context'
 // gives the global library `.pdf`, `.doc` and `.docx`.
 //
 // `.webp` stays off it. it is the logo route's own type and no document bucket was ever seen
-// to take one, so the two allow-lists remain two lists rather than converging on whatever is
-// easiest to serve - the property #61 asserted with a `.png` and which now has to be
-// asserted with the extension the two lists still disagree about.
+// to take one, so the three allow-lists remain three lists rather than converging on whatever
+// is easiest to serve - the property #61 asserted with a `.png` and which now has to be
+// asserted with the extension this list and the logo's still disagree about.
 //
 // `.doc` and `.docx` are two content types and not one: an old binary Word file served as
 // the OOXML type is a lie the browser acts on. none of these is ever derived from the

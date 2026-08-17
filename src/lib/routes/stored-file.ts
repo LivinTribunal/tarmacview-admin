@@ -22,7 +22,7 @@ import { withTenant, type TenantTransaction } from '@/lib/tenant/tenant-context'
 // src/middleware.ts does not cover /api and must not be what stops an anonymous request: it
 // reads the presence of a session cookie and nothing more. the refusal below is a resolved
 // session or nothing.
-export type StoredFileReader = (tx: TenantTransaction, id: number) => Promise<StoredFile | null>
+type StoredFileReader = (tx: TenantTransaction, id: number) => Promise<StoredFile | null>
 
 // one not-found for every refusal, so none of them confirms that a row exists
 const notFound = () => new Response(null, { status: 404 })

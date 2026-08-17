@@ -202,7 +202,7 @@ filters `Vypršané` / `Platné`; actions `Pridať školenie`, `Upraviť`, `Odst
 ## The workspace in the rebuild — decided
 
 A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
-standing autonomy grant and recorded on issues #70, #73 and #75. The owner has not reviewed
+standing autonomy grant and recorded on issues #70, #73, #75 and #82. The owner has not reviewed
 it: settled enough to build on, open enough to overturn. Everything above this line is what
 was Observed of the predecessor, and nothing here may be edited into it — in particular the
 tab table and the two *"columns not observed"* notes stay exactly as they are.

@@ -5,7 +5,8 @@
 --
 -- docs/specs/03-data-model.md §"Incidents in the rebuild" is the decision this carries.
 -- one thing here has no precedent in 0000-0012 and is the slice: `injuries` is a
--- **nullable** boolean, where the two beside it in this schema are `not null default false`.
+-- **nullable** boolean, where the three this application renders as flags are
+-- `not null default false`.
 
 CREATE TABLE "incident" (
 	"id" serial PRIMARY KEY NOT NULL,

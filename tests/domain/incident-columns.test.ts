@@ -10,10 +10,10 @@ import type { IncidentEntry } from '@/lib/tenant/scoped-incidents'
 // there is no oracle here, only doc 05's prose.
 //
 // this register's real subject is `Zranenia`, and it is the one cell in the rebuild that
-// states three things. `injuries` is nullable where the two booleans beside it in the schema
-// are `not null default false`, so a **no** here is an answer somebody gave and not the blank
-// those two collapse a negative into - the exception doc 05 records beside its own
-// affirmative-only rule.
+// states three things. `injuries` is nullable where the three booleans this application
+// renders as flags are `not null default false`, so a **no** here is an answer somebody gave
+// and not the blank those three collapse a negative into - the exception doc 05 records beside
+// its own affirmative-only rule.
 
 const entry: IncidentEntry = {
   id: 31,

@@ -19,7 +19,7 @@ import { withTenant } from '@/lib/tenant/tenant-context'
 //
 // no branch here asks whether the session is allowed. `findOrganization` returns no row for
 // an organisation they hold no membership of, and a page with nothing to render is
-// not-found - the same shape the two file routes already use, and the reason refusing would
+// not-found - the same shape the three file routes already use, and the reason refusing would
 // be worse: it would confirm the organisation is real.
 //
 // the organisation form doc 04 owns sits at the top of this screen in the predecessor. it

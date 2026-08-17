@@ -90,9 +90,8 @@ The rebuild adds three routes with no row above them, one per resource whose fil
 `document` — the global library and the three organisation registers alike — and
 `/api/incidents/{id}/file` for the file an occurrence report carries, which is a column on its
 own table rather than a fourth document bucket. Why a stored file is reached through a handler
-rather than a static path, why the buckets share one route rather than taking one each, and why
-the third of these is where the handler itself became one function, are decided in
-[03-data-model.md](03-data-model.md) §"Serving a stored file in the rebuild".
+rather than a static path, and why the buckets share one route rather than taking one each, are
+decided in [03-data-model.md](03-data-model.md) §"Serving a stored file in the rebuild".
 
 **Confirmed absent** (all 404): `/register`, `/forgot-password`, `/password/reset`.
 There is no self-service registration or password reset — accounts are provisioned by an

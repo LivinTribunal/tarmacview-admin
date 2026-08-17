@@ -3,7 +3,8 @@ import type { TableDeclaration, TableRow } from '@/lib/table/view'
 import type { IncidentEntry } from '@/lib/tenant/scoped-incidents'
 
 // the workspace's occurrence register - docs/specs/05-organization-workspace.md §6, the
-// seventh tab and the only one that needed a table of its own.
+// seventh tab and the only one of the seven that needed a **new table in the schema**; the
+// other six read tables that already existed.
 //
 // **the column list is *(inferred)***, and must keep saying so. doc 05 §6 records the
 // register as empty for the inspected organisation and says *"Expect at least `Názov` ·

@@ -6,6 +6,6 @@ import { serveStoredFile } from '@/lib/routes/stored-file'
 // of its own rather than a fourth `document` bucket: `incident.file_path` is its own column
 // on its own table, and one route per table is what #75 settled.
 //
-// the third such route is what earned the shared handler in src/lib/routes/stored-file.ts;
+// the handler itself is src/lib/routes/stored-file.ts, shared with the two routes beside it;
 // what stays here is which table this path reads.
 export const GET = serveStoredFile(readIncidentFile)

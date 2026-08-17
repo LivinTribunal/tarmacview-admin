@@ -92,7 +92,7 @@ only dependents are memberships still deletes.
 ### Serving a stored file in the rebuild — decided
 
 A **decision about the rebuild**, taken on 16 Aug 2026 by the rebuild loop under the owner's
-standing autonomy grant and recorded on issues #56 and #75. The owner has not reviewed it:
+standing autonomy grant and recorded on issues #56, #75 and #82. The owner has not reviewed it:
 settled enough to build on, open enough to overturn. It governs every stored file and not only
 the logo above — the organisation logo was the first consumer, the document library the second
 and §Incident's own file the third, §Document's three workspace buckets joined the library on
@@ -150,9 +150,9 @@ one carrying `.webp`, which is what separates it from the other two: no document
 occurrence report was ever seen to take one, and it takes no office type or PDF in return.
 [05-organization-workspace.md](05-organization-workspace.md) §6 gives the occurrence register
 `PDF, DOC, DOCX, images`, whose extensions arrive at exactly the document union's six — so
-those two are separated by the **table** each reads and not by a type, and it stays its own
-list rather than a shared constant, because the two are read off different documents and a
-correction to either must not rewrite the other.
+those two are separated by the **table** each reads and not by a type. It stays its own list
+because §6 is the source for the office half; its image half is read across from §Document
+deliberately and is to be revisited if that list moves.
 
 The file inherits the row's row-level security for free: another operator's file is not
 refused, it **reads as absent**, because the read that would have found it returned nothing
@@ -975,9 +975,8 @@ table's `file`, matching `document.file_path` and `organization.logo_path` — t
 disk and the column says where; §Map made the same correction for the same reason. It is
 nullable where §Document's is not, because §6 marks the file optional, so a report attached to
 nothing is a state and never a broken row. That makes `incident` the third consumer of
-§"Serving a stored file in the rebuild" and its own table, so it takes its own route under the
-one-route-per-table rule — and being the third is what earned the shared handler recorded
-there.
+§"Serving a stored file in the rebuild", on its own table, so it takes its own route under the
+one-route-per-table rule.
 
 ---
 

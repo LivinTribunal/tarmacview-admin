@@ -8,10 +8,7 @@ import {
   organizationPermitTableRow,
 } from '@/lib/documents/fields'
 import type { MessageKey } from '@/lib/i18n'
-import {
-  organizationIncidentTable,
-  organizationIncidentTableRow,
-} from '@/lib/incidents/fields'
+import { organizationIncidentTable, organizationIncidentTableRow } from '@/lib/incidents/fields'
 import { identifier } from '@/lib/routes/identifier'
 import type { TableDeclaration, TableRow } from '@/lib/table/view'
 import { listOrganizationAirframes } from '@/lib/tenant/scoped-airframes'

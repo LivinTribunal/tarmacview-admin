@@ -16,18 +16,17 @@ import type { TenantTransaction } from '@/lib/tenant/tenant-context'
 // still decide is the extension, and it decides it against this list and never against
 // anything a request carries.
 //
-// **its own list, though it agrees with the document union today.** doc 05 §6 names its four
-// kinds and doc 03 §Document names the buckets' six extensions, and the two lists arrive at
-// the same set - so the only thing separating this reader from the document one today is
-// which table it reads. It is still written out here rather than imported, for the reason
-// src/lib/documents/fields.ts gives for declaring §3 and §5 twice: the provenance differs,
-// and one shared constant would let a correction to either doc silently rewrite the other's
-// rule.
+// **its own list, though it agrees with the document union today** - and the two halves of it
+// stand on different ground, which is worth saying rather than papering over. `.pdf`, `.doc`
+// and `.docx` are doc 05 §6's own words, so they answer to that document. *images* it does
+// **not** enumerate, so those three are read across from doc 03 §Document's permits bucket
+// deliberately: if that list ever changes, this one is to be revisited with it rather than
+// left behind.
 //
-// *images* is read as the three the rest of this application already serves from a stored
-// document. `.webp` is **not** on it: it is the logo route's own type, doc 05 §6 enumerates
-// no image type at all, and guessing wide on a reader that also serves office documents is
-// the wrong direction to guess in.
+// so it is written out here rather than imported for the narrower reason only - §6 is the
+// source for the office types, and a correction there must not travel to the document reader.
+// `.webp` is off it: it is the logo route's own type, §6 names no image type at all, and
+// guessing wide on a reader that also serves office documents is the wrong way to guess.
 const contentTypes: Readonly<Record<string, string>> = {
   '.pdf': 'application/pdf',
   '.doc': 'application/msword',
