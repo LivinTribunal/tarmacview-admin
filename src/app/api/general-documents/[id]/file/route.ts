@@ -1,6 +1,7 @@
 import { actingSession } from '@/lib/auth/session'
 import { db } from '@/lib/db/client'
 import { readGeneralDocumentFile } from '@/lib/files/general-document'
+import { identifier } from '@/lib/routes/identifier'
 import { withTenant } from '@/lib/tenant/tenant-context'
 
 // the second file this application serves, and it serves it the one way
@@ -16,10 +17,6 @@ import { withTenant } from '@/lib/tenant/tenant-context'
 
 // one not-found for every refusal, so none of them confirms that a row exists
 const notFound = () => new Response(null, { status: 404 })
-
-// only a plain decimal id reaches the read. Number() alone would take `1e3` and ` 1 `, and
-// a value past int4 raises out of range inside the query rather than answering.
-const identifier = (id: string): number | null => (/^\d{1,9}$/.test(id) ? Number(id) : null)
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await actingSession()

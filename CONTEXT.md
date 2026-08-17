@@ -36,6 +36,13 @@ predecessor system, which is the source of most of these terms, is in
   permit, insurance validity) and its expiry-warning threshold. Deleting one is **blocked
   while dependents exist** rather than cascaded, and is a `superadmin` act even when there
   are none — two independent controls; see `docs/specs/03-data-model.md`.
+- **Organisation workspace** — the admin screen for one operator: the organisation form and
+  seven tabbed sub-registers below it, addressed as `?activeRelationManager={n}`. A tab's
+  read names the organisation it is showing, and that is a **selection and never a
+  boundary** — tenant scoping decides which rows the session may see at all, the tab decides
+  which of them it is looking at. See
+  [docs/specs/05-organization-workspace.md](docs/specs/05-organization-workspace.md)
+  §"The workspace in the rebuild".
 - **Tenant-owned / deployment-wide** — which side of the ownership chain an entity sits on.
   A tenant-owned entity carries `organization_id` and is tenant-scoped; a deployment-wide
   one is neither, and its register is a **system register** maintained by `superadmin`.

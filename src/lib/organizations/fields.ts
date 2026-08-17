@@ -79,15 +79,26 @@ export const organizationFormFields: readonly FormField[] = [
 // is the source: six columns visible, six more offered as toggles, and only the five
 // carrying `^` are sortable - `Logo` is not, and neither is any toggle.
 //
-// no row action. `Home Page` reaches the operator report and `Správa organizácie` the org
-// workspace (doc 05); neither path is served, and the chrome renders an actions column
-// only where one is declared rather than linking at a live 404. no bulk action either,
+// one row action of the two doc 04 records. `Správa organizácie` reaches the organisation
+// workspace (doc 05), which this slice serves, so the declaration names it; `Home Page`
+// reaches the operator report, which is still unserved and would be a live 404. the chrome
+// carries one row-action label - `Upraviť` - so that is what the link reads as rather than
+// doc 04's wording; a per-declaration action label is a change to every register rather
+// than to this one.
+//
+// the path shape is `{id}` and the served directory is `[org]`, which is not a
+// disagreement: rowPath() substitutes `{id}` and only `{id}`, while the oracle spells the
+// route `{org}`. both are right at their own layer, and writing `{org}` here would render
+// a literal `{org}` in the href.
+//
+// no bulk action either,
 // for the reason the two sibling registers give: `Vymazať vybrané` is Observed, the
 // capture was GET-only, and a checkbox wired to nothing is worse than no checkbox. What
 // the delete rule actually is lives in the schema, where no call path can skip it.
 export const organizationTable: TableDeclaration = {
   resource: 'organizations',
   emptyKey: 'organization.index.empty',
+  editPath: '/admin/organizations/{id}/edit',
   columns: [
     { key: 'id', labelKey: 'organization.column.id', sortable: true },
     {
