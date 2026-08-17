@@ -3,7 +3,14 @@ import type { MessageKey } from '@/lib/i18n'
 import { identifier } from '@/lib/routes/identifier'
 import type { TableDeclaration, TableRow } from '@/lib/table/view'
 import { listOrganizationAirframes } from '@/lib/tenant/scoped-airframes'
+import { listOrganizationPeople, listOrganizationPilots } from '@/lib/tenant/scoped-people'
 import type { TenantTransaction } from '@/lib/tenant/tenant-context'
+import {
+  organizationPersonTable,
+  organizationPersonTableRow,
+  organizationPilotTable,
+  organizationPilotTableRow,
+} from '@/lib/users/fields'
 
 // the seven sub-registers of docs/specs/05-organization-workspace.md and the pure half of
 // the page that renders them: which tab a request is looking at, resolved without a dom
@@ -12,8 +19,9 @@ import type { TenantTransaction } from '@/lib/tenant/tenant-context'
 //
 // no relation-manager abstraction here, deliberately. a sub-register is an `IndexTable`
 // over an organisation-scoped read, which is the three lines every register since the
-// shared table has used; one tab cannot show what varies, so the extraction waits for the
-// tabs that would earn it.
+// shared table has used. three tabs is where a shape would become visible, but two of the
+// three are the same read of the same entity, so there is still nothing to generalise over
+// - the extraction waits for the document buckets, which differ only by a constant.
 
 export type TabRegister = {
   declaration: TableDeclaration
@@ -22,21 +30,35 @@ export type TabRegister = {
 
 export type WorkspaceTab = {
   labelKey: MessageKey
-  // the sub-register this tab renders, on the one tab that has one. the other six carry a
-  // label and nothing else in this slice, and a tab with no register runs no query at all.
+  // the sub-register this tab renders, on the tabs that have one. the rest carry a label
+  // and nothing else in this slice, and a tab with no register runs no query at all.
   register?: TabRegister
 }
 
 // doc 05's tab table, in its order - the index is the address, so the order is not
-// cosmetic. only tab 2 is built.
+// cosmetic. tabs 0, 1 and 2 are built.
 //
 // three of the labels come out of `document.category.*` rather than a key of their own.
 // those tabs manage a document bucket and nothing else, so the bucket's name is the tab's
 // name - the same reuse src/lib/device-types/fields.ts makes of the form's labels, and a
 // second catalogue entry holding the same word would only be a second place to translate it.
 export const workspaceTabs: readonly WorkspaceTab[] = [
-  { labelKey: 'organization.workspace.tab.people' },
-  { labelKey: 'organization.workspace.tab.pilots' },
+  {
+    labelKey: 'organization.workspace.tab.people',
+    register: {
+      declaration: organizationPersonTable,
+      load: async (tx, organizationId) =>
+        (await listOrganizationPeople(tx, organizationId)).map(organizationPersonTableRow),
+    },
+  },
+  {
+    labelKey: 'organization.workspace.tab.pilots',
+    register: {
+      declaration: organizationPilotTable,
+      load: async (tx, organizationId) =>
+        (await listOrganizationPilots(tx, organizationId)).map(organizationPilotTableRow),
+    },
+  },
   {
     labelKey: 'organization.workspace.tab.uas',
     register: {

@@ -85,6 +85,13 @@
       "when": 1786936048955,
       "tag": "0011_map",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1786945676573,
+      "tag": "0012_person_contact_columns",
+      "breakpoints": true
     }
   ]
 }

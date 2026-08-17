@@ -48,20 +48,29 @@ const organizations = [
   },
 ] as const
 
-// the certificate values are deliberately silly. a plausible-looking number survives
-// review; `CERT-PLACEHOLDER-…` cannot be mistaken for a real pilot's.
+// the certificate values are deliberately silly, and so are the contact ones. a
+// plausible-looking number survives review; `CERT-PLACEHOLDER-…` and
+// `PHONE-PLACEHOLDER-…` cannot be mistaken for a real pilot's, and `phone_number` is
+// `text` so nothing forces a realistic value.
+//
+// one person carries a phone and a post and the other three carry neither, so the
+// workspace's people tabs have a subject for both the filled cell and the blank one.
 const people = [
   {
     key: 'alphaManager',
     name: 'Alpha Manager',
     email: 'alpha.manager@example.invalid',
     certificate: null,
+    phoneNumber: 'PHONE-PLACEHOLDER-0001',
+    position: 'Placeholder Post',
   },
   {
     key: 'bravoManager',
     name: 'Bravo Manager',
     email: 'bravo.manager@example.invalid',
     certificate: null,
+    phoneNumber: null,
+    position: null,
   },
 
   // a pilot with no e-mail and no credentials. that is the normal case for the pilot
@@ -77,6 +86,8 @@ const people = [
       types: ['A1_A3', 'A2'],
       validUntil: '2027-06-30',
     },
+    phoneNumber: null,
+    position: null,
   },
 
   // the only cross-tenant reach there is. it comes from the system role and not from a
@@ -86,6 +97,8 @@ const people = [
     name: 'System Administrator',
     email: 'admin@example.invalid',
     certificate: null,
+    phoneNumber: null,
+    position: null,
   },
 ] as const
 
@@ -395,6 +408,8 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
           certificateNumber: entry.certificate?.number ?? null,
           certificateTypes: entry.certificate ? [...entry.certificate.types] : [],
           certificateValidUntil: entry.certificate?.validUntil ?? null,
+          phoneNumber: entry.phoneNumber,
+          position: entry.position,
         })
         .returning({ id: person.id }),
     )

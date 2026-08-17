@@ -288,6 +288,34 @@ account nobody could sign in with. In code: `accountProvisioning()` in
 a resource yet, and deciding this inside the first write path that needs it would be deciding
 it in the dark.
 
+### Contact and post columns in the rebuild — decided
+
+A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #73. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. Nothing above this line is promoted by it — the
+table's `phone_number`, `position` and `note` rows are Observed **of the predecessor** and
+stay as they are. What was behind is the rebuild's schema, which grew `person` from the
+registers that rendered it and no register had asked for these.
+
+Migration `0012` adds `phone_number` and `position` to `person`, both nullable `text`. They
+are what [05-organization-workspace.md](05-organization-workspace.md) §0's `Telefón` and
+`Pozícia` columns and §1's `Telefón` render; `/admin/users` collects none of the three, which
+is why they were not there already.
+
+**`note` is deliberately left out.** It is Observed on the predecessor and both workspace
+forms collect it, but no column in either people tab renders it and no write path fills it —
+a column with no reader and no writer is speculative structure. It lands with the surface
+that shows it.
+
+**One `position` per person, not per membership**, which is the cost of the choice and is
+stated here rather than discovered later. §"Organisation membership (pivot)" below records —
+Observed — that the three may live on the pivot or on the user, and the capture could not
+distinguish them; `position` is *"Job title within the organisation"*, so a column on
+`person` gives one post across every organisation a person belongs to. That row is not edited
+by this decision. Today every person holds one membership, so nothing observes the
+difference — the same footing §"Membership in the rebuild" put its own one-organisation
+semantics on, and moving a column to the pivot later is cheaper than a policy is.
+
 ### Organisation membership (pivot)
 
 Users attach to organisations with membership attributes, so this is a pivot table, not

@@ -19,6 +19,9 @@ const entry: PersonEntry = {
   certificateNumber: 'CERT-PLACEHOLDER-0007',
   certificateTypes: ['A1_A3', 'A2'],
   certificateValidUntil: '2027-06-30',
+  // neither carries a column in this register - they are the workspace's, doc 05 §0
+  phoneNumber: null,
+  position: null,
   createdAt: new Date('2026-08-16T00:00:00Z'),
   organizations: ['Operator Alpha', 'Operator Bravo'],
   roles: ['pilot', 'operations'],
