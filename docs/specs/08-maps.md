@@ -45,11 +45,9 @@ i.e. the "you are in unrestricted airspace" case.
 
 ## Map record
 
-`/admin/maps` — columns `ID^` · `Názov^` · `Slug^` · `Tmavá mapa` · `Na mape` (file count).
-Row actions `Otvoriť mapu` · `Duplikovať` · `Upraviť`.
-
-**Form** — *Základné informácie*: `Názov` (required), `Slug` (required; used in the URL),
-`Povoliť prepínanie tmavej mapy` (toggle). *Organizácie*: searchable multi-select.
+`/admin/maps` — its columns, row actions and form are in
+[04-admin-resources.md](04-admin-resources.md) §MapResource, beside every other admin
+resource's.
 
 `Duplikovať` clones a map with its layers — observed as `uas-oblasti-copy-cyfzo9`,
 evidently used to stage changes against a copy before touching the live map. Worth keeping
