@@ -127,7 +127,12 @@ describe('the shared-organisation read: the person register under a member sessi
     // the acting person, the co-member they never see in the airframe register, and the
     // shared pilot. `Bravo Manager` belongs only to the other operator; `System
     // Administrator` belongs to no organisation at all.
-    expect(names.sort()).toEqual(['Alpha Manager', 'Alpha Pilot', 'Shared Pilot'])
+    expect(names.sort()).toEqual([
+      'Alpha Manager',
+      'Alpha Pilot',
+      'Alpha Second Pilot',
+      'Shared Pilot',
+    ])
   })
 
   it('a cross-tenant person id returns not-found rather than forbidden', async () => {
@@ -140,7 +145,7 @@ describe('the shared-organisation read: the person register under a member sessi
 
   it('the other operator sees its own people, which is the half that makes the first mean something', async () => {
     const names = (await peopleVisibleTo(bravoSession())).map((row) => row.name)
-    expect(names.sort()).toEqual(['Bravo Manager', 'Shared Pilot'])
+    expect(names.sort()).toEqual(['Bravo Manager', 'Bravo Pilot', 'Shared Pilot'])
   })
 
   it('a person attached to no organisation reaches nobody but themselves', async () => {
@@ -158,7 +163,9 @@ describe('the shared-organisation read: the person register under a member sessi
     expect(names.sort()).toEqual([
       'Alpha Manager',
       'Alpha Pilot',
+      'Alpha Second Pilot',
       'Bravo Manager',
+      'Bravo Pilot',
       'Shared Pilot',
       'System Administrator',
     ])

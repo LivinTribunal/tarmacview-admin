@@ -108,11 +108,14 @@ is reserved for the explicit revocable share link §Access asks for — which ha
 an organisation the session is not a member of reads as absent, the same answer the
 workspace already gives. A refusal would confirm the organisation is real.
 
-**The block it does not serve is declared, not empty.** `data.pilots[]` is absent from the
-payload and named in a pending list the parity test asserts against, so a block dropped by
-accident fails the suite instead of passing as "not built yet". Serving it as an empty array
-would say this operator has no pilots, which is a gap reading as a fact. `data.devices[]`
-left that list on 17 Aug 2026 (issue #90) by being served.
+**The pending list is empty, and that is now the strongest claim the parity suite can make.**
+A block the endpoint could not serve was declared in a list rather than sent as an empty
+array, because `[]` would say this operator has no pilots — a gap reading as a fact.
+`data.devices[]` left the list on 17 Aug 2026 (issue #90) and `data.pilots[]` emptied it the
+same day (issue #92), so the assertion is no longer "the unserved paths are exactly the
+declared ones" but **every oracle path under `data.` is served**. The list and the mechanism
+stay, for the block that cannot be served next; the non-vacuity guard stays with them, or the
+claim would pass over a payload with no rows in it.
 
 **`data.devices[]` carries two flight aggregates and they are different quantities.**
 `total_flights`, `total_flight_hours` and `last_flight_date` are **period-filtered** and are
@@ -179,6 +182,87 @@ inventing one, so the gap is surfaced where a key already exists for it —
 The consequence lands on the flights table below and is written here so it is not
 rediscovered: **`has_vlos_violation: false` must not render as an affirmative all-clear.** A
 flight that could not be judged is not a flight that passed.
+
+### `data.pilots[]` in the rebuild — decided
+
+The same **decision about the rebuild**, extended on 17 Aug 2026 by the rebuild loop under
+the owner's standing autonomy grant and recorded on issue #92. The owner has not reviewed it.
+Everything below is a rebuild decision, not a predecessor finding; the two occurrence counts
+it cites are Inferred from the captured payloads and are marked where they appear.
+
+**The payload spells four keys `licence_*`; nothing else in the rebuild does.** The captured
+payload carries `licence_number`, `licence_types[]`, `licence_date` and `licence_status`,
+while the rebuild's columns are `certificate_number`, `certificate_types` and
+`certificate_valid_until` and [CONTEXT.md](../../CONTEXT.md) §"Certification & training" says
+*certificate*. The key names are the oracle's and are frozen by parity — the contract is never
+edited to agree with us — and **every identifier, type, comment, test name and sentence around
+them says certificate**. The `OSVEDČENIE` column in §Tables below is the rendering of these
+keys and takes the domain word, not the wire one. The one place the synonym survives in the
+rebuild is `organization.licence_expiry_warning_days`, which mirrors the predecessor's own
+column ([03-data-model.md](03-data-model.md) §Organization).
+
+**Every pilot the organisation rosters lists, whether or not they flew.** The rule
+`data.devices[]` already follows: one who flew nothing reports zero counts and zero averages,
+because dropping them would hide a pilot from the roster the report is evidence about.
+`active_pilots` in the envelope is a **different number** and the two legitimately disagree —
+it counts distinct pilots with a flight in the window, so a flight flown by an accountable
+manager counts there and has no row here. Both are right; neither is the other's bug.
+
+**Three more nullable columns the oracle types non-null**, the class the `flight_hours`
+paragraph above already covers. `email` gets a label naming the absence — never `""`, never
+anything shaped like an address — because a pilot may exist with no e-mail and no credentials
+and nothing in this block may make the column required. `trainings[].training_type` and
+`trainings[].date_start` get labels for the same reason: `training_type_id` and `held_on` are
+both nullable, and an unclassified training or one whose date was never recorded is a gap that
+must not render blank.
+
+**No expiry is a stated fact, and it is neither a warning nor a lapse.** A null
+`certificate_valid_until` or `training.valid_until` means the record never expires —
+[03-data-model.md](03-data-model.md) §Training records `empty = "Bez expirácie"` (Observed) —
+so it gets its own status, distinct from valid-with-a-date and from expired. Holding **no**
+certificate and holding **no** training get their own statuses again: an absent record is a
+gap and a never-expiring one is a fact, and one label for both would let the gap read as the
+fact.
+
+**The warning window is the organisation's own.** A status is computed against the injected
+`asOf` and `organization.licence_expiry_warning_days` (`not null default 40`), never a
+constant. Two boundaries are decided rather than inherited: an expiry falling **on** the
+reporting day is still valid, because the last day counts, and one falling **on** the window's
+own edge is inside it. `licence_date` has no `_display` sibling the way `flight_date` does, so
+the format it was rendered in is undecidable from the capture — it serialises iso, like
+`flight_date`, and the page renders it through the one date format this application prints.
+
+**The status vocabularies are two, not one shared string.** §Tables below records the valid
+state as `Platné`/`Platná` — two Observed forms, because the predecessor's noun for the
+certificate inflected differently from the one for the training. The rebuild's two nouns are
+both neuter, so both read `Platné` today; the keys stay separate anyway, because sharing one
+would be right by accident and wrong the moment a translator sees it.
+
+**The headline training is the one that lapses soonest.** `training_status`, `training_date`
+and `training_name` describe a single training out of the `trainings[]` beside them, and the
+rebuild picks the nearest expiry — a training that never expires sorts last and is the
+headline only where the pilot holds nothing that expires at all. The cost is deliberate: an
+expired record the pilot has since renewed keeps the headline expired until it is removed.
+Taking the latest expiry instead would let a lapse hide behind a valid record, which is the
+gap-reading-as-a-pass this document rules out everywhere else. §Layout item 2's expiry-warning
+banner is the rendering of these statuses and has not been built.
+
+**One period-filtered half and one all-time half, in the same row.** `filtered_flights[]` and
+`flights_by_device[]` are period-filtered and are grouped from the very rows `data.flights[]`
+is serialised from — the same construction `data.devices[]` uses, which makes the agreement
+structural rather than a property two queries have to keep. A flight naming no airframe lists
+in `filtered_flights[]` and groups under nothing. `trainings[]` is **all-time**: a pilot's
+qualification does not stop existing because the reader picked last month.
+
+**The rebuild makes the two flight arrays agree, and the predecessor's did not.** Across the
+27 captures `filtered_flights[]` holds 318 member occurrences and
+`flights_by_device[].flights[]` holds 368. Grouping a subset can never exceed the whole, so
+the predecessor's two arrays did not hold the same rows (Inferred from the occurrence counts;
+the behaviour behind it was not observed). Parity is schema parity, so nothing fails — but the
+rebuild deliberately serves the same rows through both, and the larger count is not a target
+to be "fixed" towards. `trainings[].devices[]` is the other sparse path: 3 occurrences against
+326 training rows, so almost every captured training covered no airframe (Inferred, same
+basis). It is served as an array either way.
 
 ## Tables
 

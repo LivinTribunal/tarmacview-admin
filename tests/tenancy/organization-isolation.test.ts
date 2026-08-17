@@ -101,8 +101,8 @@ describe('tenant isolation: the two counts beside each organisation', () => {
 
   it('counts people for a superadmin, whose session can actually see them all', async () => {
     const rows = await list(superadminSession())
-    // alpha holds a manager and a pilot; the blank above is the policy, not a null column
-    expect(rows.find((row) => row.name === 'Operator Alpha')?.peopleCount).toBe(2)
+    // alpha holds a manager and two pilots; the blank above is the policy, not a null column
+    expect(rows.find((row) => row.name === 'Operator Alpha')?.peopleCount).toBe(3)
   })
 })
 

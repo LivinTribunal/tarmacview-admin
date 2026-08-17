@@ -4,6 +4,8 @@ import { reportPayload } from '@/lib/report/payload'
 import { listOrganizationAirframeReport } from '@/lib/tenant/scoped-airframes'
 import { listOrganizationFlights, type FlightSelection } from '@/lib/tenant/scoped-flights'
 import { findOrganization } from '@/lib/tenant/scoped-organizations'
+import { listOrganizationPilots } from '@/lib/tenant/scoped-people'
+import { listOrganizationTrainings } from '@/lib/tenant/scoped-trainings'
 import { withTenant, type TenantSession } from '@/lib/tenant/tenant-context'
 import { startTestDatabase, type TestDatabase } from '../support/database'
 import { seedFixtures, type SeededIds } from '../support/fixtures'
@@ -59,18 +61,31 @@ const read = (session: TenantSession, organizationId: number, selection: FlightS
 // testable against a stated instant
 const asOf = new Date('2026-08-15T00:00:00Z')
 
-// the whole payload, read the way the handler reads it - both blocks inside one
-// `withTenant`, so what scopes them is the policy and not two separate filters
+// the whole payload, read the way the handler reads it - every block inside one
+// `withTenant`, so what scopes them is the policy and not four separate filters
 const report = async (
   session: TenantSession,
   organizationId: number,
   selection: FlightSelection,
 ) => {
   const rows = await withTenant(harness.app, session, async (tx) => ({
+    organization: await findOrganization(tx, organizationId),
     entries: await listOrganizationFlights(tx, organizationId, selection),
     airframes: await listOrganizationAirframeReport(tx, organizationId),
+    pilots: await listOrganizationPilots(tx, organizationId),
+    trainings: await listOrganizationTrainings(tx, organizationId),
   }))
-  return reportPayload(rows.entries, rows.airframes, selection, asOf)
+
+  // the window comes off the organisation being reported on, exactly as the handler takes
+  // it. where the session cannot read that row the handler answers not-found, so the zero
+  // here only ever decorates a payload whose every block is already empty - and being zero
+  // rather than 40 it cannot stand in for the default and hide a hardcoded one.
+  return reportPayload({
+    ...rows,
+    selection,
+    asOf,
+    expiryWarningDays: rows.organization?.licenceExpiryWarningDays ?? 0,
+  })
 }
 
 describe('tenant isolation: the report data endpoint under a member session', () => {
@@ -181,9 +196,10 @@ describe('tenant isolation: the airframes block of the same payload', () => {
   it('carries no airframe at all when the path names another operator organisation', async () => {
     const payload = await report(alphaSession(), ids.organizations.bravo, august)
 
-    // the policy is what empties both blocks, not the selection clause
+    // the policy is what empties every block, not the selection clause
     expect(payload.data.devices).toEqual([])
     expect(payload.data.flights).toEqual([])
+    expect(payload.data.pilots).toEqual([])
   })
 
   it('never carries another operator maintenance history', async () => {
@@ -247,6 +263,7 @@ describe('the service baseline the report serves is composed from stated reading
   })
 
   it('counts lifetime cycles all-time, so they do not move when the period narrows', async () => {
+
     const flownIn = await report(alphaSession(), ids.organizations.alpha, july)
     const quiet = await report(alphaSession(), ids.organizations.alpha, august)
     const of = (payload: typeof quiet) =>
@@ -259,5 +276,143 @@ describe('the service baseline the report serves is composed from stated reading
     expect(of(quiet)?.service_lifetime_cycles).toBe(1)
     expect(of(flownIn)?.service_lifetime_cycles).toBe(1)
     expect(of(quiet)?.lifetime_flights_count).toBe(1)
+  })
+})
+
+describe('tenant isolation: the pilots block of the same payload', () => {
+  it('rosters every pilot of the operator, whether or not they flew in the period', async () => {
+    const payload = await report(alphaSession(), ids.organizations.alpha, august)
+
+    // august carries two alpha flights and neither names a pilot, so both of these flew
+    // nothing in the window and both still list - the report is evidence about the roster
+    expect(payload.data.pilots.map((row) => row.name)).toEqual([
+      'Alpha Pilot',
+      'Alpha Second Pilot',
+    ])
+    expect(payload.data.pilots.map((row) => row.flights_count)).toEqual([0, 0])
+    expect(payload.data.pilots.map((row) => row.avg_hours)).toEqual([0, 0])
+  })
+
+  it('carries no other operator pilot, even when the path names their organisation', async () => {
+    const across = await report(alphaSession(), ids.organizations.bravo, august)
+    const theirs = await report(bravoSession(), ids.organizations.bravo, august)
+
+    // the policy is what empties the first, not the selection clause - and the second is
+    // what makes that exclusion mean something rather than an empty roster on both sides
+    expect(across.data.pilots).toEqual([])
+    expect(theirs.data.pilots.map((row) => row.name)).toEqual(['Bravo Pilot'])
+  })
+
+  it('never carries another operator training, though the read filters on organisation alone', async () => {
+    const payload = await report(alphaSession(), ids.organizations.alpha, august)
+    const names = payload.data.pilots.flatMap((row) => row.trainings.map((it) => it.name))
+
+    expect(names).toEqual(['Alpha Recurrent Training', 'Alpha Unclassified Training'])
+    expect(names).not.toContain('Bravo Recurrent Training')
+  })
+
+  it('keeps a pilot with no e-mail on the roster, with the absence labelled', async () => {
+    const payload = await report(alphaSession(), ids.organizations.alpha, august)
+    const [pilot] = payload.data.pilots
+
+    // `person.email` is nullable and load-bearing, and nothing in this read makes it
+    // otherwise. the oracle types the key non-null, so the gap is named rather than blanked.
+    expect(pilot?.email).toBe(t('report.pilot.email.none'))
+    expect(pilot?.licence_number).toBe('CERT-PLACEHOLDER-0001')
+  })
+
+  it('reads the expiry window off the organisation, which is not the schema default', async () => {
+    const payload = await report(alphaSession(), ids.organizations.alpha, august)
+    const [pilot, second] = payload.data.pilots
+
+    // alpha's window is 60 days and the second pilot's certificate expires 47 days out, so
+    // it is inside alpha's window and outside the default 40. swap the organisation's column
+    // for the literal 40 and this row answers `valid` instead - which is the mutation this
+    // fixture value exists to catch.
+    expect(second?.licence_date).toBe('2026-10-01')
+    expect(second?.licence_status).toBe(t('report.pilot.certificateStatus.expiring'))
+
+    // and one outside it, so the assertion above is a distinction and not the only answer
+    // this serialiser can give
+    expect(pilot?.licence_status).toBe(t('report.pilot.certificateStatus.valid'))
+  })
+
+  it('reads a certificate with no expiry as no-expiry, never as one that has passed', async () => {
+    const [pilot] = (await report(bravoSession(), ids.organizations.bravo, august)).data.pilots
+
+    expect(pilot?.licence_date).toBeNull()
+    expect(pilot?.licence_status).toBe(t('report.pilot.certificateStatus.noExpiry'))
+
+    // no certificate type recorded is a gap, and it is not the same answer as no expiry
+    expect(pilot?.licence_types).toEqual([])
+  })
+
+  it('reads a pilot holding no training as a gap, with both headline nulls beside it', async () => {
+    const [, second] = (await report(alphaSession(), ids.organizations.alpha, august)).data.pilots
+
+    expect(second?.trainings).toEqual([])
+    expect(second?.training_status).toBe(t('report.pilot.trainingStatus.none'))
+    expect(second?.training_date).toBeNull()
+    expect(second?.training_name).toBeNull()
+  })
+
+  it('lets the roster and active_pilots disagree, because they are different numbers', async () => {
+    const payload = await report(bravoSession(), ids.organizations.bravo, august)
+
+    // bravo's flight was flown by its accountable manager, who holds no `pilot` membership.
+    // they count here and have no row in the roster; the rostered pilot flew nothing. both
+    // numbers are right, and doc 06 says so rather than leaving it to be reconciled as a bug.
+    expect(payload.data.active_pilots).toBe(1)
+    expect(payload.data.pilots.map((row) => row.flights_count)).toEqual([0])
+  })
+})
+
+describe('a pilot row carries one period-filtered half and one all-time half', () => {
+  it('narrows the flights when the period narrows, and leaves the trainings where they are', async () => {
+    const flownIn = await report(alphaSession(), ids.organizations.alpha, july)
+    const quiet = await report(alphaSession(), ids.organizations.alpha, august)
+    const of = (payload: typeof quiet) => payload.data.pilots.find((row) => row.name === 'Alpha Pilot')
+
+    // july carries this pilot's only flight and august carries none of them
+    expect(of(flownIn)?.filtered_flights).toHaveLength(1)
+    expect(of(quiet)?.filtered_flights).toEqual([])
+    expect(of(flownIn)?.total_minutes).toBe(85)
+    expect(of(quiet)?.total_minutes).toBe(0)
+
+    // a qualification does not stop existing because the reader picked another month
+    const names = (payload: typeof quiet) => of(payload)?.trainings.map((row) => row.name)
+    expect(names(quiet)).toEqual(names(flownIn))
+    expect(names(quiet)).toHaveLength(2)
+  })
+
+  it('agrees with data.flights[] about the period, pilot by pilot', async () => {
+    const payload = await report(alphaSession(), ids.organizations.alpha, july)
+
+    for (const pilot of payload.data.pilots) {
+      const theirs = payload.data.flights.filter((flight) => flight.pilot_id === pilot.id)
+
+      expect(pilot.flights_count, pilot.name).toBe(theirs.length)
+      expect(pilot.filtered_flights.map((flight) => flight.id), pilot.name).toEqual(
+        theirs.map((flight) => flight.id),
+      )
+
+      // and the airframe groupings hold the same rows, because they are grouped from them
+      expect(pilot.flights_by_device.flatMap((group) => group.flights.map((it) => it.id))).toEqual(
+        theirs.filter((flight) => flight.device_id !== null).map((flight) => flight.id),
+      )
+    }
+
+    // and the window carries a flight, or the loop above would pass over an empty report
+    expect(payload.data.flights).toHaveLength(1)
+    expect(payload.data.pilots.some((pilot) => pilot.flights_count === 1)).toBe(true)
+  })
+
+  it('groups a flight under the airframe it named, with the totals that grouping implies', async () => {
+    const payload = await report(alphaSession(), ids.organizations.alpha, july)
+    const [group] = payload.data.pilots.flatMap((pilot) => pilot.flights_by_device)
+
+    expect(group?.device_serial_number).toBe('SN-ALPHA-0002')
+    expect(group?.total_flights).toBe(1)
+    expect(group?.total_flight_hours).toBe(1.42)
   })
 })

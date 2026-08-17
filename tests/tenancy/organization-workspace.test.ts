@@ -306,6 +306,7 @@ describe('the people filter is a selection and the policy is the boundary', () =
     expect(rows.map((row) => row.name).sort()).toEqual([
       'Alpha Manager',
       'Alpha Pilot',
+      'Alpha Second Pilot',
       'Alpha Viewer',
       'Multi Operator Person',
     ])

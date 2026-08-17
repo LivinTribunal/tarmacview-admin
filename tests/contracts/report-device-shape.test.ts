@@ -1,8 +1,7 @@
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { airframeReportRow, type DeviceReportRow } from '@/lib/report/device-row'
 import { configuredType, maintenanceRecord, readings, testAirframe } from '../support/airframes'
+import { directKeys, jsonType, oracle, type OracleKey } from '../support/report-oracle'
 
 // schema parity over the operator report's data.devices[] block, never value parity -
 // the rebuild has its own records (docs/rebuild/00-operating-model.md §5). two ceilings
@@ -11,23 +10,9 @@ import { configuredType, maintenanceRecord, readings, testAirframe } from '../su
 // key exists; and max_vlos_meters is a string in the oracle, so a rebuild that
 // "corrects" it to a number fails parity and the oracle is right.
 
-type OracleKey = { path: string; types: string[]; nullable: boolean }
-
-const oracle: { keys: OracleKey[] } = JSON.parse(
-  readFileSync(fileURLToPath(new URL('../../contracts/report-schema.json', import.meta.url)), 'utf8'),
-)
-
 const prefix = 'data.devices[].'
-const deviceKeys = oracle.keys.filter(
-  (key) => key.path.startsWith(prefix) && !key.path.endsWith('[]'),
-)
+const deviceKeys = directKeys(prefix)
 const named = (key: OracleKey) => key.path.slice(prefix.length)
-
-const jsonType = (value: unknown): string => {
-  if (value === null) return 'null'
-  if (Array.isArray(value)) return 'array'
-  return typeof value
-}
 
 const serviced = airframeReportRow({
   device: testAirframe({}),

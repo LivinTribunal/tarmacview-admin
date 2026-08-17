@@ -31,14 +31,26 @@ export const FIXTURE_STORAGE_ROOT = fileURLToPath(new URL('./storage', import.me
 
 // only alpha names a file. bravo and charlie keep a null `logo_path`, which is the normal
 // case for the column and the one that must not become a crash.
+//
+// alpha carries a **non-default** `licence_expiry_warning_days`, and it is the only row that
+// does. with the schema default 40 everywhere, a report that read the constant instead of
+// the organisation's own column would answer every expiry status correctly and nothing could
+// tell the two apart - bravo and charlie keep the default, which is the other half of that.
 const organizations = [
   {
     key: 'alpha',
     name: 'Operator Alpha',
     reportToken: 'report-token-alpha',
     logoPath: 'organization-logos/alpha.png',
+    expiryWarningDays: 60,
   },
-  { key: 'bravo', name: 'Operator Bravo', reportToken: 'report-token-bravo', logoPath: null },
+  {
+    key: 'bravo',
+    name: 'Operator Bravo',
+    reportToken: 'report-token-bravo',
+    logoPath: null,
+    expiryWarningDays: null,
+  },
 
   // no airframes, no syllabus and nobody attached. the delete block is only a claim if
   // something also proves a delete still goes through when there is nothing to protect.
@@ -47,6 +59,7 @@ const organizations = [
     name: 'Operator Charlie',
     reportToken: 'report-token-charlie',
     logoPath: null,
+    expiryWarningDays: null,
   },
 ] as const
 
@@ -87,6 +100,40 @@ const people = [
       number: 'CERT-PLACEHOLDER-0001',
       types: ['A1_A3', 'A2'],
       validUntil: '2027-06-30',
+    },
+    phoneNumber: null,
+    position: null,
+  },
+
+  // the second alpha pilot, and the row the report's expiry window is measured against: the
+  // certificate expires 47 days after the report's stated instant, which is inside alpha's
+  // own 60-day window and outside the schema default of 40. a report reading the constant
+  // answers `valid` here and one reading the organisation answers a warning, so the two are
+  // distinguishable - which they are not on any other row.
+  {
+    key: 'alphaSecondPilot',
+    name: 'Alpha Second Pilot',
+    email: 'alpha.second.pilot@example.invalid',
+    certificate: {
+      number: 'CERT-PLACEHOLDER-0002',
+      types: ['STS'],
+      validUntil: '2026-10-01',
+    },
+    phoneNumber: null,
+    position: null,
+  },
+
+  // the other operator's pilot, so "another operator's roster is absent" is an exclusion
+  // rather than an empty list on both sides. the certificate has a number and **no expiry**,
+  // which doc 03 records as *Bez expirácie* - a stated fact, and neither a warning nor a gap.
+  {
+    key: 'bravoPilot',
+    name: 'Bravo Pilot',
+    email: 'bravo.pilot@example.invalid',
+    certificate: {
+      number: 'CERT-PLACEHOLDER-0003',
+      types: [],
+      validUntil: null,
     },
     phoneNumber: null,
     position: null,
@@ -598,7 +645,15 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
     organizationIds[entry.key] = await insertOne(
       db
         .insert(organization)
-        .values({ name: entry.name, reportToken: entry.reportToken, logoPath: entry.logoPath })
+        .values({
+          name: entry.name,
+          reportToken: entry.reportToken,
+          logoPath: entry.logoPath,
+
+          // undefined and not a literal, so the two rows without one take the column's own
+          // default rather than a copy of it stated here
+          licenceExpiryWarningDays: entry.expiryWarningDays ?? undefined,
+        })
         .returning({ id: organization.id }),
     )
   }
@@ -630,12 +685,17 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
       isPrimaryContact: true,
     },
     { personId: personIds.alphaPilot, organizationId: organizationIds.alpha, role: 'pilot' },
+    { personId: personIds.alphaSecondPilot, organizationId: organizationIds.alpha, role: 'pilot' },
     {
       personId: personIds.bravoManager,
       organizationId: organizationIds.bravo,
       role: 'accountable_manager',
       isPrimaryContact: true,
     },
+
+    // bravo's only pilot. its manager flies and is *not* one, which is what lets the report
+    // suite assert that the roster and `active_pilots` legitimately disagree.
+    { personId: personIds.bravoPilot, organizationId: organizationIds.bravo, role: 'pilot' },
   ])
 
   const deviceTypeId = await insertOne(

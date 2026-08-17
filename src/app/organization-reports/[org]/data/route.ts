@@ -6,6 +6,8 @@ import { identifier } from '@/lib/routes/identifier'
 import { listOrganizationAirframeReport } from '@/lib/tenant/scoped-airframes'
 import { listOrganizationFlights } from '@/lib/tenant/scoped-flights'
 import { findOrganization } from '@/lib/tenant/scoped-organizations'
+import { listOrganizationPilots } from '@/lib/tenant/scoped-people'
+import { listOrganizationTrainings } from '@/lib/tenant/scoped-trainings'
 import { withTenant } from '@/lib/tenant/tenant-context'
 
 // the operator report's data endpoint - docs/specs/06-org-report.md §"Data endpoint". the
@@ -52,8 +54,8 @@ export async function GET(
   const selection = resolveSelection(new URL(request.url).searchParams, asOf)
   if (selection === null) return json({ success: false, error: t('report.error.query') }, 400)
 
-  // both reads inside the one transaction, so one payload is one consistent read and both
-  // blocks are scoped by the same acting session
+  // every read inside the one transaction, so one payload is one consistent read and every
+  // block is scoped by the same acting session
   const read = await withTenant(db, session, async (tx) => {
     const organization = await findOrganization(tx, id)
     if (!organization) return null
@@ -61,9 +63,16 @@ export async function GET(
     return {
       entries: await listOrganizationFlights(tx, organization.id, selection),
       airframes: await listOrganizationAirframeReport(tx, organization.id),
+      pilots: await listOrganizationPilots(tx, organization.id),
+      trainings: await listOrganizationTrainings(tx, organization.id),
+
+      // the expiry warning window belongs to the organisation being reported on, so it
+      // comes off the row already in hand rather than from a constant. the column keeps the
+      // predecessor's spelling; nothing downstream of here does.
+      expiryWarningDays: organization.licenceExpiryWarningDays,
     }
   })
   if (read === null) return notFound()
 
-  return json(reportPayload(read.entries, read.airframes, selection, asOf), 200)
+  return json(reportPayload({ ...read, selection, asOf }), 200)
 }
