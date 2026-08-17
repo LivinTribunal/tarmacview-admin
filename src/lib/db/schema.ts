@@ -168,6 +168,17 @@ export const person = pgTable(
       .notNull()
       .default(sql`'{}'`),
     certificateValidUntil: date('certificate_valid_until'),
+
+    // doc 05 §0's `Telefón` and `Pozícia` columns, which the workspace's people tabs render
+    // and no other register collects - docs/specs/03-data-model.md §"Contact and job-title
+    // columns in the rebuild". both nullable: a pilot register whose rows need a phone
+    // number is not the pilot register.
+    //
+    // one `position` per person and not per membership, so a person attached to two
+    // operators states one job title across both. the cost is recorded in the spec section; no
+    // person holds two memberships today, so nothing observes the difference yet.
+    phoneNumber: text('phone_number'),
+    position: text('position'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [

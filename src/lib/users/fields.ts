@@ -1,7 +1,7 @@
 import type { FormField } from '@/lib/form/fields'
 import { t } from '@/lib/i18n'
 import type { TableDeclaration, TableRow } from '@/lib/table/view'
-import type { PersonEntry } from '@/lib/tenant/scoped-people'
+import type { OrganizationPersonEntry, PersonEntry } from '@/lib/tenant/scoped-people'
 
 // the people form declared once, rendered by both create and edit.
 // contracts/forms/users.json is the oracle for this list.
@@ -149,5 +149,80 @@ export function personTableRow(entry: PersonEntry): TableRow {
     certificate_number: entry.certificateNumber,
     organization: entry.organizations?.join(', ') ?? null,
     roles: entry.roles?.map((role) => t(`person.organizationRole.${role}`)).join(', ') ?? null,
+  }
+}
+
+// the workspace's two people registers - docs/specs/05-organization-workspace.md §0 and §1.
+// filed here rather than in a module of their own because they are the same entity's
+// presentation as `personTable` above, and a third home for it is a third place for the
+// vocabulary to drift.
+//
+// each carries its own `emptyKey`. `person.index.empty` reads *Žiadni používatelia*, which
+// is the deployment-wide register's sentence and the wrong one under *Piloti*.
+//
+// **no filter, no row action and no bulk action** on either, the same absence
+// `airframeTable` states: doc 05 records `Rola`, `Hlavná kontaktná osoba`, `Upraviť` and
+// the two `Odobrať` actions, all Observed from a GET-only capture, and no write path
+// exists. Whatever wires `Odobrať` later removes a **membership** and never a person -
+// CONTEXT.md §"Attach / detach". Detaching a pilot who has flown would orphan the flight
+// history that names them, which is the record this product exists to keep.
+//
+// `Rola` is singular here where doc 04's `Roly` is plural, and that is the read rather than
+// a rename: a tab shows one organisation, and `membership_person_organization_key` gives a
+// person at most one membership in it.
+export const organizationPersonTable: TableDeclaration = {
+  resource: 'organization-people',
+  emptyKey: 'organization.workspace.people.empty',
+  columns: [
+    { key: 'name', labelKey: 'person.column.name' },
+    { key: 'role', labelKey: 'person.column.role' },
+    { key: 'email', labelKey: 'person.field.email' },
+    { key: 'phone_number', labelKey: 'person.column.phone_number' },
+    { key: 'position', labelKey: 'person.column.position' },
+    { key: 'primary_contact', labelKey: 'person.column.primary_contact' },
+  ],
+}
+
+export const organizationPilotTable: TableDeclaration = {
+  resource: 'organization-pilots',
+  emptyKey: 'organization.workspace.pilots.empty',
+  columns: [
+    { key: 'name', labelKey: 'person.column.name' },
+    { key: 'email', labelKey: 'person.field.email' },
+    { key: 'certificate_number', labelKey: 'person.field.certificate_number' },
+    { key: 'phone_number', labelKey: 'person.column.phone_number' },
+  ],
+}
+
+// flattens a membership into the record tab 0 renders.
+//
+// `Hlavná` renders the affirmative where the flag is set and nothing where it is not.
+// `is_primary_contact` is `not null default false`, so the column cannot tell "this person
+// is not the primary contact" from "nobody ever set one" - a negative word in every row
+// would state a fact the column does not carry, and a blank reads as the gap it is.
+//
+// `Rola` goes through `person.organizationRole.*`, so no role name is written in Slovak
+// here and the labels stay shared with the form's own options.
+export function organizationPersonTableRow(entry: OrganizationPersonEntry): TableRow {
+  return {
+    id: entry.id,
+    name: entry.name,
+    role: t(`person.organizationRole.${entry.role}`),
+    email: entry.email,
+    phone_number: entry.phoneNumber,
+    position: entry.position,
+    primary_contact: entry.isPrimaryContact ? t('person.primaryContact.yes') : null,
+  }
+}
+
+// and tab 1. a pilot with no e-mail, no phone and no certificate keeps every cell blank and
+// stays in the register - that is the pilot register's normal row rather than a broken one.
+export function organizationPilotTableRow(entry: OrganizationPersonEntry): TableRow {
+  return {
+    id: entry.id,
+    name: entry.name,
+    email: entry.email,
+    certificate_number: entry.certificateNumber,
+    phone_number: entry.phoneNumber,
   }
 }

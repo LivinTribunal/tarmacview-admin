@@ -202,10 +202,10 @@ filters `Vypršané` / `Platné`; actions `Pridať školenie`, `Upraviť`, `Odst
 ## The workspace in the rebuild — decided
 
 A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
-standing autonomy grant and recorded on issue #70. The owner has not reviewed it: settled
-enough to build on, open enough to overturn. Everything above this line is what was Observed
-of the predecessor, and nothing here may be edited into it — in particular the tab table and
-the two *"columns not observed"* notes stay exactly as they are.
+standing autonomy grant and recorded on issues #70 and #73. The owner has not reviewed it:
+settled enough to build on, open enough to overturn. Everything above this line is what was
+Observed of the predecessor, and nothing here may be edited into it — in particular the tab
+table and the two *"columns not observed"* notes stay exactly as they are.
 
 **The route segment is `{org}`, and so the directory is `[org]`.** Every sibling register is
 served from an `[id]` directory, and this one is not: `tests/contracts/routes.test.ts` maps a
@@ -228,27 +228,62 @@ The tabs *"load lazily"* above is Observed of a screen that fetched on click. Th
 renders one tab per request and runs that tab's query alone, which satisfies the same claim:
 the behaviour is preserved, the mechanism is not.
 
-**The organisation filter is a selection, not a boundary.** The UAS tab's read carries
+**The organisation filter is a selection, not a boundary.** Every built tab's read carries
 `where organization_id = {org}`, which is the clause every file in the rebuild's tenant layer
 says it deliberately does not have. Both are true, and the distinction is the point:
-row-level security decides which airframes the acting session **may** see at all; this clause
+row-level security decides which rows the acting session **may** see at all; this clause
 decides which of those it is **looking at**. It is the same line
 [03-data-model.md](03-data-model.md) §"The global document library in the rebuild" draws for
 the document bucket.
 
-Concretely, and asserted rather than claimed: dropping the clause widens the register to the
-acting session's *own* airframes across their other organisations and never past them. That
-is the difference between a wrong screen and a breach.
+Concretely, and asserted rather than claimed for the fleet and for the people alike: dropping
+the clause widens the register to what the acting session already reads across their *own*
+organisations and never past them. That is the difference between a wrong screen and a
+breach.
 
 **An organisation you hold no membership of is not-found.** The scoped read returns no row, a
 page with nothing to render is not-found, and no branch anywhere asks whether the session is
 allowed — refusing would confirm the organisation is real. A `superadmin` reaches every
-organisation. This is the one security property of the slice and it is asserted against a
+organisation. This is the workspace's one security property and it is asserted against a
 real database and the real policies.
 
-**Tab 2 (UAS) is the first sub-register and, for now, the only one.** It is an index table
-over an organisation-scoped read and nothing more; there is no relation-manager abstraction,
-because one tab cannot show what varies. The other six render their label and query nothing.
+**Tabs 0, 1 and 2 are built.** Each is an index table over an organisation-scoped read and
+nothing more; there is still no relation-manager abstraction, because two of the three are
+the same read of the same entity and one entity cannot show what varies. The other four
+render their label and query nothing.
+
+**Tabs 0 and 1 are disjoint on the organisation role** *(inferred)*. §0 and §1 do not say
+which memberships each lists, and two readings fit: tab 0 lists every membership and tab 1
+lists the pilots again, or the two are disjoint. The rebuild takes the second — tab 0 is
+every membership whose role is not `pilot`, tab 1 is the pilots — because §0 calls itself the
+accountable-person register and a CAMO's accountable people are not its pilot roster; listing
+pilots among the accountable misrepresents who is accountable, which in a compliance tool is
+the worse error. `viewer` and `operations` fall in tab 0 with `accountable_manager`.
+
+Nothing is hidden either way, and that is the property asserted rather than the predicate:
+the two tabs together cover every membership of the organisation and neither lists a person
+the other does. `membership.role` is `not null` and a person holds at most one membership per
+organisation, so both halves follow from the schema. What would settle the marking is a
+captured record showing a pilot in §0's table; the crawl has none, and the register was
+populated.
+
+**The account asymmetry §0 states is recorded, not enforced here.** An organisation person
+must have an e-mail and a password and a pilot need not — accountable people are accounts,
+pilots are records. Nothing in the rebuild writes yet, so this slice owes only that neither
+tab's *read* contradicts it: a pilot with no e-mail lists normally in tab 1 and the empty
+cell reads as a gap, never as a broken row. See
+[03-data-model.md](03-data-model.md) §"Account provisioning in the rebuild" for what the
+write path will do with it.
+
+**`Hlavná` renders the flag and never a negative.** `is_primary_contact` is
+`not null default false`, so the column cannot tell "this person is not the primary contact"
+from "nobody ever set one". The cell states the affirmative where the flag is set and is
+blank where it is not; a negative word in every row would state a fact the column does not
+carry. An organisation with no primary contact therefore reads as a gap, which is what it is.
+
+`Telefón` and `Pozícia` were not on the rebuild's `person`; migration `0012` adds them and
+`Poznámka` is left out — see [03-data-model.md](03-data-model.md) §"Contact and job-title
+columns in the rebuild".
 
 Two readings of §2 above that the capture does not settle:
 
@@ -263,7 +298,12 @@ Two readings of §2 above that the capture does not settle:
   interval, so the airframe can never register a violation or a service warning — see
   [03-data-model.md](03-data-model.md) §Device.
 
-**No row action, no bulk action and no filter** on this tab. `Upraviť`, `Vymazať`,
-`Vymazať vybrané` and the `Stav` filter are all Observed and all from a GET-only capture; no
-airframe route is served and no write path exists, so the declaration carries none of them
-rather than offering chrome wired to nothing.
+**No row action, no bulk action and no filter** on any of the three built tabs. `Upraviť`,
+`Vymazať`, `Vymazať vybrané`, the `Stav` and `Rola` filters, `Hlavná kontaktná osoba` and the
+two `Odobrať` actions are all Observed and all from a GET-only capture; no route is served for
+any of them and no write path exists, so the declarations carry none of them rather than
+offering chrome wired to nothing.
+
+When one is wired, `Odobrať z organizácie` and `Odobrať z osôb organizácie` remove a
+**membership** and never a person — [CONTEXT.md](../../CONTEXT.md) §"Attach / detach".
+Detaching a pilot who has flown must leave the flight history that names them intact.
