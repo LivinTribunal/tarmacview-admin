@@ -4,6 +4,11 @@ import { isAbsolute, relative, resolve, sep } from 'node:path'
 // in the rebuild". nothing under here is ever served statically: a file leaves this
 // directory only through a handler that has already read its owning row.
 
+// what a resource's read hands back once its own row and its own allow-list have both
+// answered. it lives here rather than beside either reader, because the organisation logo
+// and the document library are now two of them.
+export type StoredFile = { bytes: Uint8Array; contentType: string }
+
 // configuration, because the deployment decides where the disk is and a test needs its
 // own. no default: an unset variable falling back to the working directory would quietly
 // make every file in the checkout a candidate. read per call rather than at import, so

@@ -3,6 +3,7 @@ import type { Database } from '@/lib/db/client'
 import {
   device,
   deviceType,
+  document,
   flight,
   flightLog,
   membership,
@@ -232,12 +233,77 @@ const flights = [
   },
 ] as const
 
+// the document library and the buckets beside it. `organization: null` is the global
+// library - the only nullable `organization_id` in the schema - and the CHECK constraint is
+// what keeps the pair honest, so every row here states both halves and none of them may
+// disagree.
+//
+// nothing under charlie, for the reason the trainings and the flights above give: charlie is
+// deleted to prove the dependent block lifts, and `document.organization_id` is `restrict`.
+//
+// alphaManager uploads nothing on purpose. `uploaded_by` is `restrict`, and
+// tests/tenancy/flight-isolation.test.ts asserts *which* constraint refuses a delete of that
+// person - a second one on the same row would leave the answer to Postgres's ordering.
+//
+// only the first names a file that is actually on disk. the second is the row that proves a
+// stored path pointing at nothing is a gap and never a crash.
+const documents = [
+  {
+    key: 'globalManual',
+    organization: null,
+    category: 'general',
+    name: 'Placeholder Operations Manual Template',
+    filePath: 'general-documents/placeholder-operations-manual.pdf',
+    note: 'Placeholder template note.',
+    validUntil: null,
+    uploadedBy: 'systemAdmin',
+    size: 12800,
+  },
+
+  // nobody named as the uploader, no size and an expiry that is stated. between them and the
+  // row above, both halves of every cell the register can leave blank are covered.
+  {
+    key: 'globalForm',
+    organization: null,
+    category: 'general',
+    name: 'Placeholder Reporting Form Template',
+    filePath: 'general-documents/placeholder-reporting-form.docx',
+    note: null,
+    validUntil: '2027-12-31',
+    uploadedBy: null,
+    size: null,
+  },
+  {
+    key: 'alphaOperations',
+    organization: 'alpha',
+    category: 'operations',
+    name: 'Alpha Operations Manual',
+    filePath: 'operations-documents/placeholder-alpha-manual.pdf',
+    note: null,
+    validUntil: '2027-06-30',
+    uploadedBy: 'alphaPilot',
+    size: 2400000,
+  },
+  {
+    key: 'bravoForm',
+    organization: 'bravo',
+    category: 'forms',
+    name: 'Bravo Occurrence Form',
+    filePath: 'forms/placeholder-bravo-form.pdf',
+    note: null,
+    validUntil: null,
+    uploadedBy: 'bravoManager',
+    size: 4096,
+  },
+] as const
+
 export type OrganizationKey = (typeof organizations)[number]['key']
 export type PersonKey = (typeof people)[number]['key']
 export type AirframeKey = (typeof airframes)[number]['key']
 export type TrainingTypeKey = (typeof trainingTypes)[number]['key']
 export type TrainingKey = (typeof trainings)[number]['key']
 export type FlightKey = (typeof flights)[number]['key']
+export type DocumentKey = (typeof documents)[number]['key']
 
 export type SeededIds = {
   organizations: Record<OrganizationKey, number>
@@ -246,6 +312,7 @@ export type SeededIds = {
   trainingTypes: Record<TrainingTypeKey, number>
   trainings: Record<TrainingKey, number>
   flights: Record<FlightKey, number>
+  documents: Record<DocumentKey, number>
   deviceType: number
 }
 
@@ -409,6 +476,25 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
     }
   }
 
+  const documentIds = {} as Record<DocumentKey, number>
+  for (const entry of documents) {
+    documentIds[entry.key] = await insertOne(
+      db
+        .insert(document)
+        .values({
+          organizationId: entry.organization ? organizationIds[entry.organization] : null,
+          category: entry.category,
+          name: entry.name,
+          filePath: entry.filePath,
+          note: entry.note,
+          validUntil: entry.validUntil,
+          uploadedBy: entry.uploadedBy ? personIds[entry.uploadedBy] : null,
+          size: entry.size,
+        })
+        .returning({ id: document.id }),
+    )
+  }
+
   return {
     organizations: organizationIds,
     people: personIds,
@@ -416,6 +502,7 @@ export async function seedFixtures(db: Database): Promise<SeededIds> {
     trainingTypes: trainingTypeIds,
     trainings: trainingIds,
     flights: flightIds,
+    documents: documentIds,
     deviceType: deviceTypeId,
   }
 }

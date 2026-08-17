@@ -94,8 +94,8 @@ only dependents are memberships still deletes.
 A **decision about the rebuild**, taken on 16 Aug 2026 by the rebuild loop under the owner's
 standing autonomy grant and recorded on issue #56. The owner has not reviewed it: settled
 enough to build on, open enough to overturn. It governs every stored file and not only the
-logo above — §Document's four buckets and §Map's KML layers are the consumers still to come,
-and the organisation logo is the one built today.
+logo above — the organisation logo was the first consumer, the global document library is the
+second, and §Document's three workspace buckets and §Map's KML layers are still to come.
 
 **The bytes stay on disk and the row holds the path**, unchanged from the section above.
 Hosting is one small instance with the application and Postgres co-located, so an object
@@ -144,8 +144,9 @@ would become a candidate.
 **Public read is an explicit opt-in, never a default.** Two exceptions will exist and both
 must be positive flags the handler checks: `document.is_public` (permits only, exposed on the
 operator report) and the public `/map/{slug}` routes in
-[02-sitemap-routes.md](02-sitemap-routes.md). Neither table exists yet; what this section
-owes them is a handler whose default branch refuses, because one whose default branch serves
+[02-sitemap-routes.md](02-sitemap-routes.md). `document` now exists and carries the flag,
+and neither handler built so far has a branch for it — which is the point. What this section
+owes both is a handler whose default branch refuses, because one whose default branch serves
 is written the wrong way round.
 
 **Deferred to whichever slice builds the write path:** generated storage names, per-bucket
@@ -177,11 +178,17 @@ may delete is answered per table rather than left to fall out of that:
 | `training_device` | the owning tenant | Detaching an airframe from a training is not evidence in itself; the training survives it |
 | `flight` | the owning tenant | The operator's own record, on the same reasoning — see §"Flights in the rebuild" |
 | `flight_log` | the owning tenant | A leg is not evidence apart from its flight, and cascades with it |
+| `document` | the owning tenant, and a **superadmin** for the global library | An operator's own bucket is their own record. A document with no organisation belongs to the deployment, and one member must not withdraw it from every other operator — see §"The global document library in the rebuild" |
 
-The three superadmin-only rows are **restrictive** delete policies added beside the
-existing ones. Permissive policies OR together, so a narrower *permissive* policy would
-restrict nothing at all; that distinction is the whole of the fix, and the member half of
+The superadmin-only rows are **restrictive** delete policies added beside the existing
+ones. Permissive policies OR together, so a narrower *permissive* policy would restrict
+nothing at all; that distinction is the whole of the fix, and the member half of
 `tests/tenancy/delete-authority.test.ts` is what tells the two apart.
+
+`document` is the split row, and its restrictive policy is keyed on the row rather than on
+the whole table: only the ones with no organisation need a superadmin, so the tenant-owned
+buckets keep the ordinary delete beside it. It is also the first table where an **`UPDATE`**
+needs the same treatment, for the reason recorded in its own section.
 
 **This and the dependent block above are independent controls.** A member is refused for
 who they are; everybody, superadmin included, is refused while dependents exist. The
@@ -705,7 +712,7 @@ workspace has three separate document registers using the same field shape.
 |---|---|---|
 | `organization_id` | FK, nullable | null ⇒ global/template document |
 | `name` | string(255) | required (except permits, which take the filename) |
-| `file` | file | required |
+| `file_path` | string | required |
 | `note` | text | |
 | `category` | enum | |
 | `valid_until` | date | Expiry tracking |
@@ -719,6 +726,81 @@ document library.
 
 Permits accept `.pdf,.jpg,.jpeg,.png,.doc,.docx`; incident files additionally allow
 `.docx` up to 50 MB.
+
+The column is `file_path` and not `file`, corrected 17 Aug 2026. The name is **Observed**:
+`contracts/forms/general-documents.json` captures this register's create and edit pages and
+gives exactly three bindings — `data.file_path`, `data.name`, `data.note`. `file` was read
+off the field's label; the oracle names the field. That it holds a path and not bytes is
+*(inferred)*, from `organization.logo_path`'s shape read across — the same footing that claim
+had before the observed `/storage/…` route settled it there.
+
+The rest of the table stands. §Incident's `file` and §Map's were read off their labels the
+same way and are **not** corrected here, because no captured form covers either — what
+changed this row is an oracle, not a rule about labels.
+
+### The global document library in the rebuild — decided
+
+A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #61. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. Nothing here describes the predecessor; the
+table above is what was Observed, and its *(inferred, but strongly indicated)* marking stays
+standing — this section **follows** that inference rather than resolving it.
+
+**One table, `organization_id` nullable, and null is the global library.** One and not four,
+because the four buckets share a field shape, because #14's history migration lands into a
+shape that mirrors the source, and because four tables would repeat the file-serving
+integration four times. `restrict` on the organisation, like the airframe and the flight: an
+operator's compliance pack is evidence, and a tenant delete must not sweep it.
+
+**A `CHECK` ties the two discriminators together:** `category = 'general'` **if and only if**
+`organization_id is null`. Stated as an equality, so it fails in both directions — a one-way
+constraint would leave an ownerless permit that no register lists and no policy scopes. This
+is the instinct the composite foreign keys above record: the invariant belongs where no later
+writer can forget it, not in a policy that has to remember it.
+
+**The policy is asymmetric, and it is the only one in the schema that is.** `USING` carries a
+null branch and `WITH CHECK` does not:
+
+| | `superadmin` | `organization_id is null` | `organization_id in (…)` |
+|---|---|---|---|
+| `USING` | ✅ | ✅, with an acting person | ✅ |
+| `WITH CHECK` | ✅ | ❌ | ✅ |
+
+The null branch on the read is what makes the library readable by every session. The same
+branch on the write would let any member publish a document into every operator's library in
+the deployment; a member writing a null fails the check because `null in (…)` is null and not
+true. **Equality here is the bug**, which is the opposite of `training`, `flight` and
+`device`, where equality is the correct answer — so an implementer copying one of those
+inherits the hole. The read branch also asks for an acting person, so a connection with no
+tenant context still reads nothing at all: *readable by every session* is the claim, and a
+connection that is nobody is not a session.
+
+**Two restrictive policies beside it, because `USING` alone decides `UPDATE` and `DELETE`.**
+Deleting a global document is #42 exactly — the null branch makes the row visible to a
+member's `DELETE` and no `WITH CHECK` exists to stop it, so the fix is the one #44 already
+established. Updating one is the same hole with the loot attached: the only edit the check
+would admit on a global row is a member setting `organization_id` to their own, which
+withdraws the document from every other operator's library into theirs. Both are refused by
+restrictive policies keyed on `organization_id is not null`, which **and** with the permissive
+one and so narrow nothing the tenant-owned buckets rely on. One policy per command and not
+one `for: 'all'`: a restrictive policy covering `SELECT` would take the library away from the
+sessions it exists for.
+
+**`category` is the bucket, never a field.** A document takes the category of the register it
+was added through, which is why no captured form collects one and why the oracle's three
+fields have no room for it. That answers half of what doc 04 called *worth resolving*.
+`valid_until` is the other half and stays a real gap: the column exists, the register lists
+it, and no captured form collects it. It is nullable and **renders as a gap, never as an
+expiry that passed** — and deliberately not as `training.valid_until`'s *Bez expirácie*, which
+is an Observed predecessor string about a different entity. Whether a later form collects it
+is the write path's question.
+
+**`is_public` exists as a column and nothing reads it.** It is the permits bucket's, and the
+handler §"Serving a stored file in the rebuild" describes has no branch for it — a public
+read stays an explicit opt-in that the slice building permits has to add.
+
+**Nothing here uploads.** #56 deferred generated storage names, per-bucket upload validation
+and the upload endpoint itself to the write path, which still does not exist.
 
 ---
 

@@ -52,6 +52,7 @@ const served = servedPaths(join(repoRoot, 'src/app'))
 const registers = [
   '/admin/device-types',
   '/admin/flights',
+  '/admin/general-documents',
   '/admin/trainings',
   '/admin/training-types',
   '/admin/users',

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { deviceTypeFormFields } from '@/lib/device-types/fields'
+import { generalDocumentFormFields } from '@/lib/documents/fields'
 import { flightFormFields } from '@/lib/flights/fields'
 import type { FormField } from '@/lib/form/fields'
 import { organizationFormFields } from '@/lib/organizations/fields'
@@ -33,6 +34,7 @@ const registers: readonly {
 }[] = [
   { resource: 'device-types', fields: deviceTypeFormFields },
   { resource: 'flights', fields: flightFormFields, captureDiffers: true },
+  { resource: 'general-documents', fields: generalDocumentFormFields },
   { resource: 'organizations', fields: organizationFormFields },
   { resource: 'training-types', fields: trainingTypeFormFields },
   { resource: 'trainings', fields: trainingFormFields },

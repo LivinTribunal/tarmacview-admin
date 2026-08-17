@@ -197,6 +197,17 @@ The list exposes `Kategória` and `Platnosť do` columns that the create form do
 collect — so either they are set elsewhere, or the form is incomplete relative to the
 model. Worth resolving during the rebuild.
 
+`Odkaz` is read as the link that fetches the file, *(inferred)*: it sits beside `Súbor` and
+doc 03 §Document carries no url column, so the two are the stored name and the way to reach
+it. An external-url column the crawl never saw is not ruled out, and a captured record whose
+two cells differ would settle it.
+
+The rebuild resolves half of the paragraph above — `category` is the bucket, which is why no
+captured form collects one — leaves `Platnosť do` a gap and renders it as one, and reaches
+the file through a route taking the row id rather than a stored path — see
+[03-data-model.md](03-data-model.md) §"The global document library in the rebuild" and
+§"Serving a stored file in the rebuild".
+
 ---
 
 ## MapResource — `/admin/maps`

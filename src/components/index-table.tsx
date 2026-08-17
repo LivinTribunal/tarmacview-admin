@@ -47,9 +47,10 @@ function writeHidden(resource: string, hidden: readonly string[]): void {
 }
 
 // one cell. a column declaring an `imagePath` renders that route for the row instead of
-// the cell's text, and the text becomes the image's accessible name - so the chrome is
-// handed a row id and a path shape, never a stored path. a blank cell stays the blank
-// marker either way: nothing is stored, so there is no file to point at.
+// the cell's text and the text becomes the image's accessible name; one declaring a
+// `linkPath` keeps the text and makes it the link. either way the chrome is handed a row id
+// and a path shape, never a stored path, and a blank cell stays the blank marker: nothing is
+// stored, so there is no file to point at.
 //
 // a plain <img> rather than next/image, for the same reason the actions column is a plain
 // <a>: the image optimizer fetches the source itself, server-side and without the session
@@ -57,9 +58,10 @@ function writeHidden(resource: string, hidden: readonly string[]): void {
 function cell(column: ColumnDef, row: TableRow) {
   const text = formatCell(row[column.key] ?? null)
   if (text === null) return t('table.blank')
-  if (!column.imagePath) return text
+  if (column.imagePath) return <img src={rowPath(column.imagePath, row.id)} alt={text} />
+  if (column.linkPath) return <a href={rowPath(column.linkPath, row.id)}>{text}</a>
 
-  return <img src={rowPath(column.imagePath, row.id)} alt={text} />
+  return text
 }
 
 export function IndexTable({
