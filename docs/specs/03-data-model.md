@@ -92,10 +92,11 @@ only dependents are memberships still deletes.
 ### Serving a stored file in the rebuild — decided
 
 A **decision about the rebuild**, taken on 16 Aug 2026 by the rebuild loop under the owner's
-standing autonomy grant and recorded on issue #56. The owner has not reviewed it: settled
-enough to build on, open enough to overturn. It governs every stored file and not only the
-logo above — the organisation logo was the first consumer, the global document library is the
-second, and §Document's three workspace buckets and §Map's KML layers are still to come.
+standing autonomy grant and recorded on issues #56 and #75. The owner has not reviewed it:
+settled enough to build on, open enough to overturn. It governs every stored file and not only
+the logo above — the organisation logo was the first consumer and the document library the
+second, §Document's three workspace buckets joined the library on that same route, and §Map's
+KML layers are still to come.
 
 **The bytes stay on disk and the row holds the path**, unchanged from the section above.
 Hosting is one small instance with the application and Postgres co-located, so an object
@@ -112,6 +113,32 @@ bytes only if that read returned a row. The handler takes a **row id**; the path
 it reads, never an input it trusts — which disposes of path traversal rather than defending
 against it. The route sits under the resource that owns the file, because a generic file
 route is the shape that invites a handler taking a path.
+
+**One route per resource, and the resource is the table** — corrected 17 Aug 2026, on issue
+#75. `/api/documents/{id}/file` serves every bucket of §Document; `/api/general-documents/{id}/file`
+was its first form and is gone. The sentence above had been read as *one route per register*,
+which would have stood five handlers over one table, and that reading does not follow from it:
+what this section forbids is a **request-supplied path**, and a route keyed on a row id of one
+table supplies none. Every property asked for above survives — the handler takes an id,
+resolves the row inside the tenant transaction, reads the path as a column, and inherits the
+row's row-level security. The generic file route this section refuses is one that serves *any*
+stored file, which needs a path to say which; `document`, `organization` and `map` each keep
+their own.
+
+What the consolidation is for is the count. `nosniff`, the extension allow-list, the storage-root
+containment check and `Cache-Control: private` are four guards that a fifth handler carries only
+because somebody remembered — and a guard required on six handlers and enforced by nobody will
+eventually be on five (#63). The three workspace buckets would have taken the count from two to
+five; they took it to two. One table was already the decision §"The global document library in
+the rebuild" took so that *four tables would repeat the file-serving integration four times*
+could not happen, and four routes over that one table is the same repetition through the other
+door.
+
+**The allow-list is then the union of what the buckets accept:** `.pdf`, `.doc`, `.docx`,
+`.jpg`, `.jpeg`, `.png` — §Document gives the permits bucket the image types. It stays a
+different list from the logo's, and `.webp` is what still separates them: it is the logo's and
+no document bucket was ever seen to take one. The two lists must not converge on whichever is
+easiest to serve, so a test holds them apart on that extension, where before #75 a `.png` did.
 
 The file inherits the row's row-level security for free: another operator's file is not
 refused, it **reads as absent**, because the read that would have found it returned nothing
@@ -134,8 +161,8 @@ file into script.
 That allow-list reads the **name and never the bytes**, so the response also carries
 `X-Content-Type-Options: nosniff` — otherwise a file named `.png` holding markup is served
 under a content type the browser may sniff past and execute in this origin, with the session
-cookie in scope. The header belongs to the pattern, not to the logo: the document buckets
-that copy this route accept `.pdf`, `.doc` and `.docx`, where sniffing is livelier still.
+cookie in scope. The header belongs to the pattern, not to the logo: the document route
+accepts `.pdf`, `.doc` and `.docx` among its six, where sniffing is livelier still.
 
 **The storage root is configuration**, with no default. An unset value fails the first file
 request rather than resolving to the working directory, where every file in the checkout

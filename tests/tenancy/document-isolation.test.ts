@@ -1,7 +1,11 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { document, organization, person } from '@/lib/db/schema'
-import { findGeneralDocument, listGeneralDocuments } from '@/lib/tenant/scoped-documents'
+import {
+  findDocument,
+  listGeneralDocuments,
+  listOrganizationDocuments,
+} from '@/lib/tenant/scoped-documents'
 import { withTenant, type TenantSession } from '@/lib/tenant/tenant-context'
 import { startTestDatabase, type TestDatabase } from '../support/database'
 import { seedFixtures, type SeededIds } from '../support/fixtures'
@@ -77,12 +81,15 @@ const publishGlobal = (name: string) =>
 const names = (rows: readonly { name: string }[]) => rows.map((row) => row.name).sort()
 
 describe('tenant isolation: the global library, readable by every session', () => {
-  it('a member reads the global documents and their own bucket, and neither another operator', async () => {
+  it('a member reads the global documents and their own buckets, and neither another operator', async () => {
     const rows = await withTenant(harness.app, alphaSession(), (tx) => tx.select().from(document))
     expect(names(rows)).toEqual([
+      'Alpha Occurrence Form',
       'Alpha Operations Manual',
       'Placeholder Operations Manual Template',
       'Placeholder Reporting Form Template',
+      'placeholder-alpha-permit.pdf',
+      'placeholder-alpha-restricted.pdf',
     ])
   })
 
@@ -99,7 +106,7 @@ describe('tenant isolation: the global library, readable by every session', () =
     const rows = await withTenant(harness.app, superadminSession(), (tx) =>
       tx.select().from(document),
     )
-    expect(rows).toHaveLength(4)
+    expect(rows).toHaveLength(7)
   })
 
   it('reads nothing at all from a connection with no tenant context, the global rows included', async () => {
@@ -142,28 +149,120 @@ describe('the register reads one bucket, and the policy reads the tenant', () =>
     expect(manual?.uploadedByName).toBe('System Administrator')
   })
 
+  it('lists one operator own bucket, and neither the library nor the other operator', async () => {
+    const rows = await withTenant(harness.app, alphaSession(), (tx) =>
+      listOrganizationDocuments(tx, ids.organizations.alpha, 'forms'),
+    )
+    expect(rows.map((row) => row.name)).toEqual(['Alpha Occurrence Form'])
+  })
+
+  it('resolves the uploader on a tenant bucket, where the gap above is not the normal row', async () => {
+    // the global library's uploader is a superadmin no member shares an organisation with,
+    // so that register's `Nahral` is usually blank. here the uploader is one of the
+    // operator's own people and the name resolves - which is what makes a blank cell on
+    // these tabs mean *the document names nobody* rather than *the session cannot see them*.
+    const rows = await withTenant(harness.app, alphaSession(), (tx) =>
+      listOrganizationDocuments(tx, ids.organizations.alpha, 'permits'),
+    )
+    expect(rows.map((row) => row.uploadedByName)).toEqual(['Alpha Pilot', 'Alpha Pilot'])
+  })
+
+  it('lists nothing of another operator bucket, even naming their organisation', async () => {
+    // the organisation is a **selection**; `document_tenant_isolation` is the boundary. so
+    // asking for bravo's forms under an alpha session is an empty read rather than a refusal
+    const rows = await withTenant(harness.app, alphaSession(), (tx) =>
+      listOrganizationDocuments(tx, ids.organizations.bravo, 'forms'),
+    )
+    expect(rows).toEqual([])
+  })
+})
+
+// the acceptance #75 states as *the four buckets partition `document`*. it is not a property
+// of any one read: each of the four could be correct on its own while a row appeared on two
+// registers, or on none.
+describe('the four buckets partition the table, so no document is on two registers or on none', () => {
+  it('covers every row a superadmin can read, exactly once', async () => {
+    const [global, forms, permits, operations, all] = await withTenant(
+      harness.app,
+      superadminSession(),
+      async (tx) => [
+        await listGeneralDocuments(tx),
+        await listOrganizationDocuments(tx, ids.organizations.alpha, 'forms'),
+        await listOrganizationDocuments(tx, ids.organizations.alpha, 'permits'),
+        await listOrganizationDocuments(tx, ids.organizations.alpha, 'operations'),
+        await tx.select().from(document),
+      ],
+    )
+
+    const listed = [...global, ...forms, ...permits, ...operations].map((row) => row.id)
+    expect(new Set(listed).size).toBe(listed.length)
+
+    // the whole table is the global library plus alpha's three buckets plus bravo's, so what
+    // the four reads leave out is bravo's and nothing else
+    const missed = all.filter((row) => !listed.includes(row.id))
+    expect(missed.map((row) => row.organizationId)).toEqual([ids.organizations.bravo])
+  })
+
+  it('keeps the global library off all three workspace tabs', async () => {
+    // the CHECK ties `category = 'general'` to a null organisation, so no organisation-scoped
+    // read can reach one. this is that constraint read from the register's end.
+    for (const category of ['forms', 'permits', 'operations'] as const) {
+      const rows = await withTenant(harness.app, superadminSession(), (tx) =>
+        listOrganizationDocuments(tx, ids.organizations.alpha, category),
+      )
+      expect(rows.map((row) => row.organizationId), category).not.toContain(null)
+    }
+  })
+})
+
+// #75's W3.1, and it **overturns** what this file asserted before it: `findGeneralDocument`
+// answered null for a permit, and its comment called serving one *the generic file route doc
+// 03 refuses to have*.
+//
+// that conflated two things. what docs/specs/03-data-model.md §"Serving a stored file in the
+// rebuild" forbids is a handler taking a path or a filename from the request; a route serving
+// one table by row id takes neither. so the bucket filter came off, and what the tests below
+// keep asserting is the property the filter was standing in for - that the **row** is what
+// decides, and the policy is what scopes it.
+describe('the file route read finds any bucket the policy admits, and no other operator', () => {
   it('finds a global document by id under a member session', async () => {
     const found = await withTenant(harness.app, alphaSession(), (tx) =>
-      findGeneralDocument(tx, ids.documents.globalManual),
+      findDocument(tx, ids.documents.globalManual),
     )
     expect(found?.name).toBe('Placeholder Operations Manual Template')
     expect(found?.organizationId).toBeNull()
   })
 
-  it('answers not-found for the acting tenant own document in another bucket', async () => {
-    // readable, and still not this register's: the route over this read serves the library
-    // and a permit fetched through it would make it the generic file route doc 03 refuses
+  it('finds the acting tenant own document in another bucket, which is what #75 changed', async () => {
+    // the same row the operations tab already lists for this session. serving it through one
+    // route rather than a third copy of the handler widens nothing: the policy admitted it
+    // before the filter was dropped and admits it after.
     const found = await withTenant(harness.app, alphaSession(), (tx) =>
-      findGeneralDocument(tx, ids.documents.alphaOperations),
+      findDocument(tx, ids.documents.alphaOperations),
+    )
+    expect(found?.name).toBe('Alpha Operations Manual')
+    expect(found?.organizationId).toBe(ids.organizations.alpha)
+  })
+
+  it('finds a permit, the bucket the dropped filter used to refuse by name', async () => {
+    const found = await withTenant(harness.app, alphaSession(), (tx) =>
+      findDocument(tx, ids.documents.alphaPermit),
+    )
+    expect(found?.category).toBe('permits')
+  })
+
+  it('answers not-found for another operator document rather than forbidden', async () => {
+    // the claim the bucket filter never carried and never could: what excludes this row is
+    // `document_tenant_isolation`, which the filter sat in front of rather than beside
+    const found = await withTenant(harness.app, alphaSession(), (tx) =>
+      findDocument(tx, ids.documents.bravoForm),
     )
     expect(found).toBeNull()
   })
 
-  it('answers not-found for another operator document rather than forbidden', async () => {
-    const found = await withTenant(harness.app, alphaSession(), (tx) =>
-      findGeneralDocument(tx, ids.documents.bravoForm),
-    )
-    expect(found).toBeNull()
+  it('answers not-found from a connection with no tenant context, the global rows included', async () => {
+    const [row] = await harness.app.select().from(document).limit(1)
+    expect(row).toBeUndefined()
   })
 })
 
@@ -327,7 +426,7 @@ describe('the restrictive policies: Postgres decides UPDATE and DELETE by USING 
     expect(published).toBeGreaterThan(0)
 
     const readable = await withTenant(harness.app, alphaSession(), (tx) =>
-      findGeneralDocument(tx, published),
+      findDocument(tx, published),
     )
     expect(readable?.name).toBe('Placeholder Published Template')
 
