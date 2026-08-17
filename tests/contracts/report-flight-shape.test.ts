@@ -1,37 +1,27 @@
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { pendingBlocks, reportPayload } from '@/lib/report/payload'
 import type { AirframeReportEntry } from '@/lib/tenant/scoped-airframes'
 import type { FlightReportEntry, FlightSelection } from '@/lib/tenant/scoped-flights'
+import type { OrganizationPersonEntry } from '@/lib/tenant/scoped-people'
+import type { TrainingEntry } from '@/lib/tenant/scoped-trainings'
 import { configuredType, maintenanceRecord, testAirframe } from '../support/airframes'
 import { testFlight } from '../support/flights'
+import { testPerson } from '../support/pilots'
+import { jsonType, oracle } from '../support/report-oracle'
 
-// schema parity over the operator report's envelope and its data.devices[] and
-// data.flights[] blocks, never value parity - the rebuild has its own records
-// (docs/rebuild/00-operating-model.md §5).
+// schema parity over the whole operator report payload, never value parity - the rebuild
+// has its own records (docs/rebuild/00-operating-model.md §5).
 //
 // this suite walks the whole payload rather than one row's key set, because it has two
-// claims to make and the second needs the walk: **no key outside the oracle**, and **the
-// oracle paths not yet served are exactly the declared pending list**. A block dropped by
-// accident then fails here instead of passing as "not built yet" - the parent's decision 3,
-// which is the repo's own rule that a gap must never read as a pass, applied to the payload.
+// claims to make and the second needs the walk: **no key outside the oracle**, and - since
+// R3 emptied the pending list - **every oracle path under `data.` is served**. That is the
+// strongest form the second claim has, and a block dropped by accident fails here instead of
+// passing as "not built yet": the repo's own rule that a gap must never read as a pass,
+// applied to the payload.
 //
-// the oracle-loading preamble is copied from report-device-shape.test.ts rather than shared.
-// two copies is where src/lib/routes/identifier.ts records extraction as not yet earned; R3
-// is the third block and it extracts.
-
-type OracleKey = { path: string; types: string[]; nullable: boolean }
-
-const oracle: { keys: OracleKey[] } = JSON.parse(
-  readFileSync(fileURLToPath(new URL('../../contracts/report-schema.json', import.meta.url)), 'utf8'),
-)
-
-const jsonType = (value: unknown): string => {
-  if (value === null) return 'null'
-  if (Array.isArray(value)) return 'array'
-  return typeof value
-}
+// the oracle-loading preamble now lives in tests/support/report-oracle.ts. it was a copy in
+// this file and in report-device-shape.test.ts; the pilots suite is the third caller, which
+// is the threshold src/lib/routes/identifier.ts states for this repo.
 
 // the payload as the oracle spells it: `$` at the root, `[]` for an array's members, and a
 // dotted path for everything else. the same path can be reached by several rows, so each
@@ -91,11 +81,43 @@ const airframes: AirframeReportEntry[] = [
   },
 ]
 
+// one rostered pilot, holding the two things the sparsest oracle paths under data.pilots[]
+// need: certificate types, so `licence_types[]` is served, and a training covering an
+// airframe, so `trainings[].devices[]` is. with an empty roster the every-path claim below
+// would fail rather than pass quietly, which is the point of asserting it in that form.
+const pilots: OrganizationPersonEntry[] = [
+  {
+    ...testPerson({
+      certificateNumber: 'CERT-PLACEHOLDER-0001',
+      certificateTypes: ['A1_A3', 'A2'],
+      certificateValidUntil: '2027-06-30',
+    }),
+    role: 'pilot',
+    isPrimaryContact: false,
+  },
+]
+
+const trainings: TrainingEntry[] = [
+  {
+    id: 1,
+    organizationId: 1,
+    name: 'Placeholder Recurrent Training',
+    trainingTypeId: 1,
+    pilotId: 1,
+    heldOn: '2026-03-01',
+    validUntil: '2027-03-01',
+    createdAt: asOf,
+    trainingTypeName: 'Placeholder Initial Training',
+    pilotName: 'Placeholder Pilot',
+    airframes: ['SN-ALPHA-0001'],
+  },
+]
+
 // an ordinary flight and the two rows a serialiser is most likely to answer with a null the
 // oracle does not allow: one assigned to nobody, and one whose parse failed and recorded no
 // measurements at all.
-const payload = reportPayload(
-  [
+const payload = reportPayload({
+  entries: [
     entry(),
     entry({
       ...testFlight({ id: 2, pilotId: null, deviceId: null }),
@@ -118,14 +140,23 @@ const payload = reportPayload(
     }),
   ],
   airframes,
+  pilots,
+  trainings,
   selection,
   asOf,
-)
+  expiryWarningDays: 40,
+})
 
 const served = walk(payload, '$')
 const oraclePaths = oracle.keys.map((key) => key.path)
+
+// empty since R3, and kept as the mechanism rather than deleted: a block that genuinely
+// cannot be served is declared here and the claim below narrows to match, instead of the
+// block quietly going missing.
 const pending = (path: string) =>
-  pendingBlocks.some((block) => path === block || path.startsWith(`${block}.`) || path.startsWith(`${block}[`))
+  pendingBlocks.some(
+    (block) => path === block || path.startsWith(`${block}.`) || path.startsWith(`${block}[`),
+  )
 
 // the one subtree the oracle has nothing below: every captured `maintenance_logs` was empty,
 // so the member shape is the rebuild's own and no key under it can be checked against the
@@ -135,13 +166,14 @@ const pending = (path: string) =>
 const ownShape = 'data.devices[].maintenance_logs[]'
 
 describe('report parity: the payload carries the captured paths and no others', () => {
-  it('the oracle carries paths to assert against, and the payload carries both blocks', () => {
+  it('the oracle carries paths to assert against, and the payload carries all three blocks', () => {
     expect(oraclePaths.length).toBeGreaterThan(0)
 
     // without these the assertions below would pass over empty arrays while claiming to
     // have covered every key under them
     expect(served.has('data.flights[].id')).toBe(true)
     expect(served.has('data.devices[].id')).toBe(true)
+    expect(served.has('data.pilots[].id')).toBe(true)
   })
 
   it('serialises no key the oracle does not carry, outside the one subtree that is ours', () => {
@@ -156,10 +188,15 @@ describe('report parity: the payload carries the captured paths and no others', 
     expect(served.has(ownShape)).toBe(true)
   })
 
-  it('leaves unserved exactly the declared pending blocks', () => {
+  it('serves every oracle path under data., which is what an empty pending list claims', () => {
     expect(oraclePaths.filter((path) => !served.has(path)).sort()).toEqual(
       oraclePaths.filter(pending).sort(),
     )
+
+    // and the list is empty, so the line above is the every-path claim rather than the old
+    // wording standing over nothing
+    expect([...pendingBlocks]).toEqual([])
+    expect(oraclePaths.every((path) => served.has(path))).toBe(true)
   })
 })
 
@@ -176,9 +213,12 @@ describe('report parity: types, where the oracle has a type to assert', () => {
 })
 
 describe('the pending list shrinks by what is served, and by nothing else', () => {
-  it('names data.pilots only, now that the airframes block is served', () => {
-    expect([...pendingBlocks]).toEqual(['data.pilots'])
+  it('names nothing, and the three blocks that emptied it are all present', () => {
+    // one key from each block, and each one the last that block added: no pending list is
+    // only meaningful beside the paths that used to be on it
+    expect(served.has('data.flights[].has_vlos_violation')).toBe(true)
     expect(served.has('data.devices[].service_warning')).toBe(true)
+    expect(served.has('data.pilots[].flights_by_device[].flights[].id')).toBe(true)
   })
 })
 

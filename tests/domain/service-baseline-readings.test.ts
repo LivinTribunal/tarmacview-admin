@@ -185,7 +185,15 @@ const flown = [
 ]
 
 describe('the two flight aggregates on an airframe are different quantities', () => {
-  const payload = reportPayload(flown, [airframe], july, asOf)
+  const payload = reportPayload({
+    entries: flown,
+    airframes: [airframe],
+    pilots: [],
+    trainings: [],
+    selection: july,
+    asOf,
+    expiryWarningDays: 40,
+  })
   const [row] = payload.data.devices
 
   it('the period totals agree with that airframe rows in data.flights[] for the same window', () => {
@@ -203,7 +211,15 @@ describe('the two flight aggregates on an airframe are different quantities', ()
   })
 
   it('counts lifetime cycles all-time, and does not move when the period narrows', () => {
-    const narrowed = reportPayload([], [airframe], september, asOf)
+    const narrowed = reportPayload({
+      entries: [],
+      airframes: [airframe],
+      pilots: [],
+      trainings: [],
+      selection: september,
+      asOf,
+      expiryWarningDays: 40,
+    })
     const [quiet] = narrowed.data.devices
 
     // a month with no flights: the period totals empty and the lifetime figure does not

@@ -6,13 +6,21 @@ import {
   reportDate,
   type FlightReportRow,
 } from '@/lib/report/flight-row'
+import {
+  expiryWindow,
+  pilotReportRow,
+  type PilotFlightInput,
+  type PilotReportRow,
+  type PilotTrainingInput,
+} from '@/lib/report/pilot-row'
 import { identifier } from '@/lib/routes/identifier'
 import type { AirframeReportEntry } from '@/lib/tenant/scoped-airframes'
 import type { FlightReportEntry, FlightSelection } from '@/lib/tenant/scoped-flights'
+import type { OrganizationPersonEntry } from '@/lib/tenant/scoped-people'
+import type { TrainingEntry } from '@/lib/tenant/scoped-trainings'
 
 // the operator report's JSON envelope - doc 06 §"Data endpoint". the period, the four
-// totals, the airframes and the flights; the one block it does not serve yet is named below
-// rather than sent as an empty array.
+// totals, and the three blocks under them.
 
 export type ReportPayload = {
   success: true
@@ -22,16 +30,18 @@ export type ReportPayload = {
     total_flight_minutes: number
     total_flight_hours: number
     active_pilots: number
+    pilots: PilotReportRow[]
     devices: DeviceReportRow[]
     flights: FlightReportRow[]
   }
 }
 
-// the oracle paths this endpoint does not serve yet. served as an empty array it would read
-// as "this operator has no pilots", which is a gap reading as a fact - so it is absent and
-// declared, and tests/contracts/report-flight-shape.test.ts fails if any *other* oracle path
-// goes unserved. the list empties when R3 lands.
-export const pendingBlocks = ['data.pilots'] as const
+// the oracle paths this endpoint does not serve. empty since R3, so what
+// tests/contracts/report-flight-shape.test.ts claims is that **every** oracle path under
+// `data.` is served - the strongest form that assertion has. a block that cannot be served
+// is declared here rather than sent as an empty array, which would state a fact about an
+// operator instead of naming a gap.
+export const pendingBlocks: readonly string[] = []
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/
 
@@ -99,12 +109,37 @@ export function resolveSelection(query: URLSearchParams, asOf: Date): FlightSele
 // docs/specs/06-org-report.md §"The data endpoint in the rebuild" owns the distinction.
 type PeriodTotals = { flights: number; seconds: number; lastFlightDate: Date | null }
 
-export function reportPayload(
-  entries: readonly FlightReportEntry[],
-  airframes: readonly AirframeReportEntry[],
-  selection: FlightSelection,
-  asOf: Date,
-): ReportPayload {
+// one named input rather than seven positional arguments, so the three call sites cannot
+// silently swap two of them. `expiryWarningDays` is the **organisation's own** window and
+// never a constant - doc 06 §Layout item 2 keys the expiry warnings off it.
+export type ReportInput = {
+  entries: readonly FlightReportEntry[]
+  airframes: readonly AirframeReportEntry[]
+  // every pilot the organisation rosters, whether or not they flew in the period
+  pilots: readonly OrganizationPersonEntry[]
+  // all-time, never period-filtered, and covering the whole organisation - grouped by pilot
+  // below rather than read once per pilot
+  trainings: readonly TrainingEntry[]
+  selection: FlightSelection
+  asOf: Date
+  expiryWarningDays: number
+}
+
+// keyed by pilot id, so a training or a flight naming nobody groups under nothing
+function groupByPilot<T>(rows: readonly { pilotId: number | null; value: T }[]): Map<number, T[]> {
+  const grouped = new Map<number, T[]>()
+
+  for (const { pilotId, value } of rows) {
+    if (pilotId === null) continue
+    const group = grouped.get(pilotId) ?? []
+    group.push(value)
+    grouped.set(pilotId, group)
+  }
+  return grouped
+}
+
+export function reportPayload(input: ReportInput): ReportPayload {
+  const { entries, airframes, selection, asOf } = input
   const seconds = entries.reduce((total, entry) => total + (entry.totalFlightTimeSeconds ?? 0), 0)
 
   // distinct pilots with at least one flight in the period, counted by id: an unassigned
@@ -145,6 +180,21 @@ export function reportPayload(
     })
   }
 
+  // the pilot block reads the very same serialised rows a third time. the trainings beside
+  // them are the one thing here that is not period-filtered, and grouping both by pilot id
+  // costs one pass each rather than a read per rostered pilot.
+  const pilotFlights = groupByPilot<PilotFlightInput>(
+    flights.map(({ entry, row }) => ({
+      pilotId: entry.pilotId,
+      value: { seconds: entry.totalFlightTimeSeconds, row },
+    })),
+  )
+  const pilotTrainings = groupByPilot<PilotTrainingInput>(
+    input.trainings.map((training) => ({ pilotId: training.pilotId, value: training })),
+  )
+
+  const window = expiryWindow(asOf, input.expiryWarningDays)
+
   return {
     success: true,
     data: {
@@ -160,6 +210,20 @@ export function reportPayload(
       total_flight_hours: flightHours(seconds),
 
       active_pilots: pilots.size,
+
+      // every pilot the organisation rosters, whether or not they flew - the rule the
+      // airframes below already follow, because dropping them would hide a pilot from the
+      // roster the report is evidence about. `active_pilots` above is the *other* number and
+      // the two legitimately disagree: a flight flown by somebody whose role is not `pilot`
+      // counts there and has no row here. doc 06 says so in its own words.
+      pilots: input.pilots.map((pilot) =>
+        pilotReportRow({
+          pilot,
+          trainings: pilotTrainings.get(pilot.id) ?? [],
+          flights: pilotFlights.get(pilot.id) ?? [],
+          window,
+        }),
+      ),
 
       // every airframe of the operator, whether or not it flew in the period. one that flew
       // nothing reports zero totals; dropping it would hide an airframe from the fleet the

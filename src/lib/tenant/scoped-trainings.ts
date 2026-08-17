@@ -1,4 +1,4 @@
-import { asc, eq, getTableColumns, sql } from 'drizzle-orm'
+import { asc, eq, getTableColumns, sql, type SQL } from 'drizzle-orm'
 import {
   device,
   person,
@@ -39,7 +39,11 @@ export type TrainingEntry = Training & {
 // nothing failing. narrowing either policy without the other is what breaks it.
 //
 // the airframe reads `name ?? serial_number`, which is what the airframe register shows.
-export function listTrainings(tx: TenantTransaction): Promise<TrainingEntry[]> {
+//
+// one query body for both reads below, so the register and the report cannot drift apart
+// unnoticed - the shape scoped-people.ts's `listMembers` already uses. the scope is the only
+// thing that differs between them.
+function listTrainingRows(tx: TenantTransaction, scope?: SQL): Promise<TrainingEntry[]> {
   return tx
     .select({
       ...getTableColumns(training),
@@ -54,8 +58,30 @@ export function listTrainings(tx: TenantTransaction): Promise<TrainingEntry[]> {
     .leftJoin(person, eq(person.id, training.pilotId))
     .leftJoin(trainingDevice, eq(trainingDevice.trainingId, training.id))
     .leftJoin(device, eq(device.id, trainingDevice.deviceId))
+    .where(scope)
     .groupBy(training.id, trainingType.id, person.id)
     .orderBy(asc(training.id))
+}
+
+// doc 04's register: every training the acting session may read, deployment-wide.
+export function listTrainings(tx: TenantTransaction): Promise<TrainingEntry[]> {
+  return listTrainingRows(tx)
+}
+
+// doc 06's operator report reads every training the organisation holds - **all-time** and
+// never period-filtered, because a pilot's qualification does not stop existing because the
+// reader picked last month. the period-filtered half of a pilot's row is their flights, and
+// those come from rows the payload already has.
+//
+// `where organization_id` is a **selection and never a boundary**, the line the header
+// comment above draws: `training_tenant_isolation` and `training_device_tenant_isolation`
+// decide which rows the session may see at all, and this clause decides which of them the
+// report is looking at. tests/tenancy/report-data-isolation.test.ts asserts the difference.
+export function listOrganizationTrainings(
+  tx: TenantTransaction,
+  organizationId: number,
+): Promise<TrainingEntry[]> {
+  return listTrainingRows(tx, eq(training.organizationId, organizationId))
 }
 
 // a cross-tenant id yields no rows, so the caller renders not-found. refusing would confirm
