@@ -193,20 +193,20 @@ it cites are Inferred from the captured payloads and are marked where they appea
 **The payload spells four keys `licence_*`; nothing else in the rebuild does.** The captured
 payload carries `licence_number`, `licence_types[]`, `licence_date` and `licence_status`,
 while the rebuild's columns are `certificate_number`, `certificate_types` and
-`certificate_valid_until` and [CONTEXT.md](../../CONTEXT.md) §"Certification & training" says
-*certificate*. The key names are the oracle's and are frozen by parity — the contract is never
-edited to agree with us — and **every identifier, type, comment, test name and sentence around
-them says certificate**. The `OSVEDČENIE` column in §Tables below is the rendering of these
-keys and takes the domain word, not the wire one. The one place the synonym survives in the
-rebuild is `organization.licence_expiry_warning_days`, which mirrors the predecessor's own
-column ([03-data-model.md](03-data-model.md) §Organization).
+`certificate_valid_until`. [03-data-model.md](03-data-model.md) §"Certificates in the
+rebuild" settles the rule and the reason a captured spelling stays — these four keys are the
+same case as the form contract's three — so **every identifier, type, comment, test name and
+sentence around them says certificate**. The `OSVEDČENIE` column in §Tables below is the
+rendering of these keys and takes the domain word, not the wire one. The one place the
+synonym survives in the rebuild is `organization.licence_expiry_warning_days`, which mirrors
+the predecessor's own column ([03-data-model.md](03-data-model.md) §Organization).
 
 **Every pilot the organisation rosters lists, whether or not they flew.** The rule
 `data.devices[]` already follows: one who flew nothing reports zero counts and zero averages,
 because dropping them would hide a pilot from the roster the report is evidence about.
 `active_pilots` in the envelope is a **different number** and the two legitimately disagree —
-it counts distinct pilots with a flight in the window, so a flight flown by an accountable
-manager counts there and has no row here. Both are right; neither is the other's bug.
+the periods paragraph above defines it, and a flight flown by an accountable manager counts
+there and has no row here. Both are right; neither is the other's bug.
 
 **Three more nullable columns the oracle types non-null**, the class the `flight_hours`
 paragraph above already covers. `email` gets a label naming the absence — never `""`, never
@@ -225,19 +225,19 @@ gap and a never-expiring one is a fact, and one label for both would let the gap
 fact.
 
 **The warning window is the organisation's own.** A status is computed against the injected
-`asOf` and `organization.licence_expiry_warning_days` (`not null default 40`), never a
-constant. Two boundaries are decided rather than inherited: an expiry falling **on** the
-reporting day is still valid, because the last day counts, and one falling **on** the window's
-own edge is inside it. `licence_date` has no `_display` sibling the way `flight_date` does, so
-the format it was rendered in is undecidable from the capture — it serialises iso, like
-`flight_date`, and the page renders it through the one date format this application prints.
+`asOf` and `organization.licence_expiry_warning_days`, never a constant. Two boundaries are
+decided rather than inherited: an expiry falling **on** the reporting day is still valid,
+because the last day counts, and one falling **on** the window's own edge is inside it.
+`licence_date` has no `_display` sibling the way `flight_date` does, so the format it was
+rendered in is undecidable from the capture — it serialises iso, like `flight_date`, and the
+page renders it through the one date format this application prints.
 
 **The status vocabularies are two, not one shared string.** §Tables below records the valid
 state as `Platné`/`Platná` — two Observed forms. *Which* form belonged to `ŠKOLENIE` and
 which to `OSVEDČENIE` was never captured, so that the split followed the two nouns'
-grammatical gender is *(inferred)*; the two strings themselves are Observed. The rebuild's two nouns are
-both neuter, so both read `Platné` today; the keys stay separate anyway, because sharing one
-would be right by accident and wrong the moment a translator sees it.
+grammatical gender is *(inferred)*; the two strings themselves are Observed. The rebuild's
+two nouns are both neuter, so both read `Platné` today; the keys stay separate anyway,
+because sharing one would be right by accident and wrong the moment a translator sees it.
 
 **The headline training is the one that lapses soonest.** `training_status`, `training_date`
 and `training_name` describe a single training out of the `trainings[]` beside them, and the
