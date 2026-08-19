@@ -42,6 +42,71 @@ Top to bottom:
 6. **Flights table** for the selected period.
 7. **Action panels** — flight-log upload, documents, maps.
 
+### The report page in the rebuild — decided
+
+A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #97. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. Items 1–7 above are what was Observed and stay
+standing; only the page's own choices are below. Items 5–7 are not built — the tabs and the
+three tables are their own slice, and the print view and the panels are another.
+
+**The page and the data endpoint share one payload builder, in one transaction.** The page
+makes the same four scoped reads the endpoint makes, hands them to the same builder, and
+renders keys off the result. It derives no figure of its own: two derivations of one number
+drift, and the payload's is the one with tests. A server component fetching its own HTTP
+endpoint would double the work, lose the session, and make one screen two reads that can
+disagree.
+
+**The header's identity comes off the `Organization` row, not off the payload.** The
+envelope carries no organisation block, so the name, the UAS registration number, the
+SPECIFIC permit number and the logo are read from the row the transaction already holds for
+`licence_expiry_warning_days` — reported rather than computed around, and no key is added to
+the payload to carry them. The logo is served through the route that takes an organisation
+id and nothing else ([03-data-model.md](03-data-model.md) §"Serving a stored file in the
+rebuild"); an absent `logo_path` renders no image rather than a broken one. Both regulatory
+numbers are nullable and each absence gets a **named label**: on a regulator-facing pack a
+blank beside a label reads as *none required*, which is a gap reading as a fact.
+
+**The generation stamp renders as a date and the clock time is dropped.** Item 1 says
+*timestamp*; `src/lib/i18n` prints one format and no time, and picking one and holding it is
+the rule. If a printed pack needs the time of day, that is the print slice's to add.
+
+**The expiry-warnings block lists three statuses and stays silent on two.** `expiring`,
+`expired` and **`none`** each list under their own label; `valid` and `noExpiry` produce no
+row, per the affirmative-only rule [05-organization-workspace.md](05-organization-workspace.md)
+owns. That split is §"`data.pilots[]` in the rebuild" applied to a screen: a pilot with no
+certificate recorded is a **gap** and one whose certificate never expires is a **stated
+fact**, and one label over both would let the gap read as the fact. A pilot with nothing to
+surface has no row, and where nobody has anything the block is **absent** rather than
+printing an all-clear — the same rule `has_vlos_violation: false` is held to above.
+
+Selection compares each status against `t()` of its **own** key family. The payload carries
+these two as already-rendered strings and the oracle gives the block no status-code key, so
+there is nothing else to compare against; `training_status` and `licence_status` render
+identical Slovak for four of their five states today, and a crossed comparison would pass now
+and break the moment a translator separates them.
+
+**The period selector is a plain GET form** carrying `period`, `date_from` and `date_to` —
+the wire vocabulary §"The data endpoint in the rebuild" already fixes, with dates as
+`YYYY-MM-DD` and never the `DD.MM.YYYY` a reader sees. An unusable range renders the
+endpoint's own query error **beside the header and the selector**, so the reader can correct
+it, rather than a report reading zero: zero would say nothing was flown when what happened is
+that two dates arrived the wrong way round. The warnings block above is **not** part of the
+body that error replaces: it takes no period, so it survives one — an absent block already
+means *nobody has anything pending*, and a mistyped range must not withdraw a warning.
+`Tlačiť PDF`, which item 3 puts beside the selector, is the print slice's.
+
+**The admin link is gated deny-by-default and superadmin-only.**
+[09-roles-permissions.md](09-roles-permissions.md) records that the predecessor rendered an
+`Administrácia` link and that whether it was role-gated was never tested, so there is no
+behaviour to reproduce — and the rebuild cannot resolve an acting session's membership role
+yet. The narrowest answer stands until the real matrix is recovered.
+
+**`/` still forwards to the admin panel**, not here. The report is a landing page worth
+having only once its tables exist; [09-roles-permissions.md](09-roles-permissions.md)
+§"Sign-in and sign-out" keeps recording the interim destination until the slice that builds
+them moves it.
+
 ## Data endpoint
 
 ```

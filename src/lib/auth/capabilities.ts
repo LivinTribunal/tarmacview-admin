@@ -106,3 +106,15 @@ export function mayManageGlobalDocuments(systemRole: SystemRole): boolean {
 export function mayManageDeviceTypes(systemRole: SystemRole): boolean {
   return systemRole === 'superadmin'
 }
+
+// and the admin panel as a whole, which is a **surface** rather than a register - the one
+// question none of the four above answers. whether the predecessor gated its `Administrácia`
+// link was never tested, so there is nothing to reproduce, and `can()` wants an
+// `OrganizationRole` nothing in `src/` resolves yet - #48's blocked ground.
+//
+// so: deny by default and superadmin-only, the narrowest answer that is certainly not too
+// wide, and one line to widen once the real matrix is recovered.
+// docs/specs/09-roles-permissions.md §"The rebuild's permission model".
+export function mayReachAdmin(systemRole: SystemRole): boolean {
+  return systemRole === 'superadmin'
+}

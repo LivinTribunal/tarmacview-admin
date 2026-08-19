@@ -50,11 +50,11 @@ const served = servedPaths(join(repoRoot, 'src/app'))
 // has built yet, and those are not failures - so the filter is the built set, and a path
 // joins it when its slice lands.
 //
-// each entry is matched as a prefix, so the report's data endpoint is named in full: the
-// rest of `/organization-reports/…` - the page, the print view, the three download paths -
-// is R2 to R6 and is not served yet.
+// each entry is matched as a prefix, so the report's own path now covers the endpoint under
+// it as well: the page and its data endpoint are both served, and the four
+// `/organization-reports/…` paths still to come are named in `deferred` below.
 const registers = [
-  '/organization-reports/{org}/data',
+  '/organization-reports/{org}',
   '/admin/device-types',
   '/admin/flights',
   '/admin/general-documents',
@@ -65,12 +65,21 @@ const registers = [
   '/admin/users',
 ]
 
-// `flights` is the one register whose oracle names a read-only detail page as well as the
-// index, create and edit its siblings carry. that page is where doc 04 §FlightResource's
-// *Detaily letov* relation manager lives, which is its own slice - so it is named here
-// rather than left to fail as an unserved path, and this line is what has to go when it
-// lands.
-const deferred = ['/admin/flights/{id}']
+// a path the oracle carries under a register that *is* served, whose own slice has not
+// landed. each line names the slice that removes it, so a deferral cannot quietly become
+// permanent.
+//
+// `/admin/flights/{id}` is the read-only detail page the flights register alone carries,
+// where doc 04 §FlightResource's *Detaily letov* relation manager lives. the four report
+// paths are the print view and the three document downloads - R6, and the read side of the
+// document buckets doc 06 §"Documents panel" describes.
+const deferred = [
+  '/admin/flights/{id}',
+  '/organization-reports/{org}/print',
+  '/organization-reports/{org}/documents/{id}/download',
+  '/organization-reports/{org}/forms/{id}/download',
+  '/organization-reports/{org}/permits/{id}/download',
+]
 
 describe('route contract: register paths, path shapes only, GET-only capture', () => {
   const captured = oracle.routes
