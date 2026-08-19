@@ -155,6 +155,13 @@ the people rows, this one is not waiting on a per-membership predicate: the assi
 `map_organization` is a deployment-level act by design, so the row is what needs revisiting
 rather than the policy.
 
+The **admin panel** is off the table too, and unlike those two it is a *surface* rather than a
+register: no row here answers *may this session reach `/admin`*. The rebuild gates it on Axis
+A alone — deny-by-default and superadmin-only — until a per-membership predicate lands and a
+narrower boundary can be drawn, which is [06-org-report.md](06-org-report.md) §"The report
+page in the rebuild". That decides only what the rebuild does; what the predecessor did with
+the link Observed above stays untested.
+
 ### Person is not account
 
 The predecessor's own split, recorded under "Account provisioning" above, is kept

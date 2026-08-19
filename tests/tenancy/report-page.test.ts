@@ -229,6 +229,23 @@ describe('the period selector round-trips through the query string', () => {
     expect(markup).toContain(t('report.error.query'))
     expect(markup).toContain('Operator Alpha')
     expect(markup).not.toContain(t('report.tile.flights'))
+
+    // and the warnings block, which takes no period, survives it. suppressing it would
+    // answer a mistyped range with the screen that means nobody has anything pending.
+    expect(markup).toContain(t('report.warning.title'))
+    expect(markup).toContain('Alpha Second Pilot')
+  })
+
+  it('shows no period rather than the first one for a period it does not name', async () => {
+    // an empty selection matches no option, and a browser left to itself displays the first -
+    // `Tento mesiac` beside an error saying no period was read.
+    const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, {
+      period: 'next_month',
+    })
+
+    expect(markup).toContain(t('report.error.query'))
+    expect(markup).toContain(t('report.period.none'))
+    expect(markup).not.toContain('value="this_month" selected')
   })
 
   it('offers all three periods from wherever the reader is', async () => {

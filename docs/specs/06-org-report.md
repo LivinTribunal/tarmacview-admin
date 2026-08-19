@@ -91,8 +91,10 @@ the wire vocabulary §"The data endpoint in the rebuild" already fixes, with dat
 `YYYY-MM-DD` and never the `DD.MM.YYYY` a reader sees. An unusable range renders the
 endpoint's own query error **beside the header and the selector**, so the reader can correct
 it, rather than a report reading zero: zero would say nothing was flown when what happened is
-that two dates arrived the wrong way round. `Tlačiť PDF`, which item 3 puts beside the
-selector, is the print slice's.
+that two dates arrived the wrong way round. The warnings block above is **not** part of the
+body that error replaces: it takes no period, so it survives one — an absent block already
+means *nobody has anything pending*, and a mistyped range must not withdraw a warning.
+`Tlačiť PDF`, which item 3 puts beside the selector, is the print slice's.
 
 **The admin link is gated deny-by-default and superadmin-only.**
 [09-roles-permissions.md](09-roles-permissions.md) records that the predecessor rendered an

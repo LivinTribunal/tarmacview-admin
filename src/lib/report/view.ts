@@ -104,8 +104,9 @@ export const periodOptions = ['this_month', 'last_month', 'custom'] as const
 export type PeriodValue = (typeof periodOptions)[number]
 
 // which option the selector opens on. an absent period is `this_month`, the state the screen
-// opens in before one is ever picked; an unrecognised one selects nothing, because the error
-// rendered beside it is the answer rather than a period.
+// opens in before one is ever picked; an unrecognised one selects none of the three, because
+// the error rendered beside it is the answer rather than a period - the page's placeholder
+// option is what that state shows.
 export function selectedPeriod(raw: string | null): PeriodValue | null {
   if (raw === null) return 'this_month'
   return periodOptions.find((option) => option === raw) ?? null

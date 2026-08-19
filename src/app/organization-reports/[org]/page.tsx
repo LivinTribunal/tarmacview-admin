@@ -4,7 +4,8 @@ import { mayReachAdmin } from '@/lib/auth/capabilities'
 import { actingSession } from '@/lib/auth/session'
 import { db } from '@/lib/db/client'
 import { formatDate, t } from '@/lib/i18n'
-import { reportPayload, resolveSelection } from '@/lib/report/payload'
+import { pilotReportRows, reportPayload, resolveSelection } from '@/lib/report/payload'
+import { expiryWindow } from '@/lib/report/pilot-row'
 import {
   expiryWarnings,
   periodOptions,
@@ -78,33 +79,49 @@ export default async function OrganizationReportPage({
     const organization = await findOrganization(tx, id)
     if (!organization) return null
 
-    // the four scoped reads run only where there is a period to read them for. an unusable
-    // custom range has no window to query and the header is still this organisation's, so
-    // the screen renders with the error where the report would be - `total_flights: 0`
+    // the roster reads take no selection, so they run whatever the period is
+    const pilots = await listOrganizationPilots(tx, organization.id)
+    const trainings = await listOrganizationTrainings(tx, organization.id)
+
+    // the period-filtered pair runs only where there is a period to read them for, and an
+    // unusable custom range renders the error where the report would be - `total_flights: 0`
     // there would say nothing was flown when what happened is that two dates arrived the
     // wrong way round.
-    if (selection === null) return { organization, data: null }
-
-    return {
-      organization,
-      data: reportPayload({
-        entries: await listOrganizationFlights(tx, organization.id, selection),
-        airframes: await listOrganizationAirframeReport(tx, organization.id),
-        pilots: await listOrganizationPilots(tx, organization.id),
-        trainings: await listOrganizationTrainings(tx, organization.id),
-
-        // the warning window belongs to the organisation being reported on, off the row
-        // already in hand rather than from a constant
-        expiryWarningDays: organization.licenceExpiryWarningDays,
-        selection,
-        asOf,
-      }).data,
+    //
+    // the warnings block over it is not part of that report body, so its rows are built here
+    // too: an absent block already means *nobody has anything pending*, and a mistyped range
+    // rendering that screen would withdraw a lapsing certificate from the reader who typed it.
+    if (selection === null) {
+      return {
+        organization,
+        pilots: pilotReportRows({
+          pilots,
+          trainings,
+          flights: new Map(),
+          window: expiryWindow(asOf, organization.licenceExpiryWarningDays),
+        }),
+        data: null,
+      }
     }
+
+    const { data } = reportPayload({
+      entries: await listOrganizationFlights(tx, organization.id, selection),
+      airframes: await listOrganizationAirframeReport(tx, organization.id),
+      pilots,
+      trainings,
+
+      // the warning window belongs to the organisation being reported on, off the row
+      // already in hand rather than from a constant
+      expiryWarningDays: organization.licenceExpiryWarningDays,
+      selection,
+      asOf,
+    })
+    return { organization, pilots: data.pilots, data }
   })
   if (read === null) notFound()
 
-  const { organization, data } = read
-  const warnings = data === null ? [] : expiryWarnings(data.pilots)
+  const { organization, pilots, data } = read
+  const warnings = expiryWarnings(pilots)
 
   return (
     <main>
@@ -175,6 +192,14 @@ export default async function OrganizationReportPage({
       <form method="get">
         <label htmlFor="report-period">{t('report.period.label')}</label>
         <select id="report-period" name="period" defaultValue={selectedPeriod(submitted.get('period')) ?? ''}>
+          {/* a period this application does not name selects this rather than nothing: an
+              empty value matches no option below and a browser then displays the first,
+              which would show `Tento mesiac` beside the error saying no period was read.
+              the empty choice src/components/resource-form.tsx offers is a state a reader
+              may pick; this one is only a state they can arrive in, so it is disabled. */}
+          <option value="" disabled>
+            {t('report.period.none')}
+          </option>
           {periodOptions.map((option) => (
             <option key={option} value={option}>
               {t(`report.period.${option}`)}

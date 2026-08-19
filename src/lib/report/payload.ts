@@ -9,6 +9,7 @@ import {
 import {
   expiryWindow,
   pilotReportRow,
+  type ExpiryWindow,
   type PilotFlightInput,
   type PilotReportRow,
   type PilotTrainingInput,
@@ -138,6 +139,37 @@ function groupByPilot<T>(rows: readonly { pilotId: number | null; value: T }[]):
   return grouped
 }
 
+// one named input rather than four positional arguments, as the row serialisers beside this
+// one already take
+export type PilotRowsInput = {
+  pilots: readonly OrganizationPersonEntry[]
+  // all-time and covering the whole organisation, grouped by pilot below
+  trainings: readonly TrainingEntry[]
+  // grouped by the caller, because only a period has any flights to group
+  flights: ReadonlyMap<number, readonly PilotFlightInput[]>
+  window: ExpiryWindow
+}
+
+// every rostered pilot's row. nothing the expiry half of a row reads comes off a flight - a
+// training is all-time and a certificate is columns on the person - so a caller holding no
+// period still gets the whole block rather than none of it. docs/specs/06-org-report.md
+// §Layout item 2's expiry-warnings block is that caller.
+export function pilotReportRows(input: PilotRowsInput): PilotReportRow[] {
+  const { flights, window } = input
+  const trainings = groupByPilot<PilotTrainingInput>(
+    input.trainings.map((training) => ({ pilotId: training.pilotId, value: training })),
+  )
+
+  return input.pilots.map((pilot) =>
+    pilotReportRow({
+      pilot,
+      trainings: trainings.get(pilot.id) ?? [],
+      flights: flights.get(pilot.id) ?? [],
+      window,
+    }),
+  )
+}
+
 export function reportPayload(input: ReportInput): ReportPayload {
   const { entries, airframes, selection, asOf } = input
   const seconds = entries.reduce((total, entry) => total + (entry.totalFlightTimeSeconds ?? 0), 0)
@@ -180,17 +212,13 @@ export function reportPayload(input: ReportInput): ReportPayload {
     })
   }
 
-  // the pilot block reads the very same serialised rows a third time. the trainings beside
-  // them are the one thing here that is not period-filtered, and grouping both by pilot id
-  // costs one pass each rather than a read per rostered pilot.
+  // the pilot block reads the very same serialised rows a third time, grouped by pilot id in
+  // one pass rather than a read per rostered pilot.
   const pilotFlights = groupByPilot<PilotFlightInput>(
     flights.map(({ entry, row }) => ({
       pilotId: entry.pilotId,
       value: { seconds: entry.totalFlightTimeSeconds, row },
     })),
-  )
-  const pilotTrainings = groupByPilot<PilotTrainingInput>(
-    input.trainings.map((training) => ({ pilotId: training.pilotId, value: training })),
   )
 
   const window = expiryWindow(asOf, input.expiryWarningDays)
@@ -216,14 +244,12 @@ export function reportPayload(input: ReportInput): ReportPayload {
       // roster the report is evidence about. `active_pilots` above is the *other* number and
       // the two legitimately disagree: a flight flown by somebody whose role is not `pilot`
       // counts there and has no row here. doc 06 says so in its own words.
-      pilots: input.pilots.map((pilot) =>
-        pilotReportRow({
-          pilot,
-          trainings: pilotTrainings.get(pilot.id) ?? [],
-          flights: pilotFlights.get(pilot.id) ?? [],
-          window,
-        }),
-      ),
+      pilots: pilotReportRows({
+        pilots: input.pilots,
+        trainings: input.trainings,
+        flights: pilotFlights,
+        window,
+      }),
 
       // every airframe of the operator, whether or not it flew in the period. one that flew
       // nothing reports zero totals; dropping it would hide an airframe from the fleet the
