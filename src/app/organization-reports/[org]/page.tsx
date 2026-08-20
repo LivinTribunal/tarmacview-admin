@@ -189,9 +189,9 @@ function AirframeDetail({ airframe }: { airframe: DeviceReportRow }) {
       {airframe.service_warning && <p>{airframe.service_warning}</p>}
       {airframe.service_is_configured && (
         <dl>
-          <dt>{t('report.service.intervalCycles')}</dt>
+          <dt>{t('deviceType.field.service_interval')}</dt>
           <dd>{figure(airframe.service_interval_cycles)}</dd>
-          <dt>{t('report.service.intervalMonths')}</dt>
+          <dt>{t('deviceType.field.service_interval_months')}</dt>
           <dd>{figure(airframe.service_interval_months)}</dd>
           <dt>{t('report.service.nextAtCycles')}</dt>
           <dd>{figure(airframe.next_service_at_cycles)}</dd>

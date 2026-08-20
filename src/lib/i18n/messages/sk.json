@@ -199,8 +199,6 @@
   "report.detail.flights": "Lety za vybrané obdobie",
   "report.detail.flightsByDevice": "Lety podľa zariadenia",
   "report.detail.maintenance": "História údržby",
-  "report.service.intervalCycles": "Servisný interval (cykly)",
-  "report.service.intervalMonths": "Servisný interval (mesiace)",
   "report.service.nextAtCycles": "Ďalší servis pri počte cyklov",
   "report.service.nextDate": "Dátum ďalšieho servisu",
   "report.service.remainingCycles": "Zostávajúce cykly",

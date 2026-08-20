@@ -137,13 +137,21 @@ route, and the row link on the identity column is what opens it. No column decla
 sortable — §Tables captured no sort marker on either table, and inventing one is a behaviour
 nobody observed.
 
-**Two of the labels are the rebuild's own, marked here so they do not come to read as Observed.**
-`Štatistiky pilotov` is Observed; the **UAS tab's own Slovak label was never captured** — §Tables
-records it as *UAS tab* and nothing more — so the rebuild names it `UAS`. Its column set is the
-rebuild's reading of *per-airframe totals and service state*, which is all §Tables records of that
-table. The five pilot headings are Observed and render in sentence case: the capture's all-caps is
-appearance, and the clean-room line takes the wording and not the styling, exactly as it takes the
-state and not the amber a status inside the warning window was drawn in.
+**§Tables' Slovak stops at the pilots table's title and headings and the two detail titles; every
+label minted below those is the rebuild's own, marked here so none of it comes to read as
+Observed.** `Štatistiky pilotov`, `Detail pilota` and `Detail UAS` are Observed, and so are the
+five pilot headings, which render in sentence case: the capture's all-caps is appearance, and the
+clean-room line takes the wording and not the styling, exactly as it takes the state and not the
+amber a status inside the warning window was drawn in. The **UAS tab's own Slovak label was never
+captured** — §Tables records it as *UAS tab* and nothing more — so the rebuild names it `UAS`, and
+its column set is the rebuild's reading of *per-airframe totals and service state*, which is all
+§Tables records of that table. Below that it records nothing for the service block and the
+maintenance history only as English field names, so both blocks are labelled fresh — over the
+payload's own service keys and [03-data-model.md](03-data-model.md) §MaintenanceLog's columns,
+exactly as `maintenance_logs[]`'s member shape is. What a detail view is not the first to label it
+reuses from the register that already labels the same field, rather than minting a second string
+([04-admin-resources.md](04-admin-resources.md) §TrainingResource, §FlightResource,
+§DeviceTypeResource).
 
 **The UAS table's service cell reads `service_warning` and never `service_due`.** Three states
 render as three: the gap names itself, a due service names itself, and one that is not due renders
