@@ -6,7 +6,7 @@ import { tabHref, type ReportTab } from '@/lib/report/view'
 import type { TableDeclaration, TableRow } from '@/lib/table/view'
 
 // the operator report's three registers - one `TableDeclaration` and one row mapper each,
-// filed the way the seventeen src/lib/<resource>/fields.ts siblings already file theirs.
+// filed the way the eleven src/lib/<resource>/fields.ts siblings already file theirs.
 // src/lib/report/view.ts keeps the *pure half of the page* it is named for: the tiles, the
 // warnings and the resolvers that read the query string.
 //

@@ -344,12 +344,15 @@ other. `active_pilots` counts distinct pilots with a flight in the period, so an
 flight contributes to none.
 
 **Nullable columns the oracle types as non-null.** `flight_hours`, `max_altitude` and
-`max_distance` serialise a null as `0` to hold parity — except that the VLOS judgement below
-reads the *column*, so a flight that recorded no distance is never mistaken for one that
-recorded zero. `parsing_errors` serialises a null as `""`, which is the one blank here that
-is honest: no error recorded is exactly what an empty message means. `parsing_status` does
-not, and gets a label naming the nothing-was-parsed case — a null status is the manual-entry
-case, and reporting a parsed state or a blank would state an outcome that never happened
+`max_distance` serialise a null as `0` to hold parity — except that `has_vlos_violation` is
+computed from the *column* rather than from the serialised figure, so **the boolean** never
+mistakes a flight that recorded no distance for one that recorded zero. A reader of the
+payload has no such column, which is the ceiling §"One ceiling on that" above states for the
+flights table's own distance cell. `parsing_errors` serialises a null as `""`, which is the
+one blank here that is honest: no error recorded is exactly what an empty message means.
+`parsing_status` does not, and gets a label naming the nothing-was-parsed case — a null
+status is the manual-entry case, and reporting a parsed state or a blank would state an
+outcome that never happened
 ([03-data-model.md](03-data-model.md) §"Flights in the rebuild").
 
 **So this null renders two ways, and the difference is recorded rather than left to a code
