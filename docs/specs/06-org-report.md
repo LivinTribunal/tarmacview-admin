@@ -49,8 +49,8 @@ standing autonomy grant and recorded on issue #97, and extended on 20 Aug 2026 o
 and #104. The owner has not reviewed it: settled enough to build on, open enough to overturn.
 Items 1–7 above are what was Observed and stay standing; only the page's own choices are below.
 Of item 7 only the documents panel is built — §"The documents panel in the rebuild" is its own —
-and item 3's `Tlačiť PDF` is not: the print view, the maps panel and the flight-log upload panel
-are each their own slice.
+and the maps panel and the flight-log upload panel are each their own slice. Item 3's `Tlačiť
+PDF` is built, and what it produces is §"The print view in the rebuild".
 
 **The page and the data endpoint share one payload builder, in one transaction.** The page
 makes the same four scoped reads the endpoint makes, hands them to the same builder, and
@@ -71,7 +71,8 @@ blank beside a label reads as *none required*, which is a gap reading as a fact.
 
 **The generation stamp renders as a date and the clock time is dropped.** Item 1 says
 *timestamp*; `src/lib/i18n` prints one format and no time, and picking one and holding it is
-the rule. If a printed pack needs the time of day, that is the print slice's to add.
+the rule. The printed pack was the surface most likely to need the time of day and it does
+not — §"The print view in the rebuild" settles that, for both surfaces at once.
 
 **The expiry-warnings block lists three statuses and stays silent on two.** `expiring`,
 `expired` and **`none`** each list under their own label; `valid` and `noExpiry` produce no
@@ -95,7 +96,9 @@ it, rather than a report reading zero: zero would say nothing was flown when wha
 that two dates arrived the wrong way round. The warnings block above is **not** part of the
 body that error replaces: it takes no period, so it survives one — an absent block already
 means *nobody has anything pending*, and a mistyped range must not withdraw a warning.
-`Tlačiť PDF`, which item 3 puts beside the selector, is the print slice's.
+`Tlačiť PDF`, which item 3 puts beside the selector, is an **anchor** rather than a field of
+that form: it carries the query string the request arrived with, so what a reader prints is the
+screen they pressed it on.
 
 **The pilot filter item 5 names is a field of that same form, and narrows the payload rather
 than the rendered rows.** `pilot_id` is already the endpoint's filter vocabulary above, so
@@ -131,9 +134,12 @@ throws them back to the first tab.
 
 **A detail view is a server-rendered disclosure the URL names, and not a modal.** §Tables records
 the predecessor's `Detail pilota` and `Detail UAS` as modals — Observed, and that finding stands
-as it reads; the rebuild departs from it. An address is linkable, it survives the print view item
-3 puts beside the selector, it needs no client component, and it cannot disagree with the payload
-the page already holds. Neither detail issues a read: `trainings[]`, `filtered_flights[]`,
+as it reads; the rebuild departs from it. An address is linkable, it needs no client component,
+and it cannot disagree with the payload the page already holds — and being an address rather
+than client state is what let the print view decide for itself whether to read one. It **does
+not**: `detail` rides onto the print link unread, because a pack carrying one pilot's history
+and nobody else's is a document about that pilot rather than about the operator (§"The print
+view in the rebuild"). Neither detail issues a read: `trainings[]`, `filtered_flights[]`,
 `flights_by_device[]` and `maintenance_logs[]` are all already in that payload, and the page makes
 the same reads with a detail open as with none. The `{id}` is resolved against the rows in hand, so
 one naming none of them opens no detail — which makes the scoping structural rather than a
@@ -524,6 +530,76 @@ GET /organization-reports/{org}/print?period=&pilot_id=&device_id=&date_from=&da
 ```
 A plain GET form carrying the current filter state, so the printed document matches
 exactly what is on screen. Worth preserving — this output is the point of the tool.
+
+### The print view in the rebuild — decided
+
+A **decision about the rebuild**, taken on 20 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #109. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. `Tlačiť PDF` and the path above are Observed;
+**the document's content, its order, the stamp format, the printed error and what the route
+ignores are all the rebuild's own**. The five query parameters are this section's line and
+`resolveSelection`'s vocabulary, not a captured one: `contracts/routes.json` fetched this path
+nine times and never with a filter, so it records no query vocabulary for it.
+
+**A second rendering, and never a second report.** The screen and the pack make the same reads
+through one shared composition, in one `withTenant` transaction, and render keys off one
+payload — a third hand-copied composition of it is exactly the drift §"The report page in the
+rebuild" rules out, on the document least able to carry it. Two derivations of one number on a
+regulator-facing pack is the worst place in the product for them to disagree.
+
+**The pack is §Layout items 1 to 6, and item 7's action panels are not on it.** The documents
+panel's links are inert on paper, `Nahrať letové povolenie` is a write, and the admin link and
+sign-out are navigation: a printed pack carries **evidence and not affordances**. The header,
+the expiry warnings, the tiles and all three tables are what remains, in that order.
+
+**No pagination, and no shared index table.** The chrome is a client component whose default
+page size is ten, so a pack rendered through it would drop row eleven of a register silently —
+the gap-reading-as-a-fact this document rules out everywhere, in its worst form. The registers
+render as plain server-side tables from the **same** `TableDeclaration`s the screen uses,
+reading `labelKey` and `key` and ignoring `linkPath`, which is the only part of a declaration
+that is chrome. Minting a second column list would let the pack and the screen come to disagree
+about what a register contains. Every row prints, in the payload's own order, through the same
+`formatCell` the chrome applies — a table without the chrome must not grow a second decimal
+comma beside the chrome's.
+
+**Both registers print, because a tab is an address on screen and not a section of a document.**
+`tab` is unread here, and so is `detail`; the page's unrecognised-tab not-found branch is
+deliberately **not** copied, or a parameter this rendering ignores could still refuse the pack.
+
+**The pack states the selection it was produced under.** The screen shows its narrowing in the
+controls the reader submitted it with and a document has none, so the period renders as the
+screen's own `report.period.selected` line and the pilot filter renders beside it — named,
+*all pilots*, or the placeholder for an id the payload does not carry, which are the three
+states the selector already resolves. `device_id` is in the wire vocabulary above and no
+control sets one, so its line renders only where one was asked for. Both are resolved against
+the rows the payload already holds, which is the `?detail={id}` reading and structural for the
+same reason. The two strings for the airframe line are the rebuild's own, filed beside the
+pilot filter's three; `Tlačiť PDF` is Observed and used as captured.
+
+**The generation stamp stays a date here too, which resolves what §"The report page in the
+rebuild" deferred.** `src/lib/i18n` resolves every date in UTC and records that which zone a
+reader should see an instant in wants an organisation or a browser to key off, and neither
+exists yet — so a clock time on a Slovak regulator-facing pack would print UTC and read as
+local, a **stated figure wrong by two hours in August**, which is worse than no figure at all.
+A second format would also have to land on the screen, or one stamp would render two ways. What
+distinguishes two packs printed the same day is the period line, which both surfaces carry. If
+a time of day is ever genuinely needed it is a `formatDateTime` in `src/lib/i18n` applied to
+both surfaces, never a `toLocaleString` at a call site.
+
+**An unusable range prints the query error, never a pack of zeroes.** The page's own
+substitution, for the reason it makes it: the header and the expiry warnings take no period and
+survive, while a mistyped range must not withdraw a lapsing certificate — and a pack whose
+figures are zero would say nothing was flown when what happened is that two dates arrived the
+wrong way round. No new string and no redirect back to the screen: the reader arrived from the
+selector, and that is the way back to correcting it.
+
+**`Tlačiť PDF` is Observed wording for a control and not a commitment to generate a PDF.** The
+route serves HTML — which is what the capture recorded for it — and the browser prints it. A
+PDF toolchain is a dependency, a rendering surface and a font-embedding problem, and nothing
+observed requires one. **No CSS ships with this slice either**: there is no stylesheet anywhere
+in the rebuild yet, so a print stylesheet would be the first, and branding is ours and is
+defined separately. Semantic markup with no chrome prints acceptably; styling lands with the
+design system that owns it.
 
 ## Documents panel
 

@@ -14,13 +14,9 @@ import {
   pilotReportTable,
   pilotReportTableRow,
 } from '@/lib/report/fields'
-import {
-  pilotReportRows,
-  reportPayload,
-  resolveSelection,
-  type ReportPayload,
-} from '@/lib/report/payload'
-import { expiryWindow, type PilotReportRow } from '@/lib/report/pilot-row'
+import type { ReportPayload } from '@/lib/report/payload'
+import type { PilotReportRow } from '@/lib/report/pilot-row'
+import { readReport, submittedQuery } from '@/lib/report/read'
 import {
   activeTab,
   detailRow,
@@ -29,6 +25,7 @@ import {
   figure,
   periodOptions,
   pilotFilterValue,
+  printHref,
   reportTabs,
   reportTiles,
   selectedPeriod,
@@ -39,23 +36,23 @@ import {
   type ReportTab,
 } from '@/lib/report/view'
 import { identifier } from '@/lib/routes/identifier'
-import { listOrganizationAirframeReport } from '@/lib/tenant/scoped-airframes'
 import { listOrganizationDocuments } from '@/lib/tenant/scoped-documents'
-import { listOrganizationFlights } from '@/lib/tenant/scoped-flights'
 import { listOrganizationIncidents } from '@/lib/tenant/scoped-incidents'
-import { findOrganization } from '@/lib/tenant/scoped-organizations'
-import { listOrganizationPilots } from '@/lib/tenant/scoped-people'
-import { listOrganizationTrainings } from '@/lib/tenant/scoped-trainings'
 import { withTenant } from '@/lib/tenant/tenant-context'
 
 // the operator report - docs/specs/06-org-report.md §Layout items 1 to 6 and the documents
-// half of item 7, the screen doc 06 calls the product's real face. the print view, the maps
-// panel and the flight-log upload panel are still to come.
+// half of item 7, the screen doc 06 calls the product's real face. the maps panel and the
+// flight-log upload panel are still to come.
 //
 // it reads the very payload the data endpoint beside it serves, through the same builder in
 // one `withTenant` transaction, and derives nothing of its own: every number here is already
 // a key. a server component fetching its own http endpoint would double the work, lose the
 // session, and make one screen two reads that can disagree.
+//
+// the composition of that read is src/lib/report/read.ts, shared with the print view beside
+// this file: a printed pack is a second rendering of one report and a third hand-copied
+// composition is the drift doc 06 §"The print view in the rebuild" rules out. the four
+// documents-panel reads stay here, in this transaction, because the pack does not make them.
 //
 // the directory is `[org]` and not `[id]`, the reason the data route and the workspace page
 // both record: the oracle spells the path `{org}` and tests/contracts/routes.test.ts maps a
@@ -66,25 +63,11 @@ import { withTenant } from '@/lib/tenant/tenant-context'
 // selection and the row-level policies are the boundary: an organisation the session holds
 // no membership of reads as absent, because refusing would confirm it is real.
 
-// next hands the query back as a record and `resolveSelection` parses the query string the
-// endpoint receives, so one shape reaches the resolver and the two surfaces cannot disagree
-// about what a period is. a repeated parameter takes its first value, which is what a
-// `get()` on the endpoint's own url would have answered.
-function query(raw: Record<string, string | string[] | undefined>): URLSearchParams {
-  const params = new URLSearchParams()
-
-  for (const [key, value] of Object.entries(raw)) {
-    const first = Array.isArray(value) ? value[0] : value
-    if (first !== undefined) params.set(key, first)
-  }
-  return params
-}
-
 // the detail views are plain server-rendered markup and not `IndexTable`: its chrome is
 // register behaviour, a disclosure inside a report is not a register, a `resource` key per
 // detail would pollute the column-visibility store, and a client component's state does not
-// survive the print view R6 needs. the payload's nested arrays could not ride in a flat
-// `TableRow` anyway.
+// survive the print view beside this file. the payload's nested arrays could not ride in a
+// flat `TableRow` anyway.
 //
 // neither of these reads anything. every array below is already in the payload the page holds,
 // and a detail that wanted a query would have grown past this slice.
@@ -383,8 +366,7 @@ export default async function OrganizationReportPage({
   // is, how overdue a service is, which expiries fall inside the window, and what the
   // generation stamp says.
   const asOf = new Date()
-  const submitted = query(await searchParams)
-  const selection = resolveSelection(submitted, asOf)
+  const submitted = submittedQuery(await searchParams)
 
   // resolved before the read, like the workspace's tab index and for the same reason: a tab
   // nobody built is a broken link and answers not-found rather than the first tab
@@ -392,60 +374,24 @@ export default async function OrganizationReportPage({
   if (active === null) notFound()
 
   const read = await withTenant(db, session, async (tx) => {
-    const organization = await findOrganization(tx, id)
-    if (!organization) return null
+    const report = await readReport(tx, { organizationId: id, submitted, asOf })
+    if (report === null) return null
 
-    // the roster reads take no selection, so they run whatever the period is
-    const pilots = await listOrganizationPilots(tx, organization.id)
-    const trainings = await listOrganizationTrainings(tx, organization.id)
-
-    // and neither does the documents panel, which is why its four reads sit above the early
-    // return with them: withdrawing an operator's permits because two dates arrived the wrong
-    // way round is the mistake the warnings block already rules out. `Dokumenty` is the
-    // `operations` bucket, *(inferred)* - doc 06 §"Documents panel" names the alternative.
-    const groups = documentGroups({
-      organizationId: organization.id,
-      operations: await listOrganizationDocuments(tx, organization.id, 'operations'),
-      forms: await listOrganizationDocuments(tx, organization.id, 'forms'),
-      permits: await listOrganizationDocuments(tx, organization.id, 'permits'),
-      incidents: await listOrganizationIncidents(tx, organization.id),
-    })
-
-    // the period-filtered pair runs only where there is a period to read them for, and an
-    // unusable custom range renders the error where the report would be - `total_flights: 0`
-    // there would say nothing was flown when what happened is that two dates arrived the
-    // wrong way round.
+    // the documents panel takes no period, which is why its four reads run whatever
+    // `report.data` came back as: withdrawing an operator's permits because two dates arrived
+    // the wrong way round is the mistake the warnings block already rules out. `Dokumenty` is
+    // the `operations` bucket, *(inferred)* - doc 06 §"Documents panel" names the alternative.
     //
-    // the warnings block over it is not part of that report body, so its rows are built here
-    // too: an absent block already means *nobody has anything pending*, and a mistyped range
-    // rendering that screen would withdraw a lapsing certificate from the reader who typed it.
-    if (selection === null) {
-      return {
-        organization,
-        pilots: pilotReportRows({
-          pilots,
-          trainings,
-          flights: new Map(),
-          window: expiryWindow(asOf, organization.licenceExpiryWarningDays),
-        }),
-        groups,
-        data: null,
-      }
-    }
-
-    const { data } = reportPayload({
-      entries: await listOrganizationFlights(tx, organization.id, selection),
-      airframes: await listOrganizationAirframeReport(tx, organization.id),
-      pilots,
-      trainings,
-
-      // the warning window belongs to the organisation being reported on, off the row
-      // already in hand rather than from a constant
-      expiryWarningDays: organization.licenceExpiryWarningDays,
-      selection,
-      asOf,
+    // they stay in this transaction rather than in the shared read: the printed pack carries
+    // evidence and not affordances, so it makes none of them.
+    const groups = documentGroups({
+      organizationId: report.organization.id,
+      operations: await listOrganizationDocuments(tx, report.organization.id, 'operations'),
+      forms: await listOrganizationDocuments(tx, report.organization.id, 'forms'),
+      permits: await listOrganizationDocuments(tx, report.organization.id, 'permits'),
+      incidents: await listOrganizationIncidents(tx, report.organization.id),
     })
-    return { organization, pilots: data.pilots, groups, data }
+    return { ...report, groups }
   })
   if (read === null) notFound()
 
@@ -515,9 +461,7 @@ export default async function OrganizationReportPage({
       {/* a plain GET form, the way the workspace tabs round-trip through
           `?activeRelationManager={n}` and the way doc 06 §Print records the predecessor's
           own filter form. the two date inputs carry `YYYY-MM-DD`, the wire format
-          `resolveSelection` parses, never the `DD.MM.YYYY` a reader sees.
-
-          `Tlačiť PDF` sits beside this in §Layout item 3 and is R6's. */}
+          `resolveSelection` parses, never the `DD.MM.YYYY` a reader sees. */}
       <form method="get">
         <label htmlFor="report-period">{t('report.period.label')}</label>
         <select id="report-period" name="period" defaultValue={selectedPeriod(submitted.get('period')) ?? ''}>
@@ -584,6 +528,13 @@ export default async function OrganizationReportPage({
 
         <button type="submit">{t('report.period.submit')}</button>
       </form>
+
+      {/* §Layout item 3's other control, beside the selector. an anchor carrying the query
+          string this request arrived with, so the pack a reader prints from a `Minulý mesiac`
+          screen is a `Minulý mesiac` pack - a print link reverting to *this month* would hand
+          them a document contradicting the screen they pressed it on, and matching the screen
+          is what the printed output is for. */}
+      <a href={printHref(organization.id, submitted)}>{t('report.period.print')}</a>
 
       {data === null ? (
         <p>{t('report.error.query')}</p>
