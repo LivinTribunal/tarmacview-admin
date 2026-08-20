@@ -188,6 +188,10 @@ predecessor system, which is the source of most of these terms, is in
   that row first, so it inherits the row's tenant scoping. See
   [docs/specs/03-data-model.md](docs/specs/03-data-model.md) §"Serving a stored file in the
   rebuild".
+- **Mount** — a second path served by a handler that already exists, stating only which reader
+  it takes and carrying no session handling, transaction, containment check or headers of its
+  own. It is not a second handler, and handlers are what the file routes' guard count counts —
+  see [docs/specs/03-data-model.md](docs/specs/03-data-model.md) §"A mount is not a handler".
 
 ## Geozones
 
