@@ -45,9 +45,9 @@ const served = servedPaths(join(repoRoot, 'src/app'))
 // has built yet, and those are not failures - so the filter is the built set, and a path
 // joins it when its slice lands.
 //
-// each entry is matched as a prefix, so the report's own path now covers the endpoint under
-// it as well: the page and its data endpoint are both served, and the four
-// `/organization-reports/…` paths still to come are named in `deferred` below.
+// each entry is matched as a prefix, so the report's own path covers everything served under
+// it: the page, its data endpoint and the three download routes. the one
+// `/organization-reports/…` path still to come is named in `deferred` below.
 const registers = [
   '/organization-reports/{org}',
   '/admin/device-types',
