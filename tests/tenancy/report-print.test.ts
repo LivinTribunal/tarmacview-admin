@@ -169,7 +169,18 @@ describe('the document the reader gets, which is items 1 to 6 and no affordances
 
     expect(markup).toContain('Operator Alpha')
     expect(markup).toContain(t('report.header.generatedAt'))
+
+    // the header repeats the screen's four keys rather than sharing a component, because the
+    // two surfaces differ in the chrome around them - so each fact under it is pinned here
+    // too. a blank beside `Číslo zápisu do registra` on a pack reads as *none required*.
+    expect(markup).toContain(t('report.organization.registration.none'))
+    expect(markup).toContain(t('report.organization.permit.none'))
+    expect(markup).toContain(`/api/organizations/${ids.organizations.alpha}/logo`)
+    expect(markup).not.toContain('organization-logos/')
+
     expect(markup).toContain(t('report.warning.title'))
+    expect(markup).toContain('Alpha Second Pilot')
+    expect(markup).toContain(t('report.pilot.certificateStatus.expiring'))
     expect(markup).toContain(t('report.tile.flightHours'))
 
     expect(markup).toContain(t('report.tab.pilots'))
@@ -242,7 +253,7 @@ describe('every row prints, because a pack that omits one is a gap reading as a 
 })
 
 describe('both registers print, because a tab is an address on screen and not a section', () => {
-  it.each([{}, { tab: 'pilots' }, { tab: 'uas' }, { tab: 'flights' }])(
+  it.each<Record<string, string>>([{}, { tab: 'pilots' }, { tab: 'uas' }, { tab: 'flights' }])(
     'prints the pilots and the UAS registers for %o',
     async (search) => {
       // `?tab=` is not read here, so an unnamed tab does not 404 the pack either - the page's
