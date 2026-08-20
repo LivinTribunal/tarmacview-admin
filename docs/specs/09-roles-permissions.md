@@ -193,11 +193,13 @@ failure behaviour, no post-sign-in redirect. Everything below except the path is
   open redirect, which is how this feature usually goes wrong.
 - **`/` redirects and renders nothing**, which is the shape doc 02 §Other observes on the
   predecessor. Where it lands is decided, and temporarily: the predecessor sends people to
-  their organisation report, the rebuild has none yet, so the interim destination is
-  `/admin/device-types` — the only register that exists. That is a placeholder, not a claim
-  about where anyone should land; the device-type catalogue is deployment-wide (doc 03
-  §DeviceType), so it is no organisation role's natural home. Recorded on issue #35, and
-  retargeted by step 5 of `docs/rebuild/00-operating-model.md` §6.
+  their organisation report, and the rebuild's is not a landing page worth having until its
+  tables exist ([06-org-report.md](06-org-report.md) §"The report page in the rebuild"), so
+  the interim destination is `/admin/device-types` — the only register that existed then.
+  That is a placeholder, not a claim about where anyone should land; the device-type
+  catalogue is deployment-wide (doc 03 §DeviceType), so it is no organisation role's natural
+  home. Recorded on issue #35, and retargeted by step 5 of
+  `docs/rebuild/00-operating-model.md` §6.
 - **Every failure is one outcome.** A wrong password, an e-mail belonging to nobody and an
   account carrying no password are indistinguishable in the response, its wording and its
   timing. This is a security property rather than a preference: `person.email` is nullable

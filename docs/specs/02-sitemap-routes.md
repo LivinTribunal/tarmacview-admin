@@ -82,8 +82,8 @@ fetched page — the capture ran as an authenticated session and never visited a
 form, so the paths and their auth are Observed and nothing about the form itself is. What
 the rebuild does at `/login`, and why it has **no `/logout` path** (sign-out is a POST
 server action), is decided in `09-roles-permissions.md` §"Sign-in and sign-out". The `/`
-row is Observed as written; where the rebuild redirects it to instead, until the operator
-report exists, is decided in that same section.
+row is Observed as written; where the rebuild redirects it to instead, and for how long, is
+decided in that same section.
 
 The rebuild adds three routes with no row above them, one per resource whose files it serves:
 `/api/organizations/{id}/logo`, which serves what the predecessor served from

@@ -73,12 +73,12 @@ the rule. If a printed pack needs the time of day, that is the print slice's to 
 
 **The expiry-warnings block lists three statuses and stays silent on two.** `expiring`,
 `expired` and **`none`** each list under their own label; `valid` and `noExpiry` produce no
-row, per the affirmative-only rule [05-organization-workspace.md](05-organization-workspace.md)
-owns. That split is §"`data.pilots[]` in the rebuild" applied to a screen: a pilot with no
-certificate recorded is a **gap** and one whose certificate never expires is a **stated
-fact**, and one label over both would let the gap read as the fact. A pilot with nothing to
-surface has no row, and where nobody has anything the block is **absent** rather than
-printing an all-clear — the same rule `has_vlos_violation: false` is held to above.
+row, per the affirmative-only rule
+[05-organization-workspace.md](05-organization-workspace.md) owns. Keeping `none` apart from
+`noExpiry` is §"`data.pilots[]` in the rebuild" applied to a screen, and holds here for the
+reason it gives there. A pilot with nothing to surface has no row, and where nobody has
+anything the block is **absent** rather than printing an all-clear — the same rule
+`has_vlos_violation: false` is held to below.
 
 Selection compares each status against `t()` of its **own** key family. The payload carries
 these two as already-rendered strings and the oracle gives the block no status-code key, so
@@ -311,7 +311,8 @@ headline only where the pilot holds nothing that expires at all. The cost is del
 expired record the pilot has since renewed keeps the headline expired until it is removed.
 Taking the latest expiry instead would let a lapse hide behind a valid record, which is the
 gap-reading-as-a-pass this document rules out everywhere else. §Layout item 2's expiry-warning
-banner is the rendering of these statuses and has not been built.
+banner is the rendering of these statuses; which of them it lists is §"The report page in the
+rebuild" above.
 
 **One period-filtered half and one all-time half, in the same row.** `filtered_flights[]` and
 `flights_by_device[]` are period-filtered and are grouped from the very rows `data.flights[]`
