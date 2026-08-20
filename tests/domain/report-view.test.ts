@@ -1,13 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import { t } from '@/lib/i18n'
+import type { DeviceReportRow } from '@/lib/report/device-row'
 import { resolveSelection, type ReportPayload } from '@/lib/report/payload'
 import type { PilotReportRow } from '@/lib/report/pilot-row'
 import {
+  activeTab,
+  airframeReportTable,
+  airframeReportTableRow,
+  detailRow,
   expiryWarnings,
   periodOptions,
+  pilotReportTable,
+  pilotReportTableRow,
   reportTiles,
   selectedPeriod,
+  tabHref,
 } from '@/lib/report/view'
+import { formatCell } from '@/lib/table/view'
 
 // the report page's pure half - docs/specs/06-org-report.md §"The report page in the
 // rebuild". the page reads the payload R1 to R3 built and derives nothing, and this is
@@ -35,6 +44,42 @@ const pilot = (id: number, name: string, over: Partial<PilotReportRow> = {}): Pi
   trainings: [],
   filtered_flights: [],
   flights_by_device: [],
+  ...over,
+})
+
+// the same shape one table over: an airframe carrying the states this file is not asking
+// about. configured and not due is the silent case, so every departure below is deliberate.
+const airframe = (id: number, over: Partial<DeviceReportRow> = {}): DeviceReportRow => ({
+  id,
+  name: null,
+  serial_number: `SN-PLACEHOLDER-${id}`,
+  model: 'Placeholder Model',
+  manufacturer: null,
+  notes: null,
+  type: 'Placeholder Quadcopter',
+  status: t('device.status.active'),
+  max_vlos_meters: '500',
+  maintenance_instructions: null,
+  maintenance_logs: [],
+  last_flight_date: null,
+  lifetime_flights_count: 0,
+  total_flights: 0,
+  total_flight_hours: 0,
+  service_is_configured: true,
+  service_due: false,
+  service_due_reasons: [],
+  service_interval_cycles: 50,
+  service_lifetime_cycles: 0,
+  service_baseline_cycles: 0,
+  next_service_at_cycles: 50,
+  service_remaining_cycles: 50,
+  service_overdue_cycles: 0,
+  service_interval_months: 12,
+  service_calendar_baseline_date: null,
+  next_service_date: null,
+  service_remaining_days: null,
+  service_overdue_days: null,
+  service_warning: null,
   ...over,
 })
 
@@ -180,5 +225,139 @@ describe('the period selector and the resolver name the same three periods', () 
       expect(selectedPeriod(raw), raw).toBeNull()
       expect(resolveSelection(new URLSearchParams(`period=${raw}`), asOf), raw).toBeNull()
     }
+  })
+})
+
+describe('the pilots table reports the payload own figures', () => {
+  it('takes the flight count off the key and never off the rows beside it', () => {
+    // the defect this slice most has to avoid. the payload says seven flights and one and a
+    // half hours and carries no rows, which is a state a real payload never produces - so a
+    // cell that sums `filtered_flights[]` answers 0 here and goes red.
+    const row = pilotReportTableRow(
+      pilot(1, 'Placeholder Flown Pilot', {
+        flights_count: 7,
+        total_hours: 1.5,
+        filtered_flights: [],
+      }),
+    )
+
+    expect(row.flights_count).toBe(7)
+
+    // and the decimal comma, from the one formatter the chrome already applies to a cell
+    expect(formatCell(row.total_hours ?? null)).toBe('1,5')
+  })
+
+  it('keeps a gap, a stated no-expiry and a valid certificate three different cells', () => {
+    // three answers and not two. the pilot who holds nothing renders the gap alone, because
+    // `formatDate` answers null for a null expiry and an absent part is dropped rather than
+    // printed - and one label over the gap and the pass is what this rules out.
+    const cells = [
+      pilot(1, 'Placeholder Uncertificated Pilot', {
+        licence_status: t('report.pilot.certificateStatus.none'),
+      }),
+      pilot(2, 'Placeholder Never Expires Pilot', {
+        licence_status: t('report.pilot.certificateStatus.noExpiry'),
+        licence_types: [t('person.certificateType.A1_A3')],
+      }),
+      pilot(3, 'Placeholder Certificated Pilot', {
+        licence_status: t('report.pilot.certificateStatus.valid'),
+        licence_date: '2027-06-30',
+        licence_types: [t('person.certificateType.A1_A3')],
+      }),
+    ].map((row) => pilotReportTableRow(row).certificate)
+
+    expect(cells[0]).toBe(t('report.pilot.certificateStatus.none'))
+    expect(new Set(cells).size).toBe(3)
+
+    // the expiry renders in the one format this application prints, and only where one was
+    // stated
+    expect(cells[2]).toContain('30.06.2027')
+    expect(cells[1]).not.toContain('.')
+  })
+
+  it('opens a detail on the period the reader is already looking at', () => {
+    const [column] = pilotReportTable(new URLSearchParams('period=last_month')).columns
+
+    expect(column?.linkPath).toContain('detail={id}')
+    expect(column?.linkPath).toContain('period=last_month')
+  })
+})
+
+describe('the UAS table tells the gap from the pass', () => {
+  it('reads an airframe with no device type as not configured and one inside its interval as nothing', () => {
+    // both carry `service_due: false` and only one of them is an all-clear. an airframe with
+    // no device type has no VLOS limit and no service interval, so it can never register a
+    // service warning - a cell keyed off the boolean prints the same nothing for both and
+    // goes red here.
+    const gap = airframeReportTableRow(
+      airframe(1, {
+        service_is_configured: false,
+        service_interval_cycles: null,
+        service_interval_months: null,
+        next_service_at_cycles: null,
+        service_remaining_cycles: null,
+        service_overdue_cycles: null,
+        service_warning: t('device.warning.noDeviceType'),
+      }),
+    )
+    const withinInterval = airframeReportTableRow(airframe(2))
+
+    expect(gap.service).toBe(t('device.warning.noDeviceType'))
+    expect(withinInterval.service).toBeNull()
+  })
+
+  it('names a due service, so the blank cell above is the not-due state and not a third gap', () => {
+    const due = airframeReportTableRow(
+      airframe(3, {
+        service_due: true,
+        service_due_reasons: [t('device.serviceLimit.cycles')],
+        service_warning: t('device.warning.serviceDue'),
+      }),
+    )
+
+    expect(due.service).toBe(t('device.warning.serviceDue'))
+  })
+
+  it('carries the period into its row link as the pilots table does', () => {
+    const [column] = airframeReportTable(new URLSearchParams('period=last_month')).columns
+
+    expect(column?.linkPath).toContain('tab=uas')
+    expect(column?.linkPath).toContain('period=last_month')
+  })
+})
+
+describe('the two tabs and the detail each row opens are addressed on the query string', () => {
+  it('opens on the pilots tab where no tab was asked for', () => {
+    expect(activeTab(null)).toBe('pilots')
+  })
+
+  it('answers nothing for a tab this application does not name, which the page reads as absent', () => {
+    // deliberately not the period's treatment. a period is a filter over content and renders
+    // its error beside the selector; a tab is the address of a section, and a link to one
+    // nobody built is a broken link.
+    expect(activeTab('flights')).toBeNull()
+  })
+
+  it('carries the reader window across a tab link and drops the open detail', () => {
+    const href = tabHref(new URLSearchParams('period=custom&date_from=2026-07-01&detail=4'), 'uas')
+
+    expect(href).toContain('period=custom')
+    expect(href).toContain('date_from=2026-07-01')
+    expect(href).toContain('tab=uas')
+
+    // a row id from one register names no row in the other, so it does not ride along
+    expect(href).not.toContain('detail')
+  })
+
+  it('finds the detail row in the rows already in hand, and none for an id they do not carry', () => {
+    const rows = [pilot(1, 'Placeholder First Pilot'), pilot(2, 'Placeholder Second Pilot')]
+
+    expect(detailRow(rows, '2')?.name).toBe('Placeholder Second Pilot')
+
+    // the cross-tenant id and the junk one answer the same nothing: an id naming no row in
+    // the payload the page holds opens no detail
+    expect(detailRow(rows, '999999')).toBeNull()
+    expect(detailRow(rows, 'not-an-id')).toBeNull()
+    expect(detailRow(rows, null)).toBeNull()
   })
 })
