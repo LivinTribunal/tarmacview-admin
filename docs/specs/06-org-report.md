@@ -529,7 +529,9 @@ POST /organization-reports/{org}/upload-permit
 GET /organization-reports/{org}/print?period=&pilot_id=&device_id=&date_from=&date_to=
 ```
 A plain GET form carrying the current filter state, so the printed document matches
-exactly what is on screen. Worth preserving — this output is the point of the tool.
+exactly what is on screen. Worth preserving — this output is the point of the tool. The path
+is Observed and the five query parameters are *(inferred)*, for the reason §"The print view in
+the rebuild" gives.
 
 ### The print view in the rebuild — decided
 
