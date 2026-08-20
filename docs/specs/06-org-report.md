@@ -170,8 +170,9 @@ pilota`, `Detail UAS`, `Platné`/`Platná`, `Pridať záznam údržby`, and the 
 all-caps is appearance, and the clean-room line takes the wording and not the styling, exactly as
 it takes the state and not the amber a status inside the warning window was drawn in. They are
 reused as captured and not "corrected" towards the admin panel's spelling of the same field:
-`Vzdialenosť (m)` keeps the capture's wording where §FlightResource says `Max. vzdialenosť (m)`,
-and `Max výška (m)` keeps its unabbreviated `Max` for the same reason.
+`Vzdialenosť (m)` keeps the capture's wording where [04-admin-resources.md](04-admin-resources.md)
+§FlightResource says `Max. vzdialenosť (m)`, and `Max výška (m)` keeps its unabbreviated `Max` for
+the same reason.
 
 `Lety za vybrané obdobie` is keyed **twice**, and deliberately. It labels the flights table and
 it labels *Detail pilota*'s period flights, which are one pilot's flights against every flight —
