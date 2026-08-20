@@ -615,3 +615,82 @@ describe('the detail each row opens, which is a disclosure the url names', () =>
     ).rejects.toThrow(NOT_FOUND)
   })
 })
+
+describe('the documents panel, the read side of the workspace registers', () => {
+  it('counts each of the four groups off the operator own buckets', async () => {
+    // alpha holds one operations document, one form, two permits and three occurrence
+    // reports. `(2)` on permits is what fails if anything filters on `is_public`, since only
+    // one of the two is ticked - and doc 06 §"Documents panel" decides that flag reads
+    // nothing here.
+    const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha)
+
+    expect(markup).toContain(t('report.documents.title'))
+    expect(markup).toContain(t('report.documents.documents', { count: 1 }))
+    expect(markup).toContain(t('report.documents.forms', { count: 1 }))
+    expect(markup).toContain(t('report.documents.permits', { count: 2 }))
+    expect(markup).toContain(t('report.documents.incidents', { count: 3 }))
+
+    expect(markup).toContain('Alpha Operations Manual')
+    expect(markup).toContain('Placeholder Occurrence With Injury')
+  })
+
+  it('links each file through a route that takes an id, never through its stored path', async () => {
+    const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha)
+
+    expect(markup).toContain(
+      `/organization-reports/${ids.organizations.alpha}/permits/${ids.documents.alphaPermit}/download`,
+    )
+    expect(markup).toContain(`/api/incidents/${ids.incidents.alphaInjury}/file`)
+
+    // the stored path never reaches the browser. asserted as the whole stored value, because
+    // `permits/` alone appears in the download path this panel is meant to carry.
+    expect(markup).not.toContain('operations-documents/placeholder-alpha-manual.pdf')
+    expect(markup).not.toContain('forms/placeholder-alpha-form.pdf')
+    expect(markup).not.toContain('permits/placeholder-alpha-permit.pdf')
+    expect(markup).not.toContain('incidents/placeholder-alpha-incident.pdf')
+  })
+
+  it('keeps an occurrence report that names no file, and names the gap', async () => {
+    // dropping it would lose the evidence that an occurrence was filed, and a link on it
+    // would point at a route that answers not-found
+    const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha)
+
+    expect(markup).toContain('Placeholder Occurrence Unanswered')
+    expect(markup).toContain(t('report.documents.noFile'))
+    expect(markup).not.toContain(`/api/incidents/${ids.incidents.alphaUnanswered}/file`)
+  })
+
+  it('keeps a bucket the operator has nothing in, counted zero', async () => {
+    // bravo holds one form and one occurrence report and nothing else. a group that vanished
+    // would read as a panel that was never asked, not as a bucket that is empty.
+    const markup = await open(memberOf(ids.people.bravoManager), ids.organizations.bravo)
+
+    expect(markup).toContain(t('report.documents.documents', { count: 0 }))
+    expect(markup).toContain(t('report.documents.forms', { count: 1 }))
+    expect(markup).toContain(t('report.documents.permits', { count: 0 }))
+    expect(markup).toContain(t('report.documents.incidents', { count: 1 }))
+  })
+
+  it('renders the panel for an operator whose every group is empty', async () => {
+    const markup = await open(superadmin(), ids.organizations.charlie)
+
+    expect(markup).toContain(t('report.documents.title'))
+    expect(markup).toContain(t('report.documents.documents', { count: 0 }))
+    expect(markup).toContain(t('report.documents.incidents', { count: 0 }))
+  })
+
+  it('survives an unusable range, because it takes no period', async () => {
+    // the same reasoning the warnings block above it carries: withdrawing an operator's
+    // permits because two dates arrived the wrong way round is not an answer to a mistyped
+    // range
+    const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, {
+      period: 'custom',
+      date_from: '2026-08-14',
+      date_to: '2026-08-01',
+    })
+
+    expect(markup).toContain(t('report.error.query'))
+    expect(markup).toContain(t('report.documents.permits', { count: 2 }))
+    expect(markup).toContain('Alpha Operations Manual')
+  })
+})

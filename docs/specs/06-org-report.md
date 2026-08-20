@@ -48,8 +48,9 @@ A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under
 standing autonomy grant and recorded on issue #97, and extended on 20 Aug 2026 on issues #101
 and #104. The owner has not reviewed it: settled enough to build on, open enough to overturn.
 Items 1–7 above are what was Observed and stay standing; only the page's own choices are below.
-Item 7 is not built at all and item 3's `Tlačiť PDF` is not either — the print view and the
-panels are their own slice.
+Of item 7 only the documents panel is built — §"The documents panel in the rebuild" is its own —
+and item 3's `Tlačiť PDF` is not: the print view, the maps panel and the flight-log upload panel
+are each their own slice.
 
 **The page and the data endpoint share one payload builder, in one transaction.** The page
 makes the same four scoped reads the endpoint makes, hands them to the same builder, and
@@ -532,6 +533,77 @@ downloadable files, plus a `Nahrať letové povolenie` action.
 
 This is the read side of the org workspace registers (doc 05) — operators consume here
 what admins curate there.
+
+### The documents panel in the rebuild — decided
+
+A **decision about the rebuild**, taken on 20 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #107. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. Everything above this line is what was Observed;
+`Nahrať letové povolenie` is a write and is not built.
+
+**Which bucket each group reads, and one of the four is *(inferred)*.** `Formuláre` reads
+the `forms` bucket and `Letové povolenia` the `permits` bucket, which is what the oracle's own
+path names say. `Dokumenty` reads **`operations`** — [05-organization-workspace.md](05-organization-workspace.md)
+§5's *Prevádzková dokumentácia* — and that pairing is inferred rather than captured: three
+oracle download paths, three tenant buckets, and the two named ones leave it. The alternative
+is that `Dokumenty` is the `general` library every session reads. It is not read that way here,
+because both this section and the issue say *the organisation's own buckets*, and the global
+library is nobody's. `Incidenty` reads the occurrence register, §6's.
+
+**`is_public` is not what the permits group filters on.** Doc 05 §4 flags its own ambiguity
+for this document to settle, and the answer is that every permit the organisation holds lists.
+Filtering on the flag is wrong twice over: §Access above records that **nothing here serves
+anonymously**, so *public* has no surface on which to mean anything; and the column is `not
+null default false`, so a bucket nobody has ticked would read `Letové povolenia (0)` while the
+operator's permits sit in the register — a gap reading as a fact on a regulator-facing pack.
+The flag's consumer is the explicit revocable share link §Access asks for, which has no slice
+yet.
+
+**A count of zero is a fact and renders as one.** An empty bucket keeps its group and states
+`(0)`, and a panel whose four groups are all empty still renders. This is **not** the
+affirmative-only rule's territory: that rule is about a boolean that cannot tell a real *no*
+from an unrecorded one, and a count is a figure over a bucket that was actually read. An
+operator looking for a permit needs to see the bucket empty rather than the panel missing.
+
+**The panel takes no period, so it survives an unusable range** — the expiry-warnings block's
+reasoning above, unchanged. Its four reads run in both branches of the page's transaction, and
+withdrawing an operator's permits because two dates arrived the wrong way round would be the
+mistake §"The report page in the rebuild" already rules out for the warnings.
+
+**The three download paths are mounts of the handler that already exists, not new handlers.**
+[03-data-model.md](03-data-model.md) §"Serving a stored file in the rebuild" owns that
+distinction and the count behind it. The cost is stated rather than hidden: on a mount the
+`{org}` segment is unread and the bucket in the path does not filter, so one permit id resolves
+through all three paths. The alternative — a reader selecting on the path's organisation and
+category — is **worse for the property that matters**: a selection clause would answer the
+cross-tenant case on its own, and the isolation assertion would then pass with
+`document_tenant_isolation` dropped. A mount leaves row-level security as the only thing
+standing there.
+
+**The fourth group reaches its file through `/api/incidents/{id}/file`.** `contracts/routes.json`
+carries three download paths and nothing for incidents, so no fourth report path is minted — the
+same reuse the header's logo makes of the route that already serves one. An occurrence report
+naming no file **keeps its entry and names the gap** rather than linking: `incident.file_path` is
+nullable, a link on it would point at a route answering not-found, and dropping the row would
+lose the evidence that an occurrence was filed. It stays counted for the same reason.
+
+**Plain markup and not the shared index table.** Four `resource` keys would pollute the
+column-visibility store for four short download lists, the chrome offers search, sorting and
+pagination a list of files does not want, a client component's state does not survive the print
+view, and the count belongs in the group's own heading, which a `TableDeclaration` has no place
+for. This is the detail views' reasoning above, which is also why the panel's pure half sits in
+`src/lib/report/view.ts` rather than as a declaration in `src/lib/report/fields.ts`.
+
+**Observed, and used as captured**: `Dokumenty, formuláre a letové povolenia`, `Dokumenty`,
+`Formuláre`, `Letové povolenia` and `Incidenty`, in sentence case — the wording and not the
+styling, exactly as the flights table takes `Max výška (m)`. They take their own
+`report.documents.*` family rather than reusing `document.category.*`: these come from a
+different capture, and `Lety za vybrané obdobie` above is the precedent for keeping two headings
+that coincide apart. **The rebuild's own**: the `(n)` formatting, carried as a `{count}`
+placeholder inside each label so a label and its number stay one translatable string; and the
+label for an occurrence report that names no file, the treatment
+`report.maintenance.totalFlights.none` sets. There is no empty-state sentence, because `(0)` is
+the statement.
 
 ## Maps panel
 

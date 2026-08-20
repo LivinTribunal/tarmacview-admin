@@ -3,6 +3,8 @@ import type { ReportPayload } from '@/lib/report/payload'
 import type { PilotReportRow } from '@/lib/report/pilot-row'
 import { identifier } from '@/lib/routes/identifier'
 import { formatCell } from '@/lib/table/view'
+import type { DocumentEntry } from '@/lib/tenant/scoped-documents'
+import type { IncidentEntry } from '@/lib/tenant/scoped-incidents'
 
 // the operator report page's pure half - the split src/lib/table/view.ts and
 // src/lib/organizations/workspace.ts already set. no react and no drizzle here, so the one
@@ -100,6 +102,96 @@ export function expiryWarnings(
       ].filter((warning) => warning !== null),
     }))
     .filter((pilot) => pilot.warnings.length > 0)
+}
+
+// doc 06 §"Documents panel" - the four counted groups of item 7, as data. a group is its
+// label, its count and its entries, so the panel is assertable without a dom: what the page
+// does with it is a heading and a list.
+export type DocumentGroupEntry = {
+  id: number
+  // what the reader sees. the row's own name and never the path it is stored at - the rule
+  // docs/specs/03-data-model.md §"Serving a stored file in the rebuild" owns, held here by
+  // not reading `file_path` at all.
+  name: string
+  // null where the record names no file. only an occurrence report can be in that state -
+  // `document.file_path` is not null - and it keeps its entry, because the row is the record
+  // and the file is an attachment to it.
+  href: string | null
+}
+
+export type DocumentGroup = {
+  // one key per group, each carrying its own `{count}` placeholder: a label and its number
+  // are one translatable string rather than fragments a component concatenates
+  labelKey: MessageKey
+  count: number
+  entries: readonly DocumentGroupEntry[]
+}
+
+// the report's own download path, one per bucket the oracle names. it takes a row id and
+// nothing else that the handler reads: the bucket segment is the address the oracle spells
+// and the boundary is `document_tenant_isolation`, which doc 06 §"Documents panel" records
+// as a stated cost rather than a filter.
+const downloadPath = (organizationId: number, bucket: string, id: number): string =>
+  `/organization-reports/${organizationId}/${bucket}/${id}/download`
+
+// what the four groups read. three document buckets and the occurrence register, each
+// already scoped by the reads the page makes - nothing here filters, so an entry the caller
+// could not read was never in the list.
+export type DocumentPanelInput = {
+  organizationId: number
+  operations: readonly DocumentEntry[]
+  forms: readonly DocumentEntry[]
+  permits: readonly DocumentEntry[]
+  incidents: readonly IncidentEntry[]
+}
+
+const documentEntries = (
+  organizationId: number,
+  bucket: string,
+  rows: readonly DocumentEntry[],
+): readonly DocumentGroupEntry[] =>
+  rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    href: downloadPath(organizationId, bucket, row.id),
+  }))
+
+// four groups, always, in doc 06 §"Documents panel"'s order. an empty bucket keeps its group
+// and states `(0)`: a count is a figure over a bucket that was actually read, so it is not
+// the affirmative-only rule's territory - an operator looking for a permit needs to see the
+// bucket empty rather than the group missing.
+//
+// the occurrence register is the odd one and reaches its file through the route that already
+// serves it, `/api/incidents/{id}/file`. `contracts/routes.json` carries no report path for
+// incidents, and a fourth one minted to make the panel symmetrical would be a path the
+// capture does not have.
+export function documentGroups(input: DocumentPanelInput): readonly DocumentGroup[] {
+  return [
+    {
+      labelKey: 'report.documents.documents',
+      count: input.operations.length,
+      entries: documentEntries(input.organizationId, 'documents', input.operations),
+    },
+    {
+      labelKey: 'report.documents.forms',
+      count: input.forms.length,
+      entries: documentEntries(input.organizationId, 'forms', input.forms),
+    },
+    {
+      labelKey: 'report.documents.permits',
+      count: input.permits.length,
+      entries: documentEntries(input.organizationId, 'permits', input.permits),
+    },
+    {
+      labelKey: 'report.documents.incidents',
+      count: input.incidents.length,
+      entries: input.incidents.map((row) => ({
+        id: row.id,
+        name: row.title,
+        href: row.filePath === null ? null : `/api/incidents/${row.id}/file`,
+      })),
+    },
+  ]
 }
 
 // the three §Layout item 3 names, in its order. these are the **wire** values

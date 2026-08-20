@@ -24,6 +24,7 @@ import { expiryWindow, type PilotReportRow } from '@/lib/report/pilot-row'
 import {
   activeTab,
   detailRow,
+  documentGroups,
   expiryWarnings,
   figure,
   periodOptions,
@@ -34,18 +35,22 @@ import {
   tabHref,
   tabLabels,
   unknownPilot,
+  type DocumentGroup,
   type ReportTab,
 } from '@/lib/report/view'
 import { identifier } from '@/lib/routes/identifier'
 import { listOrganizationAirframeReport } from '@/lib/tenant/scoped-airframes'
+import { listOrganizationDocuments } from '@/lib/tenant/scoped-documents'
 import { listOrganizationFlights } from '@/lib/tenant/scoped-flights'
+import { listOrganizationIncidents } from '@/lib/tenant/scoped-incidents'
 import { findOrganization } from '@/lib/tenant/scoped-organizations'
 import { listOrganizationPilots } from '@/lib/tenant/scoped-people'
 import { listOrganizationTrainings } from '@/lib/tenant/scoped-trainings'
 import { withTenant } from '@/lib/tenant/tenant-context'
 
-// the operator report - docs/specs/06-org-report.md §Layout items 1 to 6, the screen doc 06
-// calls the product's real face. the print view and item 7's panels are R6's.
+// the operator report - docs/specs/06-org-report.md §Layout items 1 to 6 and the documents
+// half of item 7, the screen doc 06 calls the product's real face. the print view, the maps
+// panel and the flight-log upload panel are still to come.
 //
 // it reads the very payload the data endpoint beside it serves, through the same builder in
 // one `withTenant` transaction, and derives nothing of its own: every number here is already
@@ -323,6 +328,41 @@ function ReportTabs({
   )
 }
 
+// doc 06 §Layout item 7's documents half - `Dokumenty, formuláre a letové povolenia`, the
+// read side of the workspace registers doc 05 §§3-6 curate. plain markup and not
+// `IndexTable`, on the detail views' reasoning above: four `resource` keys for four short
+// download lists, and search, sorting and pagination a list of files does not want.
+//
+// nothing is hidden. an empty bucket keeps its group and states `(0)`, and an occurrence
+// report that names no file keeps its entry and names the gap - dropping it would lose the
+// evidence that an occurrence was filed.
+function DocumentsPanel({ groups }: { groups: readonly DocumentGroup[] }) {
+  return (
+    <section>
+      <h2>{t('report.documents.title')}</h2>
+      {groups.map((group) => (
+        <section key={group.labelKey}>
+          <h3>{t(group.labelKey, { count: group.count })}</h3>
+          <ul>
+            {group.entries.map((entry) => (
+              <li key={entry.id}>
+                {entry.href === null ? (
+                  <>
+                    <span>{entry.name}</span>
+                    <span>{t('report.documents.noFile')}</span>
+                  </>
+                ) : (
+                  <a href={entry.href}>{entry.name}</a>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </section>
+  )
+}
+
 export default async function OrganizationReportPage({
   params,
   searchParams,
@@ -359,6 +399,18 @@ export default async function OrganizationReportPage({
     const pilots = await listOrganizationPilots(tx, organization.id)
     const trainings = await listOrganizationTrainings(tx, organization.id)
 
+    // and neither does the documents panel, which is why its four reads sit above the early
+    // return with them: withdrawing an operator's permits because two dates arrived the wrong
+    // way round is the mistake the warnings block already rules out. `Dokumenty` is the
+    // `operations` bucket, *(inferred)* - doc 06 §"Documents panel" names the alternative.
+    const groups = documentGroups({
+      organizationId: organization.id,
+      operations: await listOrganizationDocuments(tx, organization.id, 'operations'),
+      forms: await listOrganizationDocuments(tx, organization.id, 'forms'),
+      permits: await listOrganizationDocuments(tx, organization.id, 'permits'),
+      incidents: await listOrganizationIncidents(tx, organization.id),
+    })
+
     // the period-filtered pair runs only where there is a period to read them for, and an
     // unusable custom range renders the error where the report would be - `total_flights: 0`
     // there would say nothing was flown when what happened is that two dates arrived the
@@ -376,6 +428,7 @@ export default async function OrganizationReportPage({
           flights: new Map(),
           window: expiryWindow(asOf, organization.licenceExpiryWarningDays),
         }),
+        groups,
         data: null,
       }
     }
@@ -392,11 +445,11 @@ export default async function OrganizationReportPage({
       selection,
       asOf,
     })
-    return { organization, pilots: data.pilots, data }
+    return { organization, pilots: data.pilots, groups, data }
   })
   if (read === null) notFound()
 
-  const { organization, pilots, data } = read
+  const { organization, pilots, groups, data } = read
   const warnings = expiryWarnings(pilots)
 
   return (
@@ -572,6 +625,12 @@ export default async function OrganizationReportPage({
           </section>
         </>
       )}
+
+      {/* outside the body the query error replaces, and last on the page the way §Layout
+          orders it. `Nahrať letové povolenie` sits in this panel in the capture and is a
+          write, so it is not here; the maps panel and the flight-log upload panel are the
+          other two of item 7 and neither is built. */}
+      <DocumentsPanel groups={groups} />
     </main>
   )
 }

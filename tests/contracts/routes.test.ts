@@ -65,16 +65,11 @@ const registers = [
 // permanent.
 //
 // `/admin/flights/{id}` is the read-only detail page the flights register alone carries,
-// where doc 04 §FlightResource's *Detaily letov* relation manager lives. the four report
-// paths are the print view and the three document downloads - R6, and the read side of the
-// document buckets doc 06 §"Documents panel" describes.
-const deferred = [
-  '/admin/flights/{id}',
-  '/organization-reports/{org}/print',
-  '/organization-reports/{org}/documents/{id}/download',
-  '/organization-reports/{org}/forms/{id}/download',
-  '/organization-reports/{org}/permits/{id}/download',
-]
+// where doc 04 §FlightResource's *Detaily letov* relation manager lives.
+// `/organization-reports/{org}/print` is the print view, which is R6b's; the three document
+// downloads beside it landed with doc 06 §"Documents panel"'s own slice and are asserted
+// served above.
+const deferred = ['/admin/flights/{id}', '/organization-reports/{org}/print']
 
 describe('route contract: register paths, path shapes only, GET-only capture', () => {
   const captured = oracle.routes
@@ -89,6 +84,17 @@ describe('route contract: register paths, path shapes only, GET-only capture', (
 
   it.each(captured)('%s is served by the app router', (path) => {
     expect(served).toContain(path)
+  })
+
+  // doc 06 §"Documents panel" counts four groups and the oracle carries three download
+  // paths. the fourth reaches its file through `/api/incidents/{id}/file`, which the
+  // occurrence register already serves - a fourth report path would be one the capture does
+  // not have, and `contracts/**` is protected and is never edited to agree with us.
+  it('mints no report-scoped incidents download path, which the oracle does not carry', () => {
+    const reportPaths = served.filter((path) => path.startsWith('/organization-reports/'))
+
+    expect(reportPaths).not.toContain('/organization-reports/{org}/incidents/{id}/download')
+    expect(reportPaths.filter((path) => path.includes('incident'))).toEqual([])
   })
 })
 
