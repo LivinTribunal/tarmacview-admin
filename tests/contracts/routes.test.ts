@@ -46,8 +46,7 @@ const served = servedPaths(join(repoRoot, 'src/app'))
 // joins it when its slice lands.
 //
 // each entry is matched as a prefix, so the report's own path covers everything served under
-// it: the page, its data endpoint and the three download routes. the one
-// `/organization-reports/…` path still to come is named in `deferred` below.
+// it: the page, its data endpoint, the three download routes and the print view.
 const registers = [
   '/organization-reports/{org}',
   '/admin/device-types',
@@ -65,11 +64,10 @@ const registers = [
 // permanent.
 //
 // `/admin/flights/{id}` is the read-only detail page the flights register alone carries,
-// where doc 04 §FlightResource's *Detaily letov* relation manager lives.
-// `/organization-reports/{org}/print` is the print view, which is R6b's; the three document
-// downloads beside it landed with doc 06 §"Documents panel"'s own slice and are asserted
-// served above.
-const deferred = ['/admin/flights/{id}', '/organization-reports/{org}/print']
+// where doc 04 §FlightResource's *Detaily letov* relation manager lives. it is the only entry
+// left: every `/organization-reports/…` path the oracle carries is now served, the print view
+// last.
+const deferred = ['/admin/flights/{id}']
 
 describe('route contract: register paths, path shapes only, GET-only capture', () => {
   const captured = oracle.routes

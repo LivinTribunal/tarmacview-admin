@@ -2,7 +2,7 @@ import { t, type MessageKey } from '@/lib/i18n'
 import type { ReportPayload } from '@/lib/report/payload'
 import type { PilotReportRow } from '@/lib/report/pilot-row'
 import { identifier } from '@/lib/routes/identifier'
-import { formatCell } from '@/lib/table/view'
+import { formatCell, type CellValue } from '@/lib/table/view'
 import type { DocumentEntry } from '@/lib/tenant/scoped-documents'
 import type { IncidentEntry } from '@/lib/tenant/scoped-incidents'
 
@@ -31,7 +31,11 @@ export type ReportTile = { labelKey: MessageKey; value: string }
 // rather than a second copy of the replacement. an absent one is the blank marker the chrome
 // already renders for a null cell: the tiles' three keys are not nullable, the detail views'
 // service and per-device figures are.
-export const figure = (value: number | null): string => formatCell(value) ?? t('table.blank')
+//
+// it takes a whole `CellValue` rather than a number, so the print view renders a row mapper's
+// cells through this same one path - a table rendered without the chrome must not grow a
+// second decimal comma beside the chrome's.
+export const figure = (value: CellValue): string => formatCell(value) ?? t('table.blank')
 
 export function reportTiles(data: ReportData): readonly ReportTile[] {
   return [
@@ -248,6 +252,63 @@ export function tabHref(submitted: URLSearchParams, tab: ReportTab): string {
   carried.delete('detail')
   carried.set('tab', tab)
   return `?${carried}`
+}
+
+// the print link, beside `tabHref` and carrying the reader's whole window the same way - the
+// document has to match the screen it was printed from, so the filter state travels in the
+// link rather than the print view reverting to *this month*. the query string rides along
+// verbatim, so a filter parameter a later slice adds carries without anyone remembering to
+// add it here; `tab` and `detail` ride along unread, which doc 06 records.
+export function printHref(organizationId: number, submitted: URLSearchParams): string {
+  const carried = String(submitted)
+  return `/organization-reports/${organizationId}/print${carried === '' ? '' : `?${carried}`}`
+}
+
+// what the printed pack was produced under. the screen states its narrowing in the controls
+// the reader submitted it with and a document has none, so a pack filtered to one pilot with
+// nothing saying so is a gap reading as a fact - the error class doc 06 rules out everywhere.
+export type SelectionLine = { labelKey: MessageKey; value: string }
+
+// the filter as a line, resolved **against the rows the payload already carries** - the
+// `detailRow` reading, and structural for the same reason: another operator's id was never in
+// the payload to be named. absent and empty alike are no line at all, which is the
+// `pilot_id=` wire shape `resolveSelection` already reads as *no filter*.
+function filterLine<Row extends { id: number }>(
+  raw: string | null,
+  rows: readonly Row[],
+  name: (row: Row) => string,
+  unknownKey: MessageKey,
+): string | null {
+  if (raw === null || raw === '') return null
+
+  const row = detailRow(rows, raw)
+  return row === null ? t(unknownKey) : name(row)
+}
+
+// the pilot line always renders, because *all pilots* is itself the statement a reader needs;
+// the airframe line only where one was asked for, since no control sets `device_id` and a
+// line saying nothing was filtered on a parameter nobody submits is noise.
+export function selectionLines(
+  submitted: URLSearchParams,
+  data: ReportData,
+): readonly SelectionLine[] {
+  const pilot = filterLine(
+    submitted.get('pilot_id'),
+    data.pilots,
+    (row) => row.name,
+    'report.filter.pilot.unknown',
+  )
+  const device = filterLine(
+    submitted.get('device_id'),
+    data.devices,
+    (row) => row.serial_number,
+    'report.filter.device.unknown',
+  )
+
+  return [
+    { labelKey: 'report.filter.pilot' as const, value: pilot ?? t('report.filter.pilot.all') },
+    ...(device === null ? [] : [{ labelKey: 'report.filter.device' as const, value: device }]),
+  ]
 }
 
 // which row a `?detail={id}` names, looked up **in the rows the page already holds**. an id

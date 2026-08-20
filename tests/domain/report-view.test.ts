@@ -15,8 +15,10 @@ import {
   expiryWarnings,
   periodOptions,
   pilotFilterValue,
+  printHref,
   reportTiles,
   selectedPeriod,
+  selectionLines,
   tabHref,
   unknownPilot,
 } from '@/lib/report/view'
@@ -389,5 +391,75 @@ describe('the two tabs and the detail each row opens are addressed on the query 
     expect(detailRow(rows, '999999')).toBeNull()
     expect(detailRow(rows, 'not-an-id')).toBeNull()
     expect(detailRow(rows, null)).toBeNull()
+  })
+})
+
+describe('the print link carries the screen own filter state', () => {
+  it('carries every filter parameter onto the organisation own print path', () => {
+    // the claim the whole decision rests on: a pack printed from a `last_month` screen is a
+    // `last_month` pack. a link that dropped the query string would hand the reader a document
+    // contradicting the screen they pressed it on.
+    const href = printHref(
+      7,
+      new URLSearchParams('period=custom&date_from=2026-07-01&date_to=2026-07-14&pilot_id=3'),
+    )
+
+    expect(href.startsWith('/organization-reports/7/print?')).toBe(true)
+    for (const carried of ['period=custom', 'date_from=2026-07-01', 'date_to=2026-07-14', 'pilot_id=3']) {
+      expect(href, carried).toContain(carried)
+    }
+  })
+
+  it('stays a usable path where the reader has submitted nothing', () => {
+    expect(printHref(7, new URLSearchParams())).toBe('/organization-reports/7/print')
+  })
+})
+
+describe('the printed pack states the selection it was produced under', () => {
+  const data = {
+    period_dates: { from: '01.07.2026', to: '31.07.2026' },
+    total_flights: 0,
+    total_flight_minutes: 0,
+    total_flight_hours: 0,
+    active_pilots: 0,
+    pilots: [pilot(1, 'Placeholder First Pilot'), pilot(2, 'Placeholder Second Pilot')],
+    devices: [airframe(4)],
+    flights: [],
+  } satisfies ReportPayload['data']
+
+  it('names all pilots where nothing narrowed it, since the document carries no controls', () => {
+    // a screen shows its filter in the control the reader submitted it with. a pack has none,
+    // so the unfiltered state has to say so too - otherwise the reader cannot tell it apart
+    // from a pack whose filter went unstated.
+    expect(selectionLines(new URLSearchParams(), data)).toEqual([
+      { labelKey: 'report.filter.pilot', value: t('report.filter.pilot.all') },
+    ])
+  })
+
+  it('names the pilot a filtered pack was narrowed to, off the rows the payload carries', () => {
+    const [line] = selectionLines(new URLSearchParams('pilot_id=2'), data)
+
+    expect(line?.value).toBe('Placeholder Second Pilot')
+  })
+
+  it('names an id the payload does not carry rather than reading as unfiltered', () => {
+    // another operator's pilot id and an unparseable one land the same way. `all pilots` over a
+    // payload narrowed to nothing would be a gap reading as a fact on a regulator-facing pack.
+    for (const raw of ['pilot_id=999999', 'pilot_id=not-an-id']) {
+      const [line] = selectionLines(new URLSearchParams(raw), data)
+      expect(line?.value, raw).toBe(t('report.filter.pilot.unknown'))
+    }
+  })
+
+  it('states an airframe filter only where one was asked for', () => {
+    // no control sets `device_id`, so a line saying nothing was filtered on it is noise -
+    // but a pack narrowed to one airframe by hand still has to say which
+    expect(selectionLines(new URLSearchParams(), data)).toHaveLength(1)
+
+    const stated = selectionLines(new URLSearchParams('device_id=4'), data)
+    expect(stated[1]).toEqual({ labelKey: 'report.filter.device', value: 'SN-PLACEHOLDER-4' })
+
+    const unknown = selectionLines(new URLSearchParams('device_id=999999'), data)
+    expect(unknown[1]?.value).toBe(t('report.filter.device.unknown'))
   })
 })
