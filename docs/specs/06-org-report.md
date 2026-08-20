@@ -75,11 +75,10 @@ the rule. If a printed pack needs the time of day, that is the print slice's to 
 **The expiry-warnings block lists three statuses and stays silent on two.** `expiring`,
 `expired` and **`none`** each list under their own label; `valid` and `noExpiry` produce no
 row, per the affirmative-only rule [05-organization-workspace.md](05-organization-workspace.md)
-owns. That split is §"`data.pilots[]` in the rebuild" applied to a screen: a pilot with no
-certificate recorded is a **gap** and one whose certificate never expires is a **stated
-fact**, and one label over both would let the gap read as the fact. A pilot with nothing to
-surface has no row, and where nobody has anything the block is **absent** rather than
-printing an all-clear — the same rule `has_vlos_violation: false` is held to above.
+owns. Keeping `none` apart from `noExpiry` is §"`data.pilots[]` in the rebuild" applied to a
+screen, and holds here for the reason it gives there. A pilot with nothing to surface has no
+row, and where nobody has anything the block is **absent** rather than printing an all-clear —
+the same rule §"`has_vlos_violation` is false in three different situations" is held to.
 
 Selection compares each status against `t()` of its **own** key family. The payload carries
 these two as already-rendered strings and the oracle gives the block no status-code key, so
@@ -190,10 +189,10 @@ string ([04-admin-resources.md](04-admin-resources.md) §TrainingResource, §Fli
 render as three: the gap names itself, a due service names itself, and one that is not due renders
 the blank marker under the affirmative-only rule. An airframe with no device type has no VLOS limit
 and no service interval, so `service_due: false` beside it is *not knowable* rather than an
-all-clear — the same shape `has_vlos_violation: false` is held to above. In `Detail UAS` the
-maintenance readings render as the technician stated them: the hours are text in either notation,
-and a null `total_flights` names the absence rather than printing `0`, which would be a reading
-nobody took.
+all-clear — the same shape §"`has_vlos_violation` is false in three different situations" is
+held to. In `Detail UAS` the maintenance readings render as the technician stated them: the
+hours are text in either notation, and a null `total_flights` names the absence rather than
+printing `0`, which would be a reading nobody took.
 
 **All three tables sit inside the report body that the query error replaces.** The pilots
 table's two count columns are the period's own figures, the UAS table has none without a payload
