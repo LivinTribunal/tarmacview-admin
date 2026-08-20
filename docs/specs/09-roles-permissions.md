@@ -138,9 +138,9 @@ register*, *Assign pilot/aircraft to flight*, *Upload flight logs*, *File occurr
 and *Record maintenance*. The matrix and the database agree on **who** — the tenant — but the
 policies behind `training_type`, `device`, `training`, `flight`, `flight_log`, `incident`,
 `maintenance_log` and `document`'s tenant-owned buckets key off **membership, not organisation
-role**, so Postgres admits a `pilot` or `viewer` membership the matrix denies. Narrowing it needs a policy
-predicate over a per-membership role, which is the same missing piece the people rows are
-waiting on.
+role**, so Postgres admits a `pilot` or `viewer` membership the matrix denies. Narrowing it
+needs a policy predicate over a per-membership role, which is the same missing piece the
+people rows are waiting on.
 
 The **global** document library is on no row of this table, and that is not an omission: it
 carries no organisation, so no organisation role reaches it. Every session reads it and only
