@@ -137,19 +137,28 @@ route, and the row link on the identity column is what opens it. No column decla
 sortable — §Tables captured no sort marker on either table, and inventing one is a behaviour
 nobody observed.
 
-**§Tables' Slovak stops at the pilots table's title and headings and the two detail titles; every
-label minted below those is the rebuild's own, marked here so none of it comes to read as
-Observed.** `Štatistiky pilotov`, `Detail pilota` and `Detail UAS` are Observed, and so are the
-five pilot headings, which render in sentence case: the capture's all-caps is appearance, and the
-clean-room line takes the wording and not the styling, exactly as it takes the state and not the
-amber a status inside the warning window was drawn in. The **UAS tab's own Slovak label was never
-captured** — §Tables records it as *UAS tab* and nothing more — so the rebuild names it `UAS`, and
+**§Tables records Slovak for all three tables, and what this slice mints sits below them.**
+Marked here so neither half comes to read as the other's, because unmarked means Observed and a
+capture re-minted as a rebuild decision is the same error as a promotion, taken the other way.
+
+**Observed, and used as captured**: `Štatistiky pilotov`, the five pilot headings, `Detail
+pilota`, `Detail UAS`, `Platné`/`Platná`, `Pridať záznam údržby`, and the whole flights entry —
+`Lety za vybrané obdobie`, `STAV`, `DÁTUM`, `PILOT`, `UAS`, `ČAS LETU`, `MAX VÝŠKA (M)`,
+`VZDIALENOSŤ (M)` and the `Priradiť` fallback. Three of those land in this slice already:
+`Lety za vybrané obdobie`, `Stav` and `Dátum` label *Detail pilota*'s period flights, and the
+table they were captured from is R4c's, which inherits the same strings. Headings render in
+sentence case — the capture's all-caps is appearance, and the clean-room line takes the wording
+and not the styling, exactly as it takes the state and not the amber a status inside the warning
+window was drawn in.
+
+**The rebuild's own, because §Tables records nothing to take.** The UAS tab's Slovak label was
+never captured — §Tables gives it as *UAS tab* and no more — so the rebuild names it `UAS`, and
 its column set is the rebuild's reading of *per-airframe totals and service state*, which is all
-§Tables records of that table. Below that it records nothing for the service block and the
-maintenance history only as English field names, so both blocks are labelled fresh — over the
-payload's own service keys and [03-data-model.md](03-data-model.md) §MaintenanceLog's columns,
-exactly as `maintenance_logs[]`'s member shape is. What a detail view is not the first to label it
-reuses from the register that already labels the same field, rather than minting a second string
+that entry records. Nothing at all is recorded for the service block, and the maintenance history
+only as English field names, so both are labelled fresh — over the payload's own service keys and
+[03-data-model.md](03-data-model.md) §MaintenanceLog's columns, exactly as `maintenance_logs[]`'s
+member shape is. What a detail view is not the first to label it reuses from the register that
+already labels the same field, rather than minting a second string
 ([04-admin-resources.md](04-admin-resources.md) §TrainingResource, §FlightResource,
 §DeviceTypeResource).
 
