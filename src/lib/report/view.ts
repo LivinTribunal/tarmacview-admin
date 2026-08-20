@@ -281,9 +281,8 @@ function filterLine<Row extends { id: number }>(
 ): string | null {
   if (raw === null || raw === '') return null
 
-  const id = identifier(raw)
-  const row = id === null ? undefined : rows.find((candidate) => candidate.id === id)
-  return row === undefined ? t(unknownKey) : name(row)
+  const row = detailRow(rows, raw)
+  return row === null ? t(unknownKey) : name(row)
 }
 
 // the pilot line always renders, because *all pilots* is itself the statement a reader needs;

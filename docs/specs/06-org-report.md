@@ -556,8 +556,11 @@ the expiry warnings, the tiles and all three tables are what remains, in that or
 page size is ten, so a pack rendered through it would drop row eleven of a register silently —
 the gap-reading-as-a-fact this document rules out everywhere, in its worst form. The registers
 render as plain server-side tables from the **same** `TableDeclaration`s the screen uses,
-reading `labelKey` and `key` and ignoring `linkPath`, which is the only part of a declaration
-that is chrome. Minting a second column list would let the pack and the screen come to disagree
+reading `labelKey` and `key` and ignoring `linkPath`, which is the only chrome-bearing field
+the three report declarations carry. `imagePath`, `hiddenByDefault`, `sortable`, `filters`,
+`bulkActionKey` and `editPath` are chrome too, and a report column that grew one would need
+handling here — an `imagePath` column would otherwise print its cell text where the screen
+shows an image. Minting a second column list would let the pack and the screen come to disagree
 about what a register contains. Every row prints, in the payload's own order, through the same
 `formatCell` the chrome applies — a table without the chrome must not grow a second decimal
 comma beside the chrome's.

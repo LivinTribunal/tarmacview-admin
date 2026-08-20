@@ -44,9 +44,10 @@ import { withTenant } from '@/lib/tenant/tenant-context'
 // serves html, which is also what the capture recorded for it.
 
 // one register, from the very `TableDeclaration` the screen renders. the headings and the
-// cell keys are read off it and `linkPath` is ignored, which is the only part of a
-// declaration that is chrome - minting a second column list here would let the pack and the
-// screen come to disagree about what a register contains.
+// cell keys are read off it and `linkPath` is ignored - the only chrome-bearing field these
+// three declarations carry. `imagePath` and the rest are chrome too and would need handling
+// here if a report column ever grew one; doc 06 says which. minting a second column list here
+// would let the pack and the screen come to disagree about what a register contains.
 //
 // cells go through `figure`, so the decimal comma and the blank marker are the chrome's own
 // single implementation rather than a second copy of either.
@@ -128,6 +129,9 @@ export default async function OrganizationReportPrintPage({
           clock time - §"The print view in the rebuild" records why, since item 1 says
           timestamp and this is the slice that was owed the decision. */}
       <header>
+        {/* a plain <img> for the reason src/components/index-table.tsx gives: the image
+            optimizer fetches the source without the session cookie, and every tenant-scoped
+            route would answer it not-found. */}
         {organization.logoPath && (
           <img src={`/api/organizations/${organization.id}/logo`} alt={organization.name} />
         )}
