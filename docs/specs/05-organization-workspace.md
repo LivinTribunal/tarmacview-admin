@@ -145,6 +145,10 @@ The only document bucket with a public flag. Permits marked public appear on the
 report. Note the wording says "public page" while the report itself requires a session
 (doc 06) — reconcile that intent during the rebuild rather than copying the ambiguity.
 
+That reconciliation is done and doc 06 owns it: the report's permits group lists **every**
+permit the organisation holds and reads the flag not at all, for the two reasons
+[06-org-report.md](06-org-report.md) §"The documents panel in the rebuild" gives.
+
 Permits are also uploadable directly from the report via `POST …/upload-permit`.
 
 ---

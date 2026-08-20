@@ -176,7 +176,10 @@ predecessor system, which is the source of most of these terms, is in
 - **Operations documentation** — the operator's standing compliance pack: operations
   manual, emergency response procedures, checklists, insurance, registration.
 - **Flight permit** — an authorisation document for specific flights. The only document
-  class carrying a public flag, which exposes it on the organisation report.
+  class carrying a public flag. The flag is **not** what the operator report filters on —
+  every permit the organisation holds lists there; see
+  [docs/specs/06-org-report.md](docs/specs/06-org-report.md) §"The documents panel in the
+  rebuild".
 - **Form** — a blank form the operator distributes or files.
 - **Incident (occurrence)** — a reported occurrence, optionally linked to the flight that
   caused it, recording whether persons were injured.
