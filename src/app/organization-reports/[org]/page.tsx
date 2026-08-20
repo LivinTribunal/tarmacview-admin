@@ -19,6 +19,7 @@ import {
   airframeReportTableRow,
   detailRow,
   expiryWarnings,
+  figure,
   periodOptions,
   pilotReportTable,
   pilotReportTableRow,
@@ -30,7 +31,6 @@ import {
   type ReportTab,
 } from '@/lib/report/view'
 import { identifier } from '@/lib/routes/identifier'
-import { formatCell } from '@/lib/table/view'
 import { listOrganizationAirframeReport } from '@/lib/tenant/scoped-airframes'
 import { listOrganizationFlights } from '@/lib/tenant/scoped-flights'
 import { findOrganization } from '@/lib/tenant/scoped-organizations'
@@ -69,10 +69,6 @@ function query(raw: Record<string, string | string[] | undefined>): URLSearchPar
   }
   return params
 }
-
-// a stated figure through the repo's one formatter, so the decimal comma is not implemented
-// twice, and an absent one as the blank marker the chrome already renders for a null cell.
-const stated = (value: number | null): string => formatCell(value) ?? t('table.blank')
 
 // the detail views are plain server-rendered markup and not `IndexTable`: its chrome is
 // register behaviour, a disclosure inside a report is not a register, a `resource` key per
@@ -140,7 +136,7 @@ function PilotDetail({ pilot }: { pilot: PilotReportRow }) {
                 <td>{flight.flight_date_display}</td>
                 <td>{flight.device_serial_number}</td>
                 <td>{flight.device_model}</td>
-                <td>{stated(flight.flight_hours)}</td>
+                <td>{figure(flight.flight_hours)}</td>
               </tr>
             ))}
           </tbody>
@@ -168,8 +164,8 @@ function PilotDetail({ pilot }: { pilot: PilotReportRow }) {
               <tr key={group.device_serial_number}>
                 <td>{group.device_serial_number}</td>
                 <td>{group.device_model}</td>
-                <td>{stated(group.total_flights)}</td>
-                <td>{stated(group.total_flight_hours)}</td>
+                <td>{figure(group.total_flights)}</td>
+                <td>{figure(group.total_flight_hours)}</td>
               </tr>
             ))}
           </tbody>
@@ -194,21 +190,21 @@ function AirframeDetail({ airframe }: { airframe: DeviceReportRow }) {
       {airframe.service_is_configured && (
         <dl>
           <dt>{t('report.service.intervalCycles')}</dt>
-          <dd>{stated(airframe.service_interval_cycles)}</dd>
+          <dd>{figure(airframe.service_interval_cycles)}</dd>
           <dt>{t('report.service.intervalMonths')}</dt>
-          <dd>{stated(airframe.service_interval_months)}</dd>
+          <dd>{figure(airframe.service_interval_months)}</dd>
           <dt>{t('report.service.nextAtCycles')}</dt>
-          <dd>{stated(airframe.next_service_at_cycles)}</dd>
+          <dd>{figure(airframe.next_service_at_cycles)}</dd>
           <dt>{t('report.service.nextDate')}</dt>
           <dd>{formatDate(airframe.next_service_date) ?? t('table.blank')}</dd>
           <dt>{t('report.service.remainingCycles')}</dt>
-          <dd>{stated(airframe.service_remaining_cycles)}</dd>
+          <dd>{figure(airframe.service_remaining_cycles)}</dd>
           <dt>{t('report.service.remainingDays')}</dt>
-          <dd>{stated(airframe.service_remaining_days)}</dd>
+          <dd>{figure(airframe.service_remaining_days)}</dd>
           <dt>{t('report.service.overdueCycles')}</dt>
-          <dd>{stated(airframe.service_overdue_cycles)}</dd>
+          <dd>{figure(airframe.service_overdue_cycles)}</dd>
           <dt>{t('report.service.overdueDays')}</dt>
-          <dd>{stated(airframe.service_overdue_days)}</dd>
+          <dd>{figure(airframe.service_overdue_days)}</dd>
           {airframe.service_due_reasons.length > 0 && (
             <>
               <dt>{t('report.service.dueReasons')}</dt>
@@ -245,7 +241,7 @@ function AirframeDetail({ airframe }: { airframe: DeviceReportRow }) {
                 <td>
                   {log.total_flights === null
                     ? t('report.maintenance.totalFlights.none')
-                    : stated(log.total_flights)}
+                    : figure(log.total_flights)}
                 </td>
                 <td>{log.maintenance_performed_by ?? t('table.blank')}</td>
                 <td>{log.fault_and_maintenance_description ?? t('table.blank')}</td>

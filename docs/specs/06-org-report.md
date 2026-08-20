@@ -47,9 +47,10 @@ Top to bottom:
 A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
 standing autonomy grant and recorded on issue #97, and extended on 20 Aug 2026 on issue #101.
 The owner has not reviewed it: settled enough to build on, open enough to overturn. Items 1–7
-above are what was Observed and stay standing; only the page's own choices are below. Items 6–7
-are not built — the flights table and the pilot filter that narrows it are their own slice, and
-the print view and the panels are another.
+above are what was Observed and stay standing; only the page's own choices are below. Items 5–7
+are built only in part — the two tabs and their registers are here, while the pilot filter item 5
+also names and item 6's flights table are their own slice, and the print view and item 7's panels
+are another.
 
 **The page and the data endpoint share one payload builder, in one transaction.** The page
 makes the same four scoped reads the endpoint makes, hands them to the same builder, and

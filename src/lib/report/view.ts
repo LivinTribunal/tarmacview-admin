@@ -22,10 +22,11 @@ type ReportData = ReportPayload['data']
 // rather than as one.
 export type ReportTile = { labelKey: MessageKey; value: string }
 
-// the decimal comma, from the repo's one implementation rather than a second copy of the
-// replacement. `formatCell` answers null only for a null cell and none of these three keys
-// is nullable, so the fallback is unreachable - it is here so nothing casts.
-const figure = (value: number): string => formatCell(value) ?? String(value)
+// every figure on the screen, through the repo's one implementation of the decimal comma
+// rather than a second copy of the replacement. an absent one is the blank marker the chrome
+// already renders for a null cell: the tiles' three keys are not nullable, the detail views'
+// service and per-device figures are.
+export const figure = (value: number | null): string => formatCell(value) ?? t('table.blank')
 
 export function reportTiles(data: ReportData): readonly ReportTile[] {
   return [
@@ -130,9 +131,11 @@ export const tabLabels: Record<ReportTab, MessageKey> = {
 }
 
 // absent is the first tab, the way an absent period is `this_month`. unrecognised is null and
-// the page turns that into not-found rather than falling back - `activeTabIndex`'s recorded
-// reason holds here too: a link to a tab nobody built answering 200 is the reading that
-// survives longest before anyone notices.
+// the page turns that into not-found rather than falling back, for the reason `activeTabIndex`
+// records: a link to a tab nobody built answering 200 is the reading that survives longest
+// before anyone notices. this one is the stricter of the two - `activeTabIndex` answers the
+// first tab for an unparseable value, while a tab here is named rather than indexed, so
+// anything that is not one of the two names is a broken link.
 //
 // so null means something different here from what it means in `selectedPeriod` above, and
 // deliberately: a period is a filter over content and its error renders beside the selector,
