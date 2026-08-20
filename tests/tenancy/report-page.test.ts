@@ -32,6 +32,48 @@ vi.mock('@/lib/auth/session', () => ({
   actingSession: async () => wiring.session,
 }))
 
+// every scoped read the page makes, wrapped in a counter. test-only and over
+// `importOriginal`, so the real query and the real policies still run and no `src/` file
+// knows this exists - what it makes assertable is that opening a detail issues **no second
+// read**, which is the claim the whole query-string-disclosure decision rests on.
+const { reads, counted } = vi.hoisted(() => {
+  const reads = { count: 0 }
+  return {
+    reads,
+    counted:
+      <Args extends unknown[], Result>(read: (...args: Args) => Result) =>
+      (...args: Args): Result => {
+        reads.count += 1
+        return read(...args)
+      },
+  }
+})
+
+vi.mock('@/lib/tenant/scoped-organizations', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@/lib/tenant/scoped-organizations')>()
+  return { ...real, findOrganization: counted(real.findOrganization) }
+})
+
+vi.mock('@/lib/tenant/scoped-people', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@/lib/tenant/scoped-people')>()
+  return { ...real, listOrganizationPilots: counted(real.listOrganizationPilots) }
+})
+
+vi.mock('@/lib/tenant/scoped-trainings', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@/lib/tenant/scoped-trainings')>()
+  return { ...real, listOrganizationTrainings: counted(real.listOrganizationTrainings) }
+})
+
+vi.mock('@/lib/tenant/scoped-flights', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@/lib/tenant/scoped-flights')>()
+  return { ...real, listOrganizationFlights: counted(real.listOrganizationFlights) }
+})
+
+vi.mock('@/lib/tenant/scoped-airframes', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@/lib/tenant/scoped-airframes')>()
+  return { ...real, listOrganizationAirframeReport: counted(real.listOrganizationAirframeReport) }
+})
+
 // both unwind the render by throwing, which is what makes them assertable
 vi.mock('next/navigation', () => ({
   notFound: () => {
@@ -263,40 +305,55 @@ describe('the period selector round-trips through the query string', () => {
   })
 })
 
+// the warnings block on its own. what this block does **not** say stopped being readable off
+// the whole page the moment the pilots register landed under it: every rostered pilot has a
+// row there and a never-expiring certificate reads as such in its own column, and both are
+// correct. an absence asserted against the page would now be asserting that the register is
+// missing rows.
+function warningsBlock(markup: string): string {
+  const opened = markup.indexOf(`<h2>${t('report.warning.title')}</h2>`)
+  return opened === -1 ? '' : markup.slice(opened, markup.indexOf('</section>', opened))
+}
+
 describe('the expiry-warnings block, keyed off the organisation own window', () => {
   it('lists a pilot inside the window and omits one outside it', async () => {
     // alpha's window is 60 days and the second pilot's certificate expires 47 days out, so
     // it is inside alpha's own window and outside the schema default of 40. the first
     // pilot's expires in 2027 and holds a training that has not lapsed, so they have
     // nothing to surface and no row.
-    const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha)
+    const block = warningsBlock(
+      await open(memberOf(ids.people.alphaManager), ids.organizations.alpha),
+    )
 
-    expect(markup).toContain(t('report.warning.title'))
-    expect(markup).toContain('Alpha Second Pilot')
-    expect(markup).toContain(t('report.pilot.certificateStatus.expiring'))
-    expect(markup).toContain('01.10.2026')
+    expect(block).toContain('Alpha Second Pilot')
+    expect(block).toContain(t('report.pilot.certificateStatus.expiring'))
+    expect(block).toContain('01.10.2026')
 
-    expect(markup).not.toContain('Alpha Pilot')
+    expect(block).not.toContain('Alpha Pilot')
   })
 
   it('tells a pilot holding no training apart from one whose training is valid', async () => {
     // the gap and the pass are two different answers. `Bez školenia` is on the second pilot's
     // row; the first pilot holds a training that has not lapsed and is absent from the block
     // entirely.
-    const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha)
+    const block = warningsBlock(
+      await open(memberOf(ids.people.alphaManager), ids.organizations.alpha),
+    )
 
-    expect(markup).toContain(t('report.warning.training'))
-    expect(markup).toContain(t('report.pilot.trainingStatus.none'))
+    expect(block).toContain(t('report.warning.training'))
+    expect(block).toContain(t('report.pilot.trainingStatus.none'))
   })
 
   it('says nothing about a certificate that never expires, which is a stated fact', async () => {
     // bravo's pilot holds a certificate with no expiry and no training at all. the training
     // gap lists and the certificate does not, which is the two states kept apart on one row.
-    const markup = await open(memberOf(ids.people.bravoManager), ids.organizations.bravo)
+    const block = warningsBlock(
+      await open(memberOf(ids.people.bravoManager), ids.organizations.bravo),
+    )
 
-    expect(markup).toContain('Bravo Pilot')
-    expect(markup).toContain(t('report.pilot.trainingStatus.none'))
-    expect(markup).not.toContain(t('report.pilot.certificateStatus.noExpiry'))
+    expect(block).toContain('Bravo Pilot')
+    expect(block).toContain(t('report.pilot.trainingStatus.none'))
+    expect(block).not.toContain(t('report.pilot.certificateStatus.noExpiry'))
   })
 
   it('renders no block at all where nobody has anything to surface', async () => {
@@ -306,5 +363,165 @@ describe('the expiry-warnings block, keyed off the organisation own window', () 
 
     expect(markup).toContain('Operator Charlie')
     expect(markup).not.toContain(t('report.warning.title'))
+  })
+})
+
+describe('the two tabs, addressed on the query string', () => {
+  it('renders one at a time and links to the other on the period the reader is on', async () => {
+    const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, {
+      period: 'last_month',
+    })
+
+    expect(markup).toContain(t('report.tab.pilots'))
+    expect(markup).toContain(t('report.tab.uas'))
+
+    // a link a reader can send, and it carries the window they typed - without that,
+    // switching tabs silently resets the period
+    expect(markup).toContain('tab=uas')
+    expect(markup).toContain('period=last_month')
+
+    // the pilots tab is the one open, so the UAS register's own empty sentence and its
+    // service column are not on the screen
+    expect(markup).toContain(t('report.column.certificate'))
+    expect(markup).not.toContain(t('report.column.service'))
+  })
+
+  it('reads a tab this application does not name as absent rather than falling back', async () => {
+    // a link to a tab nobody built answering 200 is the reading that survives longest before
+    // anyone notices. deliberately not the period's treatment.
+    await expect(
+      open(memberOf(ids.people.alphaManager), ids.organizations.alpha, { tab: 'flights' }),
+    ).rejects.toThrow(NOT_FOUND)
+  })
+})
+
+describe('the pilots table, one row per rostered pilot', () => {
+  it('keeps a pilot who flew nothing in the period, beside one who flew', async () => {
+    // july carries this operator's one flown-and-assigned flight, and the second pilot flew
+    // none of it. dropping them would hide a pilot from the roster the report is evidence
+    // about.
+    const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, {
+      period: 'last_month',
+    })
+
+    expect(markup).toContain('Alpha Pilot')
+    expect(markup).toContain('Alpha Second Pilot')
+    expect(markup).toContain('<td>1</td>')
+    expect(markup).toContain('<td>0</td>')
+
+    // the hours come off `total_hours` with the decimal comma the one formatter applies
+    expect(markup).toContain('1,42')
+  })
+
+  it('tells a pilot holding no certificate from one holding a valid one', async () => {
+    // three answers, not two: the gap names itself, the valid one prints its expiry, and
+    // bravo's never-expiring certificate is the third - `report.pilot.certificateStatus.*`
+    // renders all three and this column never recomputes one.
+    const alpha = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha)
+    expect(alpha).toContain('30.06.2027')
+
+    const bravo = await open(memberOf(ids.people.bravoManager), ids.organizations.bravo)
+    expect(bravo).toContain(t('report.pilot.certificateStatus.noExpiry'))
+  })
+})
+
+describe('the UAS table, where a gap must never read as a pass', () => {
+  it('reads an airframe with no device type as not configured and the rest as nothing', async () => {
+    // `SN-ALPHA-0002` carries no device type, so it has no VLOS limit and no service interval
+    // and can never register a service warning. the two typed airframes beside it are inside
+    // their interval and say nothing, which is the not-due state - a cell keyed off
+    // `service_due` would print that same nothing for all three.
+    const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, {
+      tab: 'uas',
+    })
+
+    expect(markup).toContain('SN-ALPHA-0001')
+    expect(markup).toContain('SN-ALPHA-0002')
+    expect(markup).toContain(t('device.warning.noDeviceType'))
+    expect(markup.split(t('device.warning.noDeviceType')).length - 1).toBe(1)
+    expect(markup).not.toContain(t('device.warning.serviceDue'))
+  })
+})
+
+describe('the detail each row opens, which is a disclosure the url names', () => {
+  it('opens a pilot with the three nested arrays the payload already carries', async () => {
+    const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, {
+      period: 'last_month',
+      detail: String(ids.people.alphaPilot),
+    })
+
+    expect(markup).toContain(t('report.detail.pilot'))
+
+    // trainings[], all-time: the classified one and the one that states nothing but its name
+    expect(markup).toContain('Alpha Recurrent Training')
+    expect(markup).toContain('Alpha Unclassified Training')
+    expect(markup).toContain(t('report.pilot.training.unclassified'))
+    expect(markup).toContain(t('report.pilot.training.noDate'))
+
+    // filtered_flights[] and flights_by_device[], both period-filtered and both the same
+    // rows - the july flight and the airframe it names
+    expect(markup).toContain(t('report.detail.flights'))
+    expect(markup).toContain('14.07.2026')
+    expect(markup).toContain(t('report.detail.flightsByDevice'))
+    expect(markup).toContain('SN-ALPHA-0002')
+  })
+
+  it('opens an airframe with the maintenance history as the technician stated it', async () => {
+    const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, {
+      tab: 'uas',
+      detail: String(ids.airframes.alphaServiced),
+    })
+
+    expect(markup).toContain(t('report.detail.uas'))
+    expect(markup).toContain('SN-ALPHA-0004')
+
+    // both readings verbatim, in the two notations the column accepts, and neither
+    // recomputed into the other
+    expect(markup).toContain('41:30')
+    expect(markup).toContain('43,5')
+    expect(markup).toContain('20.05.2026')
+
+    // the newer service stated no cycle count. a `0` there would be a reading nobody took.
+    expect(markup).toContain(t('report.maintenance.totalFlights.none'))
+  })
+
+  it('issues no second read for a detail, which is what makes it a disclosure and not a page', async () => {
+    // the assertion the whole decision rests on. every nested array is already in the payload
+    // the page holds, so a detail that grows a query fails here.
+    reads.count = 0
+    await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, { tab: 'uas' })
+    const closed = reads.count
+
+    reads.count = 0
+    await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, {
+      tab: 'uas',
+      detail: String(ids.airframes.alphaServiced),
+    })
+
+    expect(closed).toBeGreaterThan(0)
+    expect(reads.count).toBe(closed)
+  })
+
+  it('opens nothing for an id the payload does not carry, and names no other operator', async () => {
+    // the scoping is structural here rather than a check somebody has to remember: another
+    // operator's pilot was never in `data.pilots[]` to be found.
+    const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, {
+      detail: String(ids.people.bravoPilot),
+    })
+
+    expect(markup).toContain('Operator Alpha')
+    expect(markup).not.toContain(t('report.detail.pilot'))
+    expect(markup).not.toContain('Bravo')
+  })
+
+  it('leaves an organisation the session holds no membership of absent with a detail open', async () => {
+    // neither parameter is a way around the scoping: the answer is the one the closed page
+    // already gives
+    await expect(
+      open(memberOf(ids.people.alphaManager), ids.organizations.bravo, {
+        tab: 'uas',
+        detail: String(ids.airframes.bravoOne),
+      }),
+    ).rejects.toThrow(NOT_FOUND)
   })
 })

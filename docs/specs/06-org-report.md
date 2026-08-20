@@ -45,10 +45,11 @@ Top to bottom:
 ### The report page in the rebuild — decided
 
 A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
-standing autonomy grant and recorded on issue #97. The owner has not reviewed it: settled
-enough to build on, open enough to overturn. Items 1–7 above are what was Observed and stay
-standing; only the page's own choices are below. Items 5–7 are not built — the tabs and the
-three tables are their own slice, and the print view and the panels are another.
+standing autonomy grant and recorded on issue #97, and extended on 20 Aug 2026 on issue #101.
+The owner has not reviewed it: settled enough to build on, open enough to overturn. Items 1–7
+above are what was Observed and stay standing; only the page's own choices are below. Items 6–7
+are not built — the flights table and the pilot filter that narrows it are their own slice, and
+the print view and the panels are another.
 
 **The page and the data endpoint share one payload builder, in one transaction.** The page
 makes the same four scoped reads the endpoint makes, hands them to the same builder, and
@@ -101,6 +102,62 @@ means *nobody has anything pending*, and a mistyped range must not withdraw a wa
 `Administrácia` link and that whether it was role-gated was never tested, so there is no
 behaviour to reproduce — and the rebuild cannot resolve an acting session's membership role
 yet. The narrowest answer stands until the real matrix is recovered.
+
+**The two tabs are addressed `?tab=pilots|uas`, and the detail a row opens is `?detail={id}`.**
+Both names are the rebuild's: `contracts/routes.json` carries only the path, so there was nothing
+observed to reproduce, and a named tab value is the legible form of the workspace's indexed
+`?activeRelationManager={n}`. An absent `tab` is the pilots tab, the way an absent `period` is
+`this_month`; an unrecognised one reads as **absent** rather than falling back, because a link to
+a tab nobody built answering 200 is the reading that survives longest before anyone notices. That
+deliberately differs from an unrecognised `period`, which renders its error beside the selector: a
+period is a filter over content and a tab is the address of a section. One `detail` parameter
+serves both tabs, because the active tab already says which register it indexes — and it is not
+spelled `pilot_id` or `device_id`, which are the endpoint's **filter** vocabulary above and would
+narrow the payload instead of opening a row. A tab link carries `period`, `date_from` and
+`date_to` forward and drops `detail`; the period form carries the active `tab` as a hidden input.
+Without both, switching tabs silently resets the window a reader typed and resubmitting a period
+throws them back to the first tab.
+
+**A detail view is a server-rendered disclosure the URL names, and not a modal.** §Tables records
+the predecessor's `Detail pilota` and `Detail UAS` as modals — Observed, and that finding stands
+as it reads; the rebuild departs from it. An address is linkable, it survives the print view item
+3 puts beside the selector, it needs no client component, and it cannot disagree with the payload
+the page already holds. Neither detail issues a read: `trainings[]`, `filtered_flights[]`,
+`flights_by_device[]` and `maintenance_logs[]` are all already in that payload, and the page makes
+the same reads with a detail open as with none. The `{id}` is resolved against the rows in hand, so
+one naming none of them opens no detail — which makes the scoping structural rather than a
+discipline, because another operator's id was never in the payload to be found.
+
+**Both registers render the shared index table and declare no row action.** Visibility, search,
+sorting and pagination are behaviours [04-admin-resources.md](04-admin-resources.md) §"Shared table
+behaviour" already owns, and a component that takes rows and never queries is exactly what a
+payload-fed table needs. Neither declares an edit route: a detail is a disclosure rather than a
+route, and the row link on the identity column is what opens it. No column declares itself
+sortable — §Tables captured no sort marker on either table, and inventing one is a behaviour
+nobody observed.
+
+**Two of the labels are the rebuild's own, marked here so they do not come to read as Observed.**
+`Štatistiky pilotov` is Observed; the **UAS tab's own Slovak label was never captured** — §Tables
+records it as *UAS tab* and nothing more — so the rebuild names it `UAS`. Its column set is the
+rebuild's reading of *per-airframe totals and service state*, which is all §Tables records of that
+table. The five pilot headings are Observed and render in sentence case: the capture's all-caps is
+appearance, and the clean-room line takes the wording and not the styling, exactly as it takes the
+state and not the amber a status inside the warning window was drawn in.
+
+**The UAS table's service cell reads `service_warning` and never `service_due`.** Three states
+render as three: the gap names itself, a due service names itself, and one that is not due renders
+the blank marker under the affirmative-only rule. An airframe with no device type has no VLOS limit
+and no service interval, so `service_due: false` beside it is *not knowable* rather than an
+all-clear — the same shape `has_vlos_violation: false` is held to above. In `Detail UAS` the
+maintenance readings render as the technician stated them: the hours are text in either notation,
+and a null `total_flights` names the absence rather than printing `0`, which would be a reading
+nobody took.
+
+**Both tables sit inside the report body that the query error replaces.** The pilots table's two
+count columns are the period's own figures and the UAS table has none without a payload, so an
+unusable range renders the error here too rather than a register of zeroes stating that nothing
+was flown. The warnings block above them stays outside that body, for the reason the selector
+paragraph gives.
 
 **`/` still forwards to the admin panel**, not here. The report is a landing page worth
 having only once its tables exist; [09-roles-permissions.md](09-roles-permissions.md)
@@ -311,7 +368,8 @@ headline only where the pilot holds nothing that expires at all. The cost is del
 expired record the pilot has since renewed keeps the headline expired until it is removed.
 Taking the latest expiry instead would let a lapse hide behind a valid record, which is the
 gap-reading-as-a-pass this document rules out everywhere else. §Layout item 2's expiry-warning
-banner is the rendering of these statuses and has not been built.
+banner and the `ŠKOLENIE` column of §Tables' pilots register are the two renderings of these
+statuses, and neither recomputes one.
 
 **One period-filtered half and one all-time half, in the same row.** `filtered_flights[]` and
 `flights_by_device[]` are period-filtered and are grouped from the very rows `data.flights[]`
