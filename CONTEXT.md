@@ -220,6 +220,13 @@ predecessor system, which is the source of most of these terms, is in
   regulator-facing evidence pack.
 - **Period** — the report's time filter: this month, last month, or a custom range. It
   flows through to the printed output so the document matches the screen.
+- **Affirmative-only** — how a boolean state renders: the affirmative gets a word, everything
+  else gets the blank marker. A flag that is `not null default false`, or a judgement derived
+  from one, cannot tell a real *no* from one nobody recorded, so a negative in every row states
+  a fact it does not carry — and a gap that matters gets its own named wording rather than the
+  blank. Exceptions are argued one at a time — see
+  [docs/specs/05-organization-workspace.md](docs/specs/05-organization-workspace.md)
+  §"`Hlavná` renders the flag and never a negative".
 
 ---
 

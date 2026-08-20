@@ -179,12 +179,11 @@ its column set is the rebuild's reading of *per-airframe totals and service stat
 that entry records. The two VLOS labels the `STAV` cell renders are the rebuild's too — §Tables
 records the flag's existence and no wording for it — and so are the pilot filter's own three
 strings, which item 5 names without giving any. Nothing at all is recorded for the service block,
-and the maintenance history
-only as English field names, so both are labelled fresh — over the payload's own service keys and
-[03-data-model.md](03-data-model.md) §MaintenanceLog's columns, exactly as `maintenance_logs[]`'s
-member shape is. What a detail view is not the first to label it reuses from the register that
-already labels the same field, rather than minting a second string
-([04-admin-resources.md](04-admin-resources.md) §TrainingResource, §FlightResource,
+and the maintenance history only as English field names, so both are labelled fresh — over the
+payload's own service keys and [03-data-model.md](03-data-model.md) §MaintenanceLog's columns,
+exactly as `maintenance_logs[]`'s member shape is. What a detail view is not the first to label
+it reuses from the register that already labels the same field, rather than minting a second
+string ([04-admin-resources.md](04-admin-resources.md) §TrainingResource, §FlightResource,
 §DeviceTypeResource).
 
 **The UAS table's service cell reads `service_warning` and never `service_due`.** Three states
@@ -228,10 +227,9 @@ parity. The cell therefore reads `max_distance: 0` as **not judged**. A flight t
 flew zero metres names a gap it does not have, which is noise; the other direction is a gap
 reading as a pass, which is the error this document rules out everywhere.
 
-**`/` forwards here** — to the acting session's primary organisation report, resolved from the
-primary-contact flag on its membership ([03-data-model.md](03-data-model.md) §"Membership in the
-rebuild"). A session that is the primary contact of nothing keeps the interim destination, which
-[09-roles-permissions.md](09-roles-permissions.md) §"Sign-in and sign-out" owns.
+**`/` forwards here** — to the acting session's primary organisation report. Which organisation
+it resolves to, and where a session that is the primary contact of nothing lands instead, are
+decided in [09-roles-permissions.md](09-roles-permissions.md) §"Sign-in and sign-out".
 
 ## Data endpoint
 
