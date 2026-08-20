@@ -45,12 +45,11 @@ Top to bottom:
 ### The report page in the rebuild — decided
 
 A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
-standing autonomy grant and recorded on issue #97, and extended on 20 Aug 2026 on issue #101.
-The owner has not reviewed it: settled enough to build on, open enough to overturn. Items 1–7
-above are what was Observed and stay standing; only the page's own choices are below. Items 5–7
-are built only in part — the two tabs and their registers are here, while the pilot filter item 5
-also names and item 6's flights table are their own slice, and the print view and item 7's panels
-are another.
+standing autonomy grant and recorded on issue #97, and extended on 20 Aug 2026 on issues #101
+and #104. The owner has not reviewed it: settled enough to build on, open enough to overturn.
+Items 1–7 above are what was Observed and stay standing; only the page's own choices are below.
+Item 7 is not built at all and item 3's `Tlačiť PDF` is not either — the print view and the
+panels are their own slice.
 
 **The page and the data endpoint share one payload builder, in one transaction.** The page
 makes the same four scoped reads the endpoint makes, hands them to the same builder, and
@@ -98,6 +97,17 @@ body that error replaces: it takes no period, so it survives one — an absent b
 means *nobody has anything pending*, and a mistyped range must not withdraw a warning.
 `Tlačiť PDF`, which item 3 puts beside the selector, is the print slice's.
 
+**The pilot filter item 5 names is a field of that same form, and narrows the payload rather
+than the rendered rows.** `pilot_id` is already the endpoint's filter vocabulary above, so
+filtering by pilot changes `total_flights`, `total_flight_hours` and `active_pilots` with it —
+the shared index table's own in-memory filter panel would narrow the rows and leave the tiles
+above stating the unfiltered period. One submit is therefore one payload, and the two cannot
+disagree. Its options are the whole roster whatever the filter says and whether or not the range
+was usable, so a reader who mistyped one keeps the control that widens back out; an empty value
+is *all pilots*, which is the absent-and-empty-alike reading `pilot_id=` already has, and an id
+that names nobody on the roster selects a **disabled placeholder** — without it the control would
+read *all pilots* over a table narrowed to nothing.
+
 **The admin link is gated deny-by-default and superadmin-only.**
 [09-roles-permissions.md](09-roles-permissions.md) records that the predecessor rendered an
 `Administrácia` link and that whether it was role-gated was never tested, so there is no
@@ -129,13 +139,19 @@ the same reads with a detail open as with none. The `{id}` is resolved against t
 one naming none of them opens no detail — which makes the scoping structural rather than a
 discipline, because another operator's id was never in the payload to be found.
 
-**Both registers render the shared index table and declare no row action.** Visibility, search,
-sorting and pagination are behaviours [04-admin-resources.md](04-admin-resources.md) §"Shared table
-behaviour" already owns, and a component that takes rows and never queries is exactly what a
-payload-fed table needs. Neither declares an edit route: a detail is a disclosure rather than a
-route, and the row link on the identity column is what opens it. No column declares itself
-sortable — §Tables captured no sort marker on either table, and inventing one is a behaviour
-nobody observed.
+**All three registers render the shared index table and none declares a row action.**
+Visibility, search, sorting and pagination are behaviours
+[04-admin-resources.md](04-admin-resources.md) §"Shared table behaviour" already owns, and a
+component that takes rows and never queries is exactly what a payload-fed table needs. The two
+tabs' registers declare no edit route: a detail is a disclosure rather than a route, and the row
+link on the identity column is what opens it. The flights table declares no link at all — a
+flight has no detail view, and its `Priradiť` fallback is a write rather than a disclosure. No
+column declares itself sortable — §Tables captured no sort marker on any of the three, and
+inventing one is a behaviour nobody observed; the flights table renders in payload order, which
+is the read's own, and an ordering added later keys off `flight_date_sort` rather than
+re-deriving `flight_date`. The in-memory ceiling `src/lib/table/view.ts` records does not bind
+here: this table is period-filtered and its filter narrows the payload, so it is bounded by a
+month rather than by the flights register.
 
 **§Tables records Slovak for all three tables, and what this slice mints sits below them.**
 Marked here so neither half comes to read as the other's, because unmarked means Observed and a
@@ -144,17 +160,26 @@ capture re-minted as a rebuild decision is the same error as a promotion, taken 
 **Observed, and used as captured**: `Štatistiky pilotov`, the five pilot headings, `Detail
 pilota`, `Detail UAS`, `Platné`/`Platná`, `Pridať záznam údržby`, and the whole flights entry —
 `Lety za vybrané obdobie`, `STAV`, `DÁTUM`, `PILOT`, `UAS`, `ČAS LETU`, `MAX VÝŠKA (M)`,
-`VZDIALENOSŤ (M)` and the `Priradiť` fallback. Three of those land in this slice already:
-`Lety za vybrané obdobie`, `Stav` and `Dátum` label *Detail pilota*'s period flights, and the
-table they were captured from is R4c's, which inherits the same strings. Headings render in
-sentence case — the capture's all-caps is appearance, and the clean-room line takes the wording
-and not the styling, exactly as it takes the state and not the amber a status inside the warning
-window was drawn in.
+`VZDIALENOSŤ (M)` and the `Priradiť` fallback. Headings render in sentence case — the capture's
+all-caps is appearance, and the clean-room line takes the wording and not the styling, exactly as
+it takes the state and not the amber a status inside the warning window was drawn in. They are
+reused as captured and not "corrected" towards the admin panel's spelling of the same field:
+`Vzdialenosť (m)` keeps the capture's wording where §FlightResource says `Max. vzdialenosť (m)`,
+and `Max výška (m)` keeps its unabbreviated `Max` for the same reason.
+
+`Lety za vybrané obdobie` is keyed **twice**, and deliberately. It labels the flights table and
+it labels *Detail pilota*'s period flights, which are one pilot's flights against every flight —
+two headings that happen to coincide, and §"The status vocabularies are two, not one shared
+string" is the precedent for keeping them apart. `Stav` and `Dátum` come from this same capture
+and are one `report.column.*` family across both surfaces.
 
 **The rebuild's own, because §Tables records nothing to take.** The UAS tab's Slovak label was
 never captured — §Tables gives it as *UAS tab* and no more — so the rebuild names it `UAS`, and
 its column set is the rebuild's reading of *per-airframe totals and service state*, which is all
-that entry records. Nothing at all is recorded for the service block, and the maintenance history
+that entry records. The two VLOS labels the `STAV` cell renders are the rebuild's too — §Tables
+records the flag's existence and no wording for it — and so are the pilot filter's own three
+strings, which item 5 names without giving any. Nothing at all is recorded for the service block,
+and the maintenance history
 only as English field names, so both are labelled fresh — over the payload's own service keys and
 [03-data-model.md](03-data-model.md) §MaintenanceLog's columns, exactly as `maintenance_logs[]`'s
 member shape is. What a detail view is not the first to label it reuses from the register that
@@ -171,16 +196,42 @@ maintenance readings render as the technician stated them: the hours are text in
 and a null `total_flights` names the absence rather than printing `0`, which would be a reading
 nobody took.
 
-**Both tables sit inside the report body that the query error replaces.** The pilots table's two
-count columns are the period's own figures and the UAS table has none without a payload, so an
-unusable range renders the error here too rather than a register of zeroes stating that nothing
-was flown. The warnings block above them stays outside that body, for the reason the selector
-paragraph gives.
+**All three tables sit inside the report body that the query error replaces.** The pilots
+table's two count columns are the period's own figures, the UAS table has none without a payload
+and the flights table *is* the period, so an unusable range renders the error here too rather
+than a register of zeroes stating that nothing was flown. The warnings block above them stays
+outside that body, for the reason the selector paragraph gives; so does the period form, which
+is what a reader corrects the range with.
 
-**`/` still forwards to the admin panel**, not here. The report is a landing page worth
-having only once its tables exist; [09-roles-permissions.md](09-roles-permissions.md)
-§"Sign-in and sign-out" keeps recording the interim destination until the slice that builds
-them moves it.
+**In the flights table a failed parse and an unassigned flight are ordinary rows.** Nothing
+filters on `parsing_status`, `pilot_id` or `device_id`: a flight whose parse failed keeps its row
+with its status and its error, because dropping it loses the evidence that a flight happened, and
+an unassigned one renders the named absences `pilot_name` and `device_serial_number` already
+carry. §Tables records an inline `Priradiť` button on those two cells and the rebuild renders
+**none**: the write behind it is §"Assign pilot / aircraft to a flight", which is not served yet,
+and a button that does nothing tells a reader an action exists.
+
+**`STAV` is one cell carrying two axes, and the VLOS half answers three ways.** The parsing
+status with its error, and the VLOS answer, stay distinguishable rather than folded into one
+state — they are independent, and folding them loses one. The VLOS half is the consequence the
+endpoint section above wrote down in advance: `has_vlos_violation: true` names the violation, a
+limit present with the flight inside it renders **nothing** under the affirmative-only rule, and
+no limit at all — because the airframe has no device type, its type sets none, or the flight
+names no airframe — **names the gap**. The gap is read off `data.devices[].max_vlos_meters`,
+which is null in exactly those cases, resolved against the airframes the page already holds; a
+cell keyed off the boolean would print the same nothing for the gap and the pass.
+
+**One ceiling on that, stated rather than papered over.** The third false branch — no distance
+was recorded — is not distinguishable in the payload: `max_distance` serialises a null as `0` to
+hold parity, so a recorded zero and no reading at all are one figure, and a fourth key would fail
+parity. The cell therefore reads `max_distance: 0` as **not judged**. A flight that genuinely
+flew zero metres names a gap it does not have, which is noise; the other direction is a gap
+reading as a pass, which is the error this document rules out everywhere.
+
+**`/` forwards here** — to the acting session's primary organisation report, resolved from the
+primary-contact flag on its membership ([03-data-model.md](03-data-model.md) §"Membership in the
+rebuild"). A session that is the primary contact of nothing keeps the interim destination, which
+[09-roles-permissions.md](09-roles-permissions.md) §"Sign-in and sign-out" owns.
 
 ## Data endpoint
 
@@ -293,12 +344,15 @@ other. `active_pilots` counts distinct pilots with a flight in the period, so an
 flight contributes to none.
 
 **Nullable columns the oracle types as non-null.** `flight_hours`, `max_altitude` and
-`max_distance` serialise a null as `0` to hold parity — except that the VLOS judgement below
-reads the *column*, so a flight that recorded no distance is never mistaken for one that
-recorded zero. `parsing_errors` serialises a null as `""`, which is the one blank here that
-is honest: no error recorded is exactly what an empty message means. `parsing_status` does
-not, and gets a label naming the nothing-was-parsed case — a null status is the manual-entry
-case, and reporting a parsed state or a blank would state an outcome that never happened
+`max_distance` serialise a null as `0` to hold parity — except that `has_vlos_violation` is
+computed from the *column* rather than from the serialised figure, so **the boolean** never
+mistakes a flight that recorded no distance for one that recorded zero. A reader of the
+payload has no such column, which is the ceiling §"One ceiling on that" above states for the
+flights table's own distance cell. `parsing_errors` serialises a null as `""`, which is the
+one blank here that is honest: no error recorded is exactly what an empty message means.
+`parsing_status` does not, and gets a label naming the nothing-was-parsed case — a null
+status is the manual-entry case, and reporting a parsed state or a blank would state an
+outcome that never happened
 ([03-data-model.md](03-data-model.md) §"Flights in the rebuild").
 
 **So this null renders two ways, and the difference is recorded rather than left to a code

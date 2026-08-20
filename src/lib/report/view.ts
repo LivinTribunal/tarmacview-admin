@@ -1,14 +1,17 @@
-import { formatDate, t, type MessageKey } from '@/lib/i18n'
-import type { DeviceReportRow } from '@/lib/report/device-row'
+import { t, type MessageKey } from '@/lib/i18n'
 import type { ReportPayload } from '@/lib/report/payload'
 import type { PilotReportRow } from '@/lib/report/pilot-row'
 import { identifier } from '@/lib/routes/identifier'
-import { formatCell, type TableDeclaration, type TableRow } from '@/lib/table/view'
+import { formatCell } from '@/lib/table/view'
 
 // the operator report page's pure half - the split src/lib/table/view.ts and
 // src/lib/organizations/workspace.ts already set. no react and no drizzle here, so the one
 // claim this page exists to hold - that **no figure on the screen is recomputed** - is
 // assertable without a dom and without a container.
+//
+// the three registers' declarations and row mappers are in src/lib/report/fields.ts, where
+// every other resource files them. what stays here is the tiles, the warnings and the
+// resolvers that read the query string.
 //
 // everything below reads the payload R1 to R3 built and nothing else. a second derivation
 // of a number the payload already carries would drift from it, and the payload's is the one
@@ -155,12 +158,6 @@ export function tabHref(submitted: URLSearchParams, tab: ReportTab): string {
   return `?${carried}`
 }
 
-// the row link a table declares, as a path shape the chrome substitutes `{id}` into. built
-// off `tabHref` so a detail opens on the period the reader is already looking at, and
-// appended rather than set through `URLSearchParams`, which would percent-encode the braces.
-const detailPath = (submitted: URLSearchParams, tab: ReportTab): string =>
-  `${tabHref(submitted, tab)}&detail={id}`
-
 // which row a `?detail={id}` names, looked up **in the rows the page already holds**. an id
 // naming none of them opens no detail, which is what makes the scoping structural rather than
 // a discipline: another operator's id was never in the payload to be found.
@@ -173,105 +170,21 @@ export function detailRow<Row extends { id: number }>(
   return rows.find((row) => row.id === id) ?? null
 }
 
-// one cell out of the parts the payload already resolved, absences dropped rather than
-// printed. `formatDate` answers null for a null date, so a pilot holding nothing renders the
-// status alone - `Bez osvedčenia`, never `Bez osvedčenia` with a null beside it.
-const composed = (...parts: readonly (string | null)[]): string =>
-  parts.filter((part) => part !== null && part !== '').join(', ')
+// the option value the placeholder carries, for a `pilot_id` that names nobody on the roster.
+// the empty value is *all pilots* here rather than the nothing-selected state `selectedPeriod`
+// gives the period, so the two cannot share one - `resolveSelection` reads an absent filter and
+// an empty one alike, which is doc 06's own `pilot_id=&device_id=` wire shape.
+export const unknownPilot = 'unknown'
 
-// *Štatistiky pilotov*, the five columns doc 06 §Tables names in its order. the headings are
-// Observed slovak and are keyed here in sentence case: the capture's all-caps is appearance,
-// and the clean-room line takes the wording and not the styling.
+// which pilot the filter has selected, as the value the select opens on. an id that parses but
+// names nobody in the roster selects the disabled placeholder rather than falling back: without
+// it the control would read *all pilots* over a table the payload has narrowed to nothing.
 //
-// the two keys read the same word as `report.warning.*` one block up and stay their own,
-// which is the split `trainingStatus`/`certificateStatus` already records: a column heading
-// and a lapse's label are two sentences that happen to coincide in slovak today, and sharing
-// one would be right by accident.
-//
-// a declaration rather than a constant, because the row link has to carry the reader's
-// period - `personTable(mayManage)` is the same shape for a different reason. no `editPath`
-// and no `bulkActionKey`: `TableDeclaration`'s own comment says a resource whose row action
-// has no served route declares none rather than linking at a live 404, and a detail is a
-// disclosure rather than a route. no column declares `sortable` either - doc 06 captured no
-// sort marker on this table, and inventing one is a behaviour nobody observed.
-export function pilotReportTable(submitted: URLSearchParams): TableDeclaration {
-  return {
-    resource: 'report-pilots',
-    emptyKey: 'organization.workspace.pilots.empty',
-    columns: [
-      { key: 'pilot', labelKey: 'report.column.pilot', linkPath: detailPath(submitted, 'pilots') },
-      { key: 'flights_count', labelKey: 'report.column.flights' },
-      { key: 'total_hours', labelKey: 'report.column.totalTime' },
-      { key: 'training', labelKey: 'report.column.training' },
-      { key: 'certificate', labelKey: 'report.column.certificate' },
-    ],
-  }
-}
+// the roster is `data.pilots[]`, which is every pilot the organisation rosters whatever the
+// filter says, so a reader can always widen back out.
+export function pilotFilterValue(raw: string | null, pilots: readonly PilotReportRow[]): string {
+  if (raw === null || raw === '') return ''
 
-// flattens one payload row into the record the chrome renders. every figure is a key: the
-// count is `flights_count` and never `filtered_flights.length`, which agrees with it on every
-// real payload and is wrong for the reason this whole file exists.
-//
-// the two figures stay numbers rather than strings, so the decimal comma comes off
-// `formatCell` in the one place the chrome already applies it.
-export function pilotReportTableRow(pilot: PilotReportRow): TableRow {
-  return {
-    id: pilot.id,
-    pilot: composed(pilot.name, pilot.email),
-    flights_count: pilot.flights_count,
-    total_hours: pilot.total_hours,
-
-    // the payload's already-resolved status, never a second derivation of it, and the expiry
-    // beside it only where one was stated. a pilot holding nothing renders `Bez školenia` /
-    // `Bez osvedčenia` alone, which keeps the gap, the never-expires fact and the
-    // valid-with-a-date three answers rather than two.
-    training: composed(pilot.training_status, formatDate(pilot.training_date), pilot.training_name),
-    certificate: composed(
-      pilot.licence_status,
-      formatDate(pilot.licence_date),
-      pilot.licence_types.join(', '),
-    ),
-  }
-}
-
-// the UAS tab. doc 06 §Tables names its content - *per-airframe totals and service state* -
-// and no column list was captured, so the five below are the rebuild's reading of that
-// sentence: the airframe's identity, the period's two totals, and the one cell that answers
-// the service question.
-export function airframeReportTable(submitted: URLSearchParams): TableDeclaration {
-  return {
-    resource: 'report-uas',
-    emptyKey: 'device.index.empty',
-    columns: [
-      {
-        key: 'serial_number',
-        labelKey: 'device.column.serial_number',
-        linkPath: detailPath(submitted, 'uas'),
-      },
-      { key: 'model', labelKey: 'device.column.model' },
-      { key: 'total_flights', labelKey: 'report.column.flights' },
-      { key: 'total_flight_hours', labelKey: 'report.column.totalTime' },
-      { key: 'service', labelKey: 'report.column.service' },
-    ],
-  }
-}
-
-// the service cell reads `service_warning` and never `service_due`. that one key already
-// resolves three states where the boolean resolves two: the gap names itself, a due service
-// names itself, and a service that is not due is null - which the chrome renders as the blank
-// marker, per the affirmative-only rule, rather than as a tick.
-//
-// an airframe with no device type has no VLOS limit and no service interval, so it can never
-// register a violation or a service warning. `service_due: false` beside it is *not knowable*
-// and not an all-clear, and a cell keyed off the boolean would print the same nothing for
-// both.
-export function airframeReportTableRow(airframe: DeviceReportRow): TableRow {
-  return {
-    id: airframe.id,
-    serial_number: airframe.serial_number,
-    model: airframe.model,
-    total_flights: airframe.total_flights,
-    total_flight_hours: airframe.total_flight_hours,
-    service: airframe.service_warning,
-  }
+  const id = identifier(raw)
+  return id !== null && pilots.some((pilot) => pilot.id === id) ? String(id) : unknownPilot
 }

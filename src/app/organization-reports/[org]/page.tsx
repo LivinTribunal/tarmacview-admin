@@ -7,6 +7,14 @@ import { db } from '@/lib/db/client'
 import { formatDate, t } from '@/lib/i18n'
 import type { DeviceReportRow } from '@/lib/report/device-row'
 import {
+  airframeReportTable,
+  airframeReportTableRow,
+  flightReportTable,
+  flightReportTableRow,
+  pilotReportTable,
+  pilotReportTableRow,
+} from '@/lib/report/fields'
+import {
   pilotReportRows,
   reportPayload,
   resolveSelection,
@@ -15,19 +23,17 @@ import {
 import { expiryWindow, type PilotReportRow } from '@/lib/report/pilot-row'
 import {
   activeTab,
-  airframeReportTable,
-  airframeReportTableRow,
   detailRow,
   expiryWarnings,
   figure,
   periodOptions,
-  pilotReportTable,
-  pilotReportTableRow,
+  pilotFilterValue,
   reportTabs,
   reportTiles,
   selectedPeriod,
   tabHref,
   tabLabels,
+  unknownPilot,
   type ReportTab,
 } from '@/lib/report/view'
 import { identifier } from '@/lib/routes/identifier'
@@ -38,9 +44,8 @@ import { listOrganizationPilots } from '@/lib/tenant/scoped-people'
 import { listOrganizationTrainings } from '@/lib/tenant/scoped-trainings'
 import { withTenant } from '@/lib/tenant/tenant-context'
 
-// the operator report - docs/specs/06-org-report.md §Layout items 1 to 5, the screen doc 06
-// calls the product's real face. the flights table and the pilot filter are R4c's and the
-// print view and the panels are R6's.
+// the operator report - docs/specs/06-org-report.md §Layout items 1 to 6, the screen doc 06
+// calls the product's real face. the print view and item 7's panels are R6's.
 //
 // it reads the very payload the data endpoint beside it serves, through the same builder in
 // one `withTenant` transaction, and derives nothing of its own: every number here is already
@@ -493,6 +498,32 @@ export default async function OrganizationReportPage({
           defaultValue={submitted.get('date_to') ?? ''}
         />
 
+        {/* doc 06 §Layout item 5's pilot filter, inside this form rather than in the index
+            table's own filter panel. that panel filters the rendered rows in memory and would
+            leave `Počet letov` and `Aktívni piloti` above stating the unfiltered period, while
+            `resolveSelection` narrows the payload - so one submit is one payload and the tiles
+            cannot disagree with the table.
+
+            the roster is every pilot the organisation has, whatever the filter says and
+            whether or not the range was usable, so a reader who mistyped one keeps the control
+            that widens back out. */}
+        <label htmlFor="report-pilot">{t('report.filter.pilot')}</label>
+        <select id="report-pilot" name="pilot_id" defaultValue={pilotFilterValue(submitted.get('pilot_id'), pilots)}>
+          <option value="">{t('report.filter.pilot.all')}</option>
+
+          {/* an id that parses but names nobody on the roster selects this, the answer
+              `report.period.none` gives an unrecognised period. without it the control would
+              read *all pilots* over a table the payload has narrowed to nothing. */}
+          <option value={unknownPilot} disabled>
+            {t('report.filter.pilot.unknown')}
+          </option>
+          {pilots.map((pilot) => (
+            <option key={pilot.id} value={pilot.id}>
+              {pilot.name}
+            </option>
+          ))}
+        </select>
+
         {/* the tab the reader is on, carried across a period submit. without it, resubmitting
             a period throws them back to the first tab; the open detail is not carried, because
             a form submits its own fields and a new window is a new question. */}
@@ -523,6 +554,22 @@ export default async function OrganizationReportPage({
           </section>
 
           <ReportTabs data={data} active={active} submitted={submitted} />
+
+          {/* doc 06 §Layout item 6, under the tabs and inside the body the query error
+              replaces. every row of `data.flights[]` renders: nothing filters on
+              `parsing_status`, `pilot_id` or `device_id`, because a failed parse is still a
+              record and an unassigned flight is still a flight.
+
+              the airframes are handed over so the `STAV` cell can tell an airframe with no
+              VLOS limit from one the flight stayed inside - resolved against the rows already
+              in hand, never by a second read. */}
+          <section>
+            <h2>{t('report.flights.title')}</h2>
+            <IndexTable
+              declaration={flightReportTable}
+              rows={data.flights.map((flight) => flightReportTableRow(flight, data.devices))}
+            />
+          </section>
         </>
       )}
     </main>

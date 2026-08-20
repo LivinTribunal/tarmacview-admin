@@ -70,7 +70,8 @@ predecessor system, which is the source of most of these terms, is in
   from the system role. In the rebuild it is a first-class table and the thing tenant
   scoping keys off, never a column on the person — including the reach one person has over
   another, since a member reads the people they **share an organisation** with and nobody
-  else; see `docs/specs/03-data-model.md`.
+  else, and including a person's **primary organisation**, the one `/` lands on, which
+  derives from the primary-contact flag; see `docs/specs/03-data-model.md`.
 - **Organisation role** — the post held in one organisation, one per membership:
   `accountable_manager`, `operations`, `pilot`, `viewer`.
 - **Job title (`position`)** — free text naming the job a person holds within an

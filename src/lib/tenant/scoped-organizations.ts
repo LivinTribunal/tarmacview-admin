@@ -1,4 +1,4 @@
-import { asc, eq, getTableColumns, sql } from 'drizzle-orm'
+import { and, asc, eq, getTableColumns, sql } from 'drizzle-orm'
 import { device, membership, organization, type Organization } from '@/lib/db/schema'
 import type { TenantSession, TenantTransaction } from '@/lib/tenant/tenant-context'
 
@@ -43,6 +43,33 @@ export function listOrganizations(
     .leftJoin(membership, eq(membership.organizationId, organization.id))
     .groupBy(organization.id)
     .orderBy(asc(organization.id))
+}
+
+// the acting session's primary organisation, which is what `/` lands on -
+// docs/specs/03-data-model.md §"Membership in the rebuild" decides that it derives from the
+// primary-contact flag on a membership and never from a column on the person.
+//
+// the `person_id` filter is **load-bearing and not a selection**, unlike every other
+// organisation filter in this directory. `membership_tenant_isolation` admits every
+// attachment to an organisation the acting person belongs to and a superadmin's context
+// admits the deployment's, so dropping it would land a co-member - or a superadmin - on
+// somebody else's report with every gate green.
+//
+// several primary-contact rows resolve by lowest organisation id, so the destination is the
+// same on every visit. none is null and not an error: a superadmin belonging to no
+// organisation is the ordinary case, and the caller keeps the interim destination.
+export async function findPrimaryOrganization(
+  tx: TenantTransaction,
+  session: TenantSession,
+): Promise<number | null> {
+  const [row] = await tx
+    .select({ organizationId: membership.organizationId })
+    .from(membership)
+    .where(and(eq(membership.personId, session.personId), eq(membership.isPrimaryContact, true)))
+    .orderBy(asc(membership.organizationId))
+    .limit(1)
+
+  return row?.organizationId ?? null
 }
 
 // a cross-tenant id yields no rows, so the caller renders not-found. refusing would
