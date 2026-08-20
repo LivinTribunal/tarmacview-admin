@@ -1,20 +1,24 @@
 import { describe, expect, it } from 'vitest'
 import { t } from '@/lib/i18n'
 import type { DeviceReportRow } from '@/lib/report/device-row'
+import {
+  airframeReportTable,
+  airframeReportTableRow,
+  pilotReportTable,
+  pilotReportTableRow,
+} from '@/lib/report/fields'
 import { resolveSelection, type ReportPayload } from '@/lib/report/payload'
 import type { PilotReportRow } from '@/lib/report/pilot-row'
 import {
   activeTab,
-  airframeReportTable,
-  airframeReportTableRow,
   detailRow,
   expiryWarnings,
   periodOptions,
-  pilotReportTable,
-  pilotReportTableRow,
+  pilotFilterValue,
   reportTiles,
   selectedPeriod,
   tabHref,
+  unknownPilot,
 } from '@/lib/report/view'
 import { formatCell } from '@/lib/table/view'
 
@@ -225,6 +229,32 @@ describe('the period selector and the resolver name the same three periods', () 
       expect(selectedPeriod(raw), raw).toBeNull()
       expect(resolveSelection(new URLSearchParams(`period=${raw}`), asOf), raw).toBeNull()
     }
+  })
+})
+
+describe('the pilot filter opens on what the query string asked for', () => {
+  const roster = [pilot(1, 'Placeholder First Pilot'), pilot(2, 'Placeholder Second Pilot')]
+
+  it('reads an absent filter and an empty one alike, which is all pilots', () => {
+    // the wire shape doc 06 records - the report submits `pilot_id=` with nothing in it - and
+    // what `resolveSelection` already parses, so the control and the parser agree on it
+    expect(pilotFilterValue(null, roster)).toBe('')
+    expect(pilotFilterValue('', roster)).toBe('')
+  })
+
+  it('opens on the pilot the reader picked, or a resubmit would silently widen the table', () => {
+    expect(pilotFilterValue('2', roster)).toBe('2')
+  })
+
+  it('selects the placeholder for an id that names nobody on the roster', () => {
+    // another operator's pilot id is the case that matters: the payload narrows to nothing and
+    // the control must not read *all pilots* over an empty table. an unparseable id lands the
+    // same way, beside the query error `resolveSelection` answers it with.
+    expect(pilotFilterValue('999999', roster)).toBe(unknownPilot)
+    expect(pilotFilterValue('not-an-id', roster)).toBe(unknownPilot)
+
+    // and the placeholder is not the all-pilots value, which is the whole point of it
+    expect(unknownPilot).not.toBe('')
   })
 })
 

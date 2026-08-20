@@ -9,6 +9,10 @@ import { defaultLocale, type MessageKey } from '@/lib/i18n'
 // register. it does not survive a resource large enough to matter, and `flights` is the
 // one that gets there first. server-side pagination is its own issue rather than
 // something pre-built for twelve registers that do not need it.
+//
+// the operator report's own flights table is not that caller: it is period-filtered and its
+// pilot filter narrows the payload rather than the rendered rows, so it is bounded by a month
+// rather than by the register.
 
 export type CellValue = string | number | null
 

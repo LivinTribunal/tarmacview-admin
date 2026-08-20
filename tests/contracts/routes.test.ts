@@ -2,15 +2,10 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { NextRequest } from 'next/server'
-import { describe, expect, it, vi } from 'vitest'
-import RootPage from '@/app/page'
+import { describe, expect, it } from 'vitest'
 import { safeNext } from '@/lib/auth/next-path'
+import { landingPath } from '@/lib/routes/landing'
 import { middleware, requiresSession } from '@/middleware'
-
-// the real redirect() throws to unwind the render, so the root page's target is only
-// readable with it captured. nothing else in this file navigates.
-const { redirect } = vi.hoisted(() => ({ redirect: vi.fn() }))
-vi.mock('next/navigation', () => ({ redirect }))
 
 // what this suite can and cannot claim is recorded once, in
 // docs/rebuild/00-operating-model.md §5 "Route contract". In short: the capture was
@@ -161,9 +156,23 @@ describe('the sign-in round trip, a decision recorded in docs/specs/09-roles-per
     expect(served).toContain(safeNext('//evil.example'))
   })
 
-  it('forwards the root to a path the app router serves', () => {
-    redirect.mockClear()
-    RootPage()
-    expect(served).toContain(redirect.mock.calls[0]?.[0])
-  })
+  // the root's own destination, over the pure branch rather than the page: src/app/page.tsx
+  // now reads a membership to resolve the primary organisation, and this suite has no
+  // database to read one with. both branches are asserted here and the read behind them is
+  // tests/tenancy/root-redirect.test.ts's.
+  //
+  // an organisation id becomes the oracle's `{org}` shape, the inverse of `sampleId` above,
+  // so the destination is checked against a path the app router serves rather than against
+  // one operator's id.
+  const shape = (path: string) => path.replace(/\/\d+$/, '/{org}')
+
+  it.each([landingPath(1), landingPath(null)])(
+    'forwards the root to %s, which the app router serves',
+    (destination) => {
+      expect(served).toContain(shape(destination))
+
+      // and never back to `/`, which would be a redirect loop
+      expect(destination).not.toBe('/')
+    },
+  )
 })

@@ -192,12 +192,17 @@ failure behaviour, no post-sign-in redirect. Everything below except the path is
   backslash or carrying a control character falls back to `/`. An unvalidated one is an
   open redirect, which is how this feature usually goes wrong.
 - **`/` redirects and renders nothing**, which is the shape doc 02 §Other observes on the
-  predecessor. Where it lands is decided, and temporarily: the predecessor sends people to
-  their organisation report, the rebuild has none yet, so the interim destination is
-  `/admin/device-types` — the only register that exists. That is a placeholder, not a claim
-  about where anyone should land; the device-type catalogue is deployment-wide (doc 03
-  §DeviceType), so it is no organisation role's natural home. Recorded on issue #35, and
-  retargeted by step 5 of `docs/rebuild/00-operating-model.md` §6.
+  predecessor. It lands on the acting session's **primary organisation report**, the
+  destination the predecessor also sent people to. Which organisation that is derives from the
+  primary-contact flag on the session's own membership and never from a column on the person —
+  doc 03 §"Membership in the rebuild" decides that, and the person filter on the read is the
+  security half of it: the policies admit every attachment to an organisation the acting person
+  belongs to, and a superadmin's context admits the deployment's, so a read without it would
+  land somebody on another operator's report. A session that is the primary contact of nothing
+  keeps `/admin/device-types`, which is the ordinary case for a superadmin belonging to no
+  organisation rather than an error; the device-type catalogue is deployment-wide (doc 03
+  §DeviceType) and readable to every session, so the fallback is not a wall. Recorded on issues
+  #35 and #104.
 - **Every failure is one outcome.** A wrong password, an e-mail belonging to nobody and an
   account carrying no password are indistinguishable in the response, its wording and its
   timing. This is a security property rather than a preference: `person.email` is nullable

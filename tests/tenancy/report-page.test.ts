@@ -443,6 +443,96 @@ describe('the UAS table, where a gap must never read as a pass', () => {
   })
 })
 
+describe('the flights table, where every row of the period lists whatever state it is in', () => {
+  it('keeps a failed parse and an unassigned flight, and offers no action for either', async () => {
+    // august carries both: one flight nobody was assigned to and one whose parse failed.
+    // dropping either loses the evidence that a flight happened, and `Priradiť`'s write is
+    // not served - a button that does nothing tells a reader an action exists.
+    const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha)
+
+    expect(markup).toContain(t('report.flights.title'))
+    expect(markup).toContain(t('report.flight.pilot.unassigned'))
+    expect(markup).toContain(t('report.flight.device.unassigned'))
+    expect(markup).toContain(t('flight.parsingStatus.failed'))
+    expect(markup).toContain('Placeholder parse failure.')
+    expect(markup).not.toContain('Priradiť')
+  })
+
+  it('renders the payload date and figures, in the formats this application prints', async () => {
+    // july's flight: `flight_date_display` for the date and the decimal comma off the chrome
+    // for the two measurements that carry a fraction
+    const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, {
+      period: 'last_month',
+    })
+
+    expect(markup).toContain('14.07.2026')
+    expect(markup).toContain('420,25')
+    expect(markup).toContain('95,5')
+  })
+
+  it('tells a flight that could not be judged from one that passed', async () => {
+    // alpha's flights name an airframe with no device type, or no airframe at all, so neither
+    // has a VLOS limit to be judged against and both name the gap. bravo's flight names a
+    // typed airframe and stayed inside its limit, so it says nothing - which is the pass.
+    // a cell keyed off `has_vlos_violation` prints the same nothing for all three.
+    const alpha = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha)
+    expect(alpha).toContain(t('report.flight.vlos.notJudged'))
+
+    const bravo = await open(memberOf(ids.people.bravoManager), ids.organizations.bravo)
+    expect(bravo).toContain('SN-BRAVO-0001')
+    expect(bravo).not.toContain(t('report.flight.vlos.notJudged'))
+    expect(bravo).not.toContain(t('report.flight.vlos.violation'))
+  })
+})
+
+describe('the pilot filter narrows the payload, so the table and the tiles cannot disagree', () => {
+  it('narrows both through the query string', async () => {
+    // july's one flown-and-assigned flight belongs to the first pilot. filtering to the second
+    // empties the table **and** the tiles above it - an in-memory filter over the rendered rows
+    // would leave `Počet letov` stating the whole period.
+    const flown = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, {
+      period: 'last_month',
+      pilot_id: String(ids.people.alphaPilot),
+    })
+
+    expect(flown).toContain('14.07.2026')
+    expect(flown).toContain('1,42')
+
+    const none = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, {
+      period: 'last_month',
+      pilot_id: String(ids.people.alphaSecondPilot),
+    })
+
+    expect(none).toContain(t('flight.index.empty'))
+    expect(none).not.toContain('14.07.2026')
+
+    // the tiles agree with the empty table rather than restating the unfiltered period
+    expect(none).not.toContain('1,42')
+  })
+
+  it('offers the whole roster whatever the filter says, and opens on the pilot chosen', async () => {
+    const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, {
+      period: 'last_month',
+      pilot_id: String(ids.people.alphaPilot),
+    })
+
+    // both rostered pilots stay selectable, or a reader could never widen back out
+    expect(markup).toContain(t('report.filter.pilot.all'))
+    expect(markup).toContain('Alpha Second Pilot')
+    expect(markup).toContain(`value="${ids.people.alphaPilot}" selected`)
+  })
+
+  it('leaves an organisation the session holds no membership of absent under a filter', async () => {
+    // the filter is not a way around the boundary: the answer is the one the unfiltered page
+    // already gives
+    await expect(
+      open(memberOf(ids.people.alphaManager), ids.organizations.bravo, {
+        pilot_id: String(ids.people.bravoPilot),
+      }),
+    ).rejects.toThrow(NOT_FOUND)
+  })
+})
+
 describe('the detail each row opens, which is a disclosure the url names', () => {
   it('opens a pilot with the three nested arrays the payload already carries', async () => {
     const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha, {
