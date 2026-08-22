@@ -7,8 +7,8 @@ import { serveStoredFile } from '@/lib/routes/stored-file'
 // counts handlers carrying guards and not paths.
 //
 // the `{org}` segment is the report's address and is not read here. what decides which rows
-// this path can reach is `document_tenant_isolation`, and doc 06 §"Documents panel" records
-// that as a stated cost: a selection on the path's organisation and bucket would answer the
-// cross-tenant case on its own, and the isolation assertion would then pass with the policy
-// dropped.
+// this path can reach is `document_tenant_isolation`, and doc 06 §"The documents panel in the
+// rebuild" records that as a stated cost: a selection on the path's organisation and bucket
+// would answer the cross-tenant case on its own, and the isolation assertion would then pass
+// with the policy dropped.
 export const GET = serveStoredFile(readDocumentFile)

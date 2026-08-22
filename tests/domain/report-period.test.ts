@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { resolveSelection } from '@/lib/report/payload'
 
-// the report's filter state - doc 06 §"Data endpoint". a null answer is the JSON error the
-// rebuild returns where the predecessor served an HTML error page, so the cases that must
-// produce one are named individually.
+// the report's filter state - doc 06 §"Data endpoint" and §"The data endpoint in the
+// rebuild". the query string is the capture's; a null answer is the JSON error the rebuild
+// returns where the predecessor served an HTML error page, so the cases that must produce
+// one are named individually.
 
 const asOf = new Date('2026-08-15T12:00:00Z')
 const resolve = (query: string) => resolveSelection(new URLSearchParams(query), asOf)

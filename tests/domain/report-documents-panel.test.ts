@@ -4,9 +4,10 @@ import { documentGroups, type DocumentGroup } from '@/lib/report/view'
 import type { DocumentEntry } from '@/lib/tenant/scoped-documents'
 import type { IncidentEntry } from '@/lib/tenant/scoped-incidents'
 
-// the documents panel's pure half - docs/specs/06-org-report.md §"Documents panel". four
-// counted groups over rows the page has already read, so what the builder decides is the
-// group set, the counts and where each entry links - all assertable without a dom.
+// the documents panel's pure half - docs/specs/06-org-report.md §"The documents panel in the
+// rebuild". four counted groups over rows the page has already read, so what the builder
+// decides is the group set, the counts and where each entry links - all assertable without
+// a dom.
 //
 // what it deliberately does not decide is which rows are readable. that is
 // `document_tenant_isolation` and `incident_tenant_isolation`, asserted over a real database

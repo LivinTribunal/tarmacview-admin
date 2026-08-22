@@ -620,8 +620,8 @@ describe('the documents panel, the read side of the workspace registers', () => 
   it('counts each of the four groups off the operator own buckets', async () => {
     // alpha holds one operations document, one form, two permits and three occurrence
     // reports. `(2)` on permits is what fails if anything filters on `is_public`, since only
-    // one of the two is ticked - and doc 06 §"Documents panel" decides that flag reads
-    // nothing here.
+    // one of the two is ticked - and doc 06 §"The documents panel in the rebuild" decides
+    // that flag reads nothing here.
     const markup = await open(memberOf(ids.people.alphaManager), ids.organizations.alpha)
 
     expect(markup).toContain(t('report.documents.title'))
