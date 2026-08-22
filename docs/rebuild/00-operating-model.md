@@ -245,3 +245,19 @@ Carried from `CLAUDE.md` because these are the ones an autonomous loop erodes fi
   disclaim closing its parent issue is what closed that issue on merge, and the work had to
   be reopened. Write `refs #N` for a partial slice, and put the scoping reasoning in a form
   no parser can misread.
+- **Never point with a direction word.** `above`, `below`, `earlier` — a `§` reference already
+  names its target, and the direction is a second pointer that no gate resolves and that rots on
+  its own, because the text moves and the word does not. #98 wrote *"is held to above"* where the
+  referent is the lead-in ~290 lines **below** it; #102 copied the sentence and the error with it,
+  and a gardening pass removed it three PRs later. The `§` resolved perfectly throughout — it is
+  the English that was wrong, which is why no check will ever catch this one. Twenty sites still
+  pair a `§` with a direction word and every one of them is currently right; that is the hazard,
+  not the reassurance.
+- **When a document carries both `§X` and `§"X in the rebuild"`, cite the decided one in full.**
+  The bare form resolves — to the Observed capture of the predecessor instead of the decision the
+  rebuild took, which is the same error as promoting an Inferred claim, run backwards. #108 cited
+  `§"Documents panel"` in roughly ten places where the decided section is
+  `§"The documents panel in the rebuild"`.
+  `check-conventions.sh` warns on this as of #113 and cannot fail on it, because some
+  sites genuinely do mean the capture; the thirteen still open are #112, and each needs a read
+  rather than a replace.
