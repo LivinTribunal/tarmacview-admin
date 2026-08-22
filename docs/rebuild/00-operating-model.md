@@ -189,7 +189,7 @@ nothing before it. So:
    Three things landed ahead of the code: the `docs/specs/01-tech-stack.md` rewrite from a
    fingerprint of the predecessor into a decision about the rebuild, the reconciliation of
    the documents that decision and the two closed gaps made stale, and the oracle ceilings
-   in §5 above.
+   in §5.
    The slice itself is split in two, because the second half is tier 3 and the first is not:
 
    - **2a — the shell.** `package.json`, `tsconfig.json`, the Vitest config, the
@@ -247,17 +247,16 @@ Carried from `CLAUDE.md` because these are the ones an autonomous loop erodes fi
   no parser can misread.
 - **Never point with a direction word.** `above`, `below`, `earlier` — a `§` reference already
   names its target, and the direction is a second pointer that no gate resolves and that rots on
-  its own, because the text moves and the word does not. #98 wrote *"is held to above"* where the
-  referent is the lead-in ~290 lines **below** it; #102 copied the sentence and the error with it,
-  and a gardening pass removed it three PRs later. The `§` resolved perfectly throughout — it is
-  the English that was wrong, which is why no check will ever catch this one. Twenty sites still
-  pair a `§` with a direction word and every one of them is currently right; that is the hazard,
-  not the reassurance.
+  its own, because the text moves and the word does not. #98 wrote *"is held to above"* when the
+  referent was already 159 lines **below** it; #102 copied the sentence and the error with it,
+  the gap grew to 287 lines by #105, and the gardening pass in #106 removed it. The `§` resolved
+  perfectly throughout — it is the English that was wrong, which is why no check will ever catch
+  this one. Twenty sites still pair a `§` with a direction word and every one of them is
+  currently right; that is the hazard, not the reassurance.
 - **When a document carries both `§X` and `§"X in the rebuild"`, cite the decided one in full.**
-  The bare form resolves — to the Observed capture of the predecessor instead of the decision the
-  rebuild took, which is the same error as promoting an Inferred claim, run backwards. #108 cited
-  `§"Documents panel"` in roughly ten places where the decided section is
-  `§"The documents panel in the rebuild"`.
-  `check-conventions.sh` warns on this as of #113 and cannot fail on it, because some
-  sites genuinely do mean the capture; the thirteen still open are #112, and each needs a read
-  rather than a replace.
+  The bare form resolves — to the Observed capture of the predecessor instead of the decision
+  the rebuild took, which is the same error as promoting an Inferred claim, run backwards. #108
+  cited `§"Documents panel"` in roughly ten places where the decided section is
+  `§"The documents panel in the rebuild"`. `check-conventions.sh` warns on this as of #113 and
+  cannot fail on it, because some sites genuinely do mean the capture; the thirteen still open
+  are #112, and each needs a read rather than a replace.
