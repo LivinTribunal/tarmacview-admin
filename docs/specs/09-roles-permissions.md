@@ -241,8 +241,9 @@ membership row in a shared order, so element *n* of each describes the same atta
 useful fact beside an operator's name is the post they hold there. Axis A carries no column in
 doc 04 §UserResource and none in the register's code.
 
-**The plural counts memberships, not roles per membership.** `membership_person_organization_key`
-gives a person at most one role per organisation, which is also why
+**The plural counts memberships, not roles per membership.**
+`membership_person_organization_key` gives a person at most one role per organisation, which
+is also why
 [05-organization-workspace.md](05-organization-workspace.md) §0 reads `Rola` singular against
 doc 04's `Roly` plural.
 
