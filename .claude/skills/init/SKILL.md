@@ -131,7 +131,7 @@ unrelated PR. Sections in order:
 5. **Spec claims stay marked** (`:165-177`) — warns on any file under `docs/specs/**`
    (except `00-index.md` and `10-glossary-sk-en.md`) carrying no
    `Observed` / `Inferred` / `Observable` / `Verified` marker.
-6. **§ section references resolve** (`:179-347`) — the `§` half of item 3. Fails when a `§`
+6. **§ section references resolve** (`:179-336`) — the `§` half of item 3. Fails when a `§`
    reference names no heading and no bold lead-in in the document it points at: the file
    named immediately before the `§`, or the host file if none is. Warns when it resolves to
    an Observed capture whose document also carries the decided `… in the rebuild`
