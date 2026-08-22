@@ -46,7 +46,7 @@ deliberately against the recommendation this document used to carry.
 | Auth | **Better Auth** — admin-provisioned accounts, admin-initiated reset, no public signup |
 | Hosting | **AWS**, app and database on one small instance, direct connections |
 | Test runner | **Vitest** |
-| Test database | **Testcontainers** — a real Postgres per run |
+| Test database | **Testcontainers** — a real Postgres per test file |
 
 Row-level security was chosen because `CLAUDE.md` calls tenant scoping a security property
 enforced globally rather than per-controller. RLS is the only option on the table where
