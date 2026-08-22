@@ -27,7 +27,6 @@ export default async function MapIndexPage() {
   return (
     <main>
       <h1>{t('map.index.title')}</h1>
-      {mayManage && <a href="/admin/maps/create">{t('map.index.create')}</a>}
       <IndexTable declaration={mapTable(mayManage)} rows={entries.map(mapTableRow)} />
     </main>
   )

@@ -210,6 +210,21 @@ describe('the register beyond the rows', () => {
     expect(markup).toContain(t('table.actions'))
     expect(markup).toContain(t('table.action.edit'))
   })
+
+  // the header action moved into the shared chrome, so the gate is asserted on the markup
+  // rather than on the declaration: a declaration-level assertion passes just as well if
+  // the chrome renders the link unconditionally, which is the failure this move risks.
+  it('offers a member no `Vytvoriť`, because the database would refuse the insert', async () => {
+    const markup = await renderRegister(alphaSession())
+    expect(markup).not.toContain('/admin/users/create')
+    expect(markup).not.toContain(t('table.action.create'))
+  })
+
+  it('offers a superadmin one, so the absence above is the gate and not the chrome', async () => {
+    const markup = await renderRegister(superadminSession())
+    expect(markup).toContain('/admin/users/create')
+    expect(markup).toContain(t('table.action.create'))
+  })
 })
 
 // the write authority this slice deliberately does not move - docs/specs/03-data-model.md

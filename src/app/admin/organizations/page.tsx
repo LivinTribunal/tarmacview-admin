@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { IndexTable } from '@/components/index-table'
+import { mayManageOrganizations } from '@/lib/auth/capabilities'
 import { actingSession } from '@/lib/auth/session'
 import { db } from '@/lib/db/client'
 import { t } from '@/lib/i18n'
@@ -11,6 +12,9 @@ import { withTenant } from '@/lib/tenant/tenant-context'
 // filter of its own - src/lib/tenant/scoped-organizations.ts. it is handed the session as
 // well as the transaction, which the two sibling registers do not need: only this one has
 // a column whose meaning depends on who is asking.
+//
+// the create chrome is gated on what the database will admit; the workspace link beside it
+// is not, and src/lib/organizations/fields.ts holds why the two differ.
 export default async function OrganizationIndexPage() {
   const session = await actingSession()
 
@@ -18,12 +22,16 @@ export default async function OrganizationIndexPage() {
   // an anonymous visitor as far as this page is concerned.
   if (!session) redirect('/login')
 
+  const mayManage = mayManageOrganizations(session.systemRole)
   const entries = await withTenant(db, session, (tx) => listOrganizations(tx, session))
 
   return (
     <main>
       <h1>{t('organization.index.title')}</h1>
-      <IndexTable declaration={organizationTable} rows={entries.map(organizationTableRow)} />
+      <IndexTable
+        declaration={organizationTable(mayManage)}
+        rows={entries.map(organizationTableRow)}
+      />
     </main>
   )
 }

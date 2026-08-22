@@ -65,12 +65,15 @@ export const deviceTypeFormFields: readonly FormField[] = [
 //
 // `Upraviť` is offered only to a session that could complete it, which is why this is a
 // function - the shape the people and maps registers use, and mayManageDeviceTypes in
-// src/lib/auth/capabilities.ts holds why.
+// src/lib/auth/capabilities.ts holds why. the header action is the same gate: doc 04 names
+// none for this resource, but contracts/routes.json carries /admin/device-types/create at
+// 200 behind a session, so the absence is the capture's rather than the predecessor's.
 export function deviceTypeTable(mayManage: boolean): TableDeclaration {
   return {
     resource: 'device-types',
     emptyKey: 'deviceType.index.empty',
     editPath: mayManage ? '/admin/device-types/{id}/edit' : undefined,
+    createPath: mayManage ? '/admin/device-types/create' : undefined,
     columns: [
       { key: 'id', labelKey: 'deviceType.column.id', sortable: true },
       { key: 'name', labelKey: 'deviceType.field.name', sortable: true },

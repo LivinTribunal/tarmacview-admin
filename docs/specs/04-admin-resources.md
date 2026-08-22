@@ -20,6 +20,19 @@ Every index table provides:
 
 Deletes are confirmed through a modal. Row actions render as a trailing actions column.
 
+**Header actions in the rebuild — decided.** The shared chrome renders the header action
+too, above the table, under one label rather than each resource's own wording — the same
+decision the trailing actions column already carries. Whether a register offers one is per
+register, and it is gated on the write authority the database will admit, so a session that
+could not complete the form is not offered it.
+
+Only three resource sections below name a header action — `Vytvoriť` on
+`OrganizationResource` and `UserResource`, `Pridať mapu` on `MapResource` — and three more
+record its absence explicitly. Elsewhere the silence is a gap in the capture rather than an
+Observed absence, so it is not evidence either way; [contracts/routes.json](../../contracts/routes.json)
+is what carries the route, holding `/admin/<resource>/create` behind a session for every
+built register and for none of the mobile-sync or append-only surfaces.
+
 ---
 
 ## OrganizationResource — `/admin/organizations`

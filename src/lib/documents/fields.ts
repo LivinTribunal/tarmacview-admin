@@ -63,12 +63,15 @@ const documentFilePath = '/api/documents/{id}/file'
 //
 // `Upraviť` is offered only to a session that could complete it, which is why this is a
 // function - the shape the people and maps registers use, and mayManageGlobalDocuments in
-// src/lib/auth/capabilities.ts holds why.
+// src/lib/auth/capabilities.ts holds why. the header action is the same gate, and the same
+// evidence the device-type catalogue cites: doc 04 names no header here and
+// contracts/routes.json carries /admin/general-documents/create behind a session.
 export function generalDocumentTable(mayManage: boolean): TableDeclaration {
   return {
     resource: 'general-documents',
     emptyKey: 'document.index.empty',
     editPath: mayManage ? '/admin/general-documents/{id}/edit' : undefined,
+    createPath: mayManage ? '/admin/general-documents/create' : undefined,
     columns: [
       { key: 'name', labelKey: 'document.column.name', sortable: true },
       { key: 'file', labelKey: 'document.field.file_path' },

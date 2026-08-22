@@ -4,7 +4,12 @@ import { fileURLToPath } from 'node:url'
 import { NextRequest } from 'next/server'
 import { describe, expect, it } from 'vitest'
 import { safeNext } from '@/lib/auth/next-path'
+import { deviceTypeTable } from '@/lib/device-types/fields'
+import { generalDocumentTable } from '@/lib/documents/fields'
+import { mapTable } from '@/lib/maps/fields'
+import { organizationTable } from '@/lib/organizations/fields'
 import { landingPath } from '@/lib/routes/landing'
+import { personTable } from '@/lib/users/fields'
 import { middleware, requiresSession } from '@/middleware'
 
 // what this suite can and cannot claim is recorded once, in
@@ -94,6 +99,30 @@ describe('route contract: register paths, path shapes only, GET-only capture', (
 
     expect(reportPaths).not.toContain('/organization-reports/{org}/incidents/{id}/download')
     expect(reportPaths.filter((path) => path.includes('incident'))).toEqual([])
+  })
+})
+
+// the other half of the register declarations' route claim. `editPath` cannot be asserted
+// this way - the organisation register's `{id}` and the oracle's `{org}` are both right at
+// their own layer - but a create route has no row and so no substitution, and the declared
+// string is the path. this is what catches a header action pointing at a live 404.
+describe('route contract: every declared header action is a path the app router serves', () => {
+  const declared = [
+    deviceTypeTable(true),
+    generalDocumentTable(true),
+    mapTable(true),
+    organizationTable(true),
+    personTable(true),
+  ]
+    .map((table) => table.createPath)
+    .filter((path): path is string => path !== undefined)
+
+  it('there are header actions to assert against', () => {
+    expect(declared.length).toBeGreaterThan(0)
+  })
+
+  it.each(declared)('%s is served by the app router', (path) => {
+    expect(served).toContain(path)
   })
 })
 

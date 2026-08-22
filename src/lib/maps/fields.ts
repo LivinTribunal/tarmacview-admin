@@ -60,14 +60,17 @@ export const mapFormFields: readonly FormField[] = [
 // `Duplikovať` are Observed row actions and neither is declared: the viewer and the clone
 // are their own features, so both would link at a route this slice does not serve.
 //
-// `Upraviť` is offered only to a session that could complete it, which is why this is a
-// function - the shape the people register uses, and mayManageMaps in
-// src/lib/auth/capabilities.ts holds why.
+// `Upraviť` and doc 04's `Pridať mapu` header are offered only to a session that could
+// complete them, which is why this is a function - the shape the people register uses, and
+// mayManageMaps in src/lib/auth/capabilities.ts holds why. the header reads the chrome's
+// one `Vytvoriť` rather than doc 04's wording, the way the row action reads the chrome's
+// `Upraviť`: a per-declaration action label is a change to every register.
 export function mapTable(mayManage: boolean): TableDeclaration {
   return {
     resource: 'maps',
     emptyKey: 'map.index.empty',
     editPath: mayManage ? '/admin/maps/{id}/edit' : undefined,
+    createPath: mayManage ? '/admin/maps/create' : undefined,
     columns: [
       { key: 'id', labelKey: 'map.column.id', sortable: true },
       { key: 'name', labelKey: 'map.field.name', sortable: true },

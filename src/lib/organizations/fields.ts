@@ -103,48 +103,57 @@ export const organizationFormFields: readonly FormField[] = [
 // organisation form is not on that page yet. `findOrganization` returns no row for an
 // organisation they hold no membership of, so the link either lands or is not-found. it
 // gains a gate when the form does.
-export const organizationTable: TableDeclaration = {
-  resource: 'organizations',
-  emptyKey: 'organization.index.empty',
-  editPath: '/admin/organizations/{id}/edit',
-  columns: [
-    { key: 'id', labelKey: 'organization.column.id', sortable: true },
-    {
-      key: 'logo_path',
-      labelKey: 'organization.column.logo',
-      imagePath: '/api/organizations/{id}/logo',
-    },
-    { key: 'name', labelKey: 'organization.column.name', sortable: true },
-    {
-      key: 'uas_registration_number',
-      labelKey: 'organization.column.uas_registration_number',
-      sortable: true,
-    },
-    { key: 'people', labelKey: 'organization.column.people', sortable: true },
-    { key: 'airframes', labelKey: 'organization.column.airframes', sortable: true },
-    {
-      key: 'specific_permit_number',
-      labelKey: 'organization.field.specific_permit_number',
-      hiddenByDefault: true,
-    },
-    {
-      key: 'specific_operation_type',
-      labelKey: 'organization.field.specific_operation_type',
-      hiddenByDefault: true,
-    },
-    {
-      key: 'max_allowed_altitude',
-      labelKey: 'organization.field.max_allowed_altitude',
-      hiddenByDefault: true,
-    },
-    {
-      key: 'insurance_valid_until',
-      labelKey: 'organization.field.insurance_valid_until',
-      hiddenByDefault: true,
-    },
-    { key: 'created_at', labelKey: 'organization.column.created_at', hiddenByDefault: true },
-    { key: 'updated_at', labelKey: 'organization.column.updated_at', hiddenByDefault: true },
-  ],
+//
+// `createPath` **is** gated, and the asymmetry inside one declaration is the point rather
+// than an oversight: creating an organisation reaches a form only a superadmin could ever
+// submit - `organization_tenant_isolation`'s `WITH CHECK` refuses a member outright, and
+// mayManageOrganizations in src/lib/auth/capabilities.ts holds why. gating the row action
+// to match would take the workspace read away from the members it belongs to.
+export function organizationTable(mayManage: boolean): TableDeclaration {
+  return {
+    resource: 'organizations',
+    emptyKey: 'organization.index.empty',
+    editPath: '/admin/organizations/{id}/edit',
+    createPath: mayManage ? '/admin/organizations/create' : undefined,
+    columns: [
+      { key: 'id', labelKey: 'organization.column.id', sortable: true },
+      {
+        key: 'logo_path',
+        labelKey: 'organization.column.logo',
+        imagePath: '/api/organizations/{id}/logo',
+      },
+      { key: 'name', labelKey: 'organization.column.name', sortable: true },
+      {
+        key: 'uas_registration_number',
+        labelKey: 'organization.column.uas_registration_number',
+        sortable: true,
+      },
+      { key: 'people', labelKey: 'organization.column.people', sortable: true },
+      { key: 'airframes', labelKey: 'organization.column.airframes', sortable: true },
+      {
+        key: 'specific_permit_number',
+        labelKey: 'organization.field.specific_permit_number',
+        hiddenByDefault: true,
+      },
+      {
+        key: 'specific_operation_type',
+        labelKey: 'organization.field.specific_operation_type',
+        hiddenByDefault: true,
+      },
+      {
+        key: 'max_allowed_altitude',
+        labelKey: 'organization.field.max_allowed_altitude',
+        hiddenByDefault: true,
+      },
+      {
+        key: 'insurance_valid_until',
+        labelKey: 'organization.field.insurance_valid_until',
+        hiddenByDefault: true,
+      },
+      { key: 'created_at', labelKey: 'organization.column.created_at', hiddenByDefault: true },
+      { key: 'updated_at', labelKey: 'organization.column.updated_at', hiddenByDefault: true },
+    ],
+  }
 }
 
 // flattens an entry into the record the chrome renders.

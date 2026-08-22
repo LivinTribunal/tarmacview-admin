@@ -206,7 +206,7 @@ describe('index table: the column-visibility key', () => {
     organizationPermitTable,
     organizationPersonTable,
     organizationPilotTable,
-    organizationTable,
+    organizationTable(true),
     personTable(true),
     trainingTable,
     trainingTypeTable,
@@ -229,6 +229,39 @@ describe('index table: the column-visibility key', () => {
       organizationPilotTable,
     ]
     expect(tabs.every((table) => table.resource.startsWith('organization-'))).toBe(true)
+  })
+})
+
+// the gate has to survive being moved into shared chrome. per-register assertions live in
+// each register's own columns suite beside its `editPath` pair; the property with no
+// per-register home is asserted here, over the whole family, so a sixth register adopting a
+// header action cannot forget it - the same reason the visibility key above is asserted here.
+describe('index table: the header action is gated, over every register that takes a flag', () => {
+  const gated = [
+    ['device-types', deviceTypeTable],
+    ['general-documents', generalDocumentTable],
+    ['maps', mapTable],
+    ['organizations', organizationTable],
+    ['users', personTable],
+  ] as const
+
+  it.each(gated)('%s declares no createPath for a session that could not complete it', (_, table) => {
+    expect(table(false).createPath).toBeUndefined()
+  })
+
+  it.each(gated)('%s declares one for a session that could, or the flag decides nothing', (_, table) => {
+    expect(table(true).createPath).toBeDefined()
+  })
+
+  // a register with no write authority settled declares none at all, which is
+  // deny-by-default rather than a forgotten line - src/lib/auth/capabilities.ts records
+  // that no `OrganizationRole` is resolved in src/ yet
+  it.each([
+    ['flights', flightTable],
+    ['training-types', trainingTypeTable],
+    ['trainings', trainingTable],
+  ] as const)('%s declares no header action while its gate is unresolved', (_, table) => {
+    expect(table.createPath).toBeUndefined()
   })
 })
 

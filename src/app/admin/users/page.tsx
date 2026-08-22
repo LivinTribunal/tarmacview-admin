@@ -29,7 +29,6 @@ export default async function PersonIndexPage() {
   return (
     <main>
       <h1>{t('person.index.title')}</h1>
-      {mayManage && <a href="/admin/users/create">{t('person.index.create')}</a>}
       <IndexTable declaration={personTable(mayManage)} rows={entries.map(personTableRow)} />
     </main>
   )

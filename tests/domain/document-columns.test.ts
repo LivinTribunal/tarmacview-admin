@@ -77,6 +77,11 @@ describe('general document index columns', () => {
     expect(generalDocumentTable(false).editPath).toBeUndefined()
   })
 
+  it('adopts a header action, on the route the oracle carries rather than a doc 04 line', () => {
+    expect(generalDocumentTable(true).createPath).toBe('/admin/general-documents/create')
+    expect(generalDocumentTable(false).createPath).toBeUndefined()
+  })
+
   it('offers the row action to a superadmin and to nobody else', () => {
     // the narrowing is of the acting session's system role, not of the capability matrix,
     // which carries no row for the global library at all -
