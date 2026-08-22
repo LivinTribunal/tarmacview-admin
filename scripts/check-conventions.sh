@@ -235,6 +235,13 @@ def mask_fences(text):
 # - §"`period` is false in three different situations" and seven more. the cost is that a
 # genuine citation written as `§"Data endpoint"` goes unchecked; nothing in the tree writes
 # one. markdown hosts only, as with the fences: a backtick in .ts opens a template literal.
+# the mask is built from the joined text, not the fence-masked text, so a span that wraps is
+# still a span - a reference this rule already skips does not stop being skipped because the
+# line ran out. the cost of reading it after JOIN is that no newlines remain, so the newline
+# guard in SPAN is inert and an unpaired backtick now closes across paragraphs rather than at
+# end of line, which can mask a genuinely broken reference behind it. latent rather than
+# live: no markdown file in the tree carries an odd backtick count once fences are out, so it
+# takes an authoring error that already renders wrong to reach.
 def span_mask(text):
     mask = bytearray(len(text))
     for m in SPAN.finditer(text):
@@ -286,8 +293,8 @@ for f in sys.argv[1:]:
         continue
     md = f.endswith(".md")
     masked = mask_fences(raw) if md else raw
-    spans = span_mask(masked) if md else bytearray(len(raw))
     joined = JOIN.sub(lambda m: " " * len(m.group(0)), masked)
+    spans = span_mask(joined) if md else bytearray(len(raw))
     end, prev = -1, None
     for m in REF.finditer(joined):
         if spans[m.start()]:

@@ -256,7 +256,7 @@ Carried from `CLAUDE.md` because these are the ones an autonomous loop erodes fi
 - **When a document carries both `§X` and `§"X in the rebuild"`, cite the decided one in full.**
   The bare form resolves — to the Observed capture of the predecessor instead of the decision
   the rebuild took, which is the same error as promoting an Inferred claim, run backwards. #108
-  cited `§"Documents panel"` in roughly ten places where the decided section is
-  `§"The documents panel in the rebuild"`. `check-conventions.sh` warns on this as of #113 and
-  cannot fail on it, because some sites genuinely do mean the capture; the thirteen still open
-  are #112, and each needs a read rather than a replace.
+  cited `§"Documents panel"` in roughly ten places where it meant `§"The documents panel in the
+  rebuild"`. `check-conventions.sh` warns on this as of #113 and cannot fail on it, because
+  some sites genuinely do mean the capture; the thirteen still open are #112, and each needs a
+  read rather than a replace.
