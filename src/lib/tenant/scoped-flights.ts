@@ -82,8 +82,8 @@ export type FlightReportEntry = Flight & {
 }
 
 // the flight's date, derived rather than stored - docs/specs/03-data-model.md §"Flights in
-// the rebuild". stated once and used three times - in the select and the period filter,
-// and in scoped-airframes.ts for the service calendar's fallback - because a report
+// the rebuild". stated once and used three times - in the select and the period filter
+// below, and in scoped-airframes.ts for the service calendar's fallback - because a report
 // that filtered on the import instant and displayed the log's date would list a july flight
 // under august and show july in the row, and an airframe's service clock dated from when its
 // logs were uploaded is the same error one table over.
