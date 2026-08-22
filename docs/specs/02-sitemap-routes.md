@@ -66,9 +66,9 @@ every layer. That is probably intentional (the geozone data is public aeronautic
 information) but it should be a conscious decision in the rebuild, not an accident.
 
 The KML row above is Observed in both its forms. The rebuild's map route is not built, and
-the layer-source form it will serve is decided: `?file={id}` only, **never `?fallback={path}`** —
-a stored path taken from the request, which [03-data-model.md](03-data-model.md) §"Serving a
-stored file in the rebuild" forbids outright.
+the layer-source form it will serve is decided: `?file={id}` only, **never
+`?fallback={path}`** — a stored path taken from the request, which
+[03-data-model.md](03-data-model.md) §"Serving a stored file in the rebuild" forbids outright.
 
 ## Other
 
