@@ -251,7 +251,7 @@ Carried from `CLAUDE.md` because these are the ones an autonomous loop erodes fi
   referent was already 159 lines **below** it; #102 copied the sentence and the error with it,
   the gap grew to 287 lines by #105, and the gardening pass in #106 removed it. The `§` resolved
   perfectly throughout — it is the English that was wrong, which is why no check will ever catch
-  this one. Twenty sites still pair a `§` with a direction word and every one of them is
+  this one. Nineteen sites still pair a `§` with a direction word and every one of them is
   currently right; that is the hazard, not the reassurance.
 - **When a document carries both `§X` and `§"X in the rebuild"`, cite the decided one in full.**
   The bare form resolves — to the Observed capture of the predecessor instead of the decision
