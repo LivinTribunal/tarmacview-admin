@@ -20,13 +20,22 @@ Every index table provides:
 
 Deletes are confirmed through a modal. Row actions render as a trailing actions column.
 
-**Header actions in the rebuild — decided.** The shared chrome renders the header action
-too, above the table, under one label rather than each resource's own wording — the same
-decision the trailing actions column already carries. Whether a register offers one is per
-register, and it is gated on the write authority the database will admit, so a session that
-could not complete the form is not offered it.
+### Header actions in the rebuild — decided
 
-Only three resource sections below name a header action — `Vytvoriť` on
+A **decision about the rebuild**, taken on 22 Aug 2026 by the rebuild loop under the owner's
+standing autonomy grant and recorded on issue #50. The owner has not reviewed it: settled
+enough to build on, open enough to overturn. Nothing here describes the predecessor; the
+header lines the resource sections carry are what was Observed and they stay standing.
+
+The shared chrome renders the header action too, above the table, under one label rather
+than each resource's own wording — the same decision the trailing actions column already
+carries. Whether a register offers one is per register, and it is gated on the write
+authority the database will admit, so a session that could not complete the form is not
+offered it. One label is what overrides `Pridať mapu`, which §MapResource records as
+Observed; the rebuild's maps register has rendered `Vytvoriť` since #68 built it, so this
+decision writes that divergence down rather than introducing it.
+
+Only three of the thirteen resource sections name a header action — `Vytvoriť` on
 `OrganizationResource` and `UserResource`, `Pridať mapu` on `MapResource` — and three more
 record its absence explicitly. Elsewhere the silence is a gap in the capture rather than an
 Observed absence, so it is not evidence either way; [contracts/routes.json](../../contracts/routes.json)
