@@ -263,7 +263,7 @@ Carried from `CLAUDE.md` because these are the ones an autonomous loop erodes fi
   above"* with no `§`. Name what it points at: *"the `restrict` below"* becomes *"the `restrict`
   on the composite key into `device`"*, and deleting the word there costs a reader the hop for
   nothing. The remedy is naming, so a sentence that already identifies its referent — *"the
-  delete-authority table above"*, *"narrower than `granted`"* — has nothing to fix at any
+  delete-authority table above"*, *"the entity table above"* — has nothing to fix at any
   distance, and **a reference to adjacent lines inside one block is ordinary English**: *"the
   read above"* three lines under its referent is shorter than the identifier that would replace
   it and rots no faster when the block moves. The rule first bound every direction word not
