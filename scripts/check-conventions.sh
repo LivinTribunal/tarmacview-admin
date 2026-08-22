@@ -208,6 +208,7 @@ HEAD = re.compile(r"(?m)^#{1,6}[ \t]+(.+)$")
 BOLD = re.compile(r"(?m)^[ \t]*(?:[-*+][ \t]+)?(?=\*\*[^*\s])")
 CONT = re.compile(r"[\s,;]*(?:and|or|&|/)?\s*")
 FENCE = re.compile(r"^[ \t]*(?:```|~~~)")
+SPAN  = re.compile(r"`[^`\n]*`")
 Q = "\""
 
 def read(path):
@@ -216,9 +217,7 @@ def read(path):
 # fenced blocks are blanked before matching, for the reason strip_code gives: documentation
 # about this rule quotes the unresolvable references the rule forbids, and that is not a
 # violation of it. blanking is space-for-space so byte offsets - and the reported line -
-# survive. inline code spans are deliberately NOT blanked, unlike strip_code: the repo cites
-# titles that contain them - §"`period` is false in three different situations" and seven
-# more - and blanking spans manufactures fourteen false failures.
+# survive.
 def mask_fences(text):
     out, fence = [], False
     for line in text.split("\n"):
@@ -228,6 +227,19 @@ def mask_fences(text):
         else:
             out.append(" " * len(line) if fence else line)
     return "\n".join(out)
+
+# the pair to it - fences out, spans in, except a span that opens the reference, because a
+# § inside a span is a mention of the syntax (`§X` in prose about this rule) and not a
+# citation. blanking spans wholesale as strip_code does would instead manufacture fourteen
+# false failures, because the repo cites titles that *contain* a span with the § outside it
+# - §"`period` is false in three different situations" and seven more. the cost is that a
+# genuine citation written as `§"Data endpoint"` goes unchecked; nothing in the tree writes
+# one. markdown hosts only, as with the fences: a backtick in .ts opens a template literal.
+def span_mask(text):
+    mask = bytearray(len(text))
+    for m in SPAN.finditer(text):
+        mask[m.start():m.end()] = b"\x01" * (m.end() - m.start())
+    return mask
 
 def norm(s):
     s = re.sub(r"[`*]", "", s)
@@ -272,9 +284,14 @@ for f in sys.argv[1:]:
         continue
     if "§" not in raw:
         continue
-    joined = JOIN.sub(lambda m: " " * len(m.group(0)), mask_fences(raw) if f.endswith(".md") else raw)
+    md = f.endswith(".md")
+    masked = mask_fences(raw) if md else raw
+    spans = span_mask(masked) if md else bytearray(len(raw))
+    joined = JOIN.sub(lambda m: " " * len(m.group(0)), masked)
     end, prev = -1, None
     for m in REF.finditer(joined):
+        if spans[m.start()]:
+            continue
         title = m.group("quoted") or m.group("bare")
 
         # a run of references shares the one file named before the first of them
