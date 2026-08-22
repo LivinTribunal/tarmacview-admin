@@ -13,6 +13,12 @@ const jsx = { jsx: 'automatic' } as const
 // test that silently does not run is a green build proving nothing.
 export default defineConfig({
   test: {
+    // the database project starts one container per test file, so bound how many run at
+    // once rather than letting it track the cpu count. it has to sit at root: vitest 3.2
+    // ignores maxWorkers and poolOptions inside a project block, and a cap that is ignored
+    // looks exactly like a cap that worked. the unit project is bound by it too, which
+    // costs it nothing at this size.
+    maxWorkers: 4,
     projects: [
       {
         resolve: { alias },
@@ -28,7 +34,7 @@ export default defineConfig({
         test: {
           name: 'database',
           include: ['tests/tenancy/**/*.test.ts', 'tests/auth/**/*.test.ts'],
-          // pulling and starting the container is the slow part, and it happens once
+          // pulling and starting a container is the slow part, and every file pays it
           hookTimeout: 300_000,
           testTimeout: 30_000,
         },
