@@ -103,7 +103,7 @@ block an unrelated PR. Sections in order:
    `docs/specs/**` (except `00-index.md` and `10-glossary-sk-en.md`)
    that has no `Observed` / `Inferred` / `Observable` / `Verified`
    marker. Prevents silently promoting an inference to fact.
-6. **§ section references resolve** (`:190-329`) — the `§` half of item 3.
+6. **§ section references resolve** (`:190-336`) — the `§` half of item 3.
    Fails when a `§` reference (a quoted title, or a bare word) names no
    heading and no bold lead-in in the document it points at: the file
    named immediately before the `§`, or the host file if none is.
