@@ -176,6 +176,158 @@ for f in "${EXISTING[@]}"; do
   fi
 done
 
+# ---------------------------------------------------------------------------
+# 6. § section references resolve
+#
+# the § half of section 3. a § reference is usually what carries an Observed or Inferred
+# marking's evidence, and a marking whose pointer does not resolve is worth less than no
+# marking - it looks like provenance and is not.
+#
+# numeric §N and §§N-M point at doc 05's numbered tabs and are left alone deliberately.
+# the script excludes itself, as sections 1 and 2 do. belt and braces rather than load-
+# bearing: a non-markdown host's unqualified references are skipped anyway.
+# ---------------------------------------------------------------------------
+SECTION_FILES=()
+for f in "${EXISTING[@]}"; do
+  case "$f" in scripts/check-conventions.sh) continue ;; esac
+  SECTION_FILES+=("$f")
+done
+
+if [[ ${#SECTION_FILES[@]} -gt 0 ]]; then
+  if SECTION_OUT="$(python3 -c '
+import glob, os, re, sys
+
+# a wrapped reference is joined before matching: the newline and any line-leading comment
+# marker become spaces of equal length, so byte offsets - and the reported line - survive.
+JOIN = re.compile(r"\n([ \t]*(?://+|--+|\*(?!\*))?)")
+# no whitespace after the section sign. nothing in the tree writes one, and allowing it makes
+# ordinary prose about the mechanism parse as a reference to a section called "section".
+REF  = re.compile(r"§(?:\"(?P<quoted>[^\"\n]{1,200}?)\"|(?P<bare>[A-Za-z][A-Za-z0-9-]*))")
+NAME = re.compile(r"(?:\]\((?P<link>[^)\s]+\.md)\)|`(?P<tick>[^`\s]+\.md)`|(?P<plain>[\w./-]+\.md)|\bdocs?\.?\s+(?P<num>\d{1,2}))[\s(\[]*$", re.I)
+HEAD = re.compile(r"(?m)^#{1,6}[ \t]+(.+)$")
+BOLD = re.compile(r"(?m)^[ \t]*(?:[-*+][ \t]+)?(?=\*\*[^*\s])")
+CONT = re.compile(r"[\s,;]*(?:and|or|&|/)?\s*")
+FENCE = re.compile(r"^[ \t]*(?:```|~~~)")
+SPAN  = re.compile(r"`[^`\n]*`")
+Q = "\""
+
+def read(path):
+    return open(path, encoding="utf8", errors="replace").read()
+
+# fenced blocks are blanked before matching, for the reason strip_code gives: documentation
+# about this rule quotes the unresolvable references the rule forbids, and that is not a
+# violation of it. blanking is space-for-space so byte offsets - and the reported line -
+# survive.
+def mask_fences(text):
+    out, fence = [], False
+    for line in text.split("\n"):
+        if FENCE.match(line):
+            fence = not fence
+            out.append(" " * len(line))
+        else:
+            out.append(" " * len(line) if fence else line)
+    return "\n".join(out)
+
+# the pair to it - fences out, spans in, except a span that opens the reference, because a
+# § inside a span is a mention of the syntax (`§X` in prose about this rule) and not a
+# citation. blanking spans wholesale as strip_code does would instead manufacture fourteen
+# false failures, because the repo cites titles that *contain* a span with the § outside it
+# - §"`period` is false in three different situations" and seven more. the cost is that a
+# genuine citation written as `§"Data endpoint"` goes unchecked; nothing in the tree writes
+# one. markdown hosts only, as with the fences: a backtick in .ts opens a template literal.
+def span_mask(text):
+    mask = bytearray(len(text))
+    for m in SPAN.finditer(text):
+        mask[m.start():m.end()] = b"\x01" * (m.end() - m.start())
+    return mask
+
+def norm(s):
+    s = re.sub(r"[`*]", "", s)
+    s = re.sub(r"^\d+\s*·\s*", "", s.strip())
+    return re.sub(r"\s+", " ", s).strip().casefold()
+
+# headings and bold lead-ins are both reference targets, because the repo cites both. a
+# lead-in may wrap, so it is read to the end of its paragraph.
+def targets(path):
+    try:
+        text = read(path)
+    except OSError:
+        return []
+    out = [norm(m.group(1)) for m in HEAD.finditer(text)]
+    for m in BOLD.finditer(text):
+        lead = re.match(r"\*\*(.+?)\*\*", re.sub(r"\s+", " ", text[m.end():].split("\n\n")[0]))
+        if lead:
+            out.append(norm(lead.group(1)))
+    return out
+
+# the target is the file named immediately before the § - a link, a backticked path, a bare
+# path, or "doc NN". nothing adjacent means this file, for a markdown host; in any other
+# host an unqualified reference names no file and is skipped.
+def named(host, before):
+    m = NAME.search(before)
+    if not m:
+        return host if host.endswith(".md") else None
+    if m.group("num"):
+        hit = sorted(glob.glob("docs/specs/%02d-*.md" % int(m.group("num"))))
+        return hit[0] if hit else None
+    p = m.group("link") or m.group("tick") or m.group("plain")
+    for c in (os.path.normpath(os.path.join(os.path.dirname(host), p)), p):
+        if os.path.isfile(c):
+            return c
+    return None
+
+cache = {}
+for f in sys.argv[1:]:
+    try:
+        raw = read(f)
+    except OSError:
+        continue
+    if "§" not in raw:
+        continue
+    md = f.endswith(".md")
+    masked = mask_fences(raw) if md else raw
+    spans = span_mask(masked) if md else bytearray(len(raw))
+    joined = JOIN.sub(lambda m: " " * len(m.group(0)), masked)
+    end, prev = -1, None
+    for m in REF.finditer(joined):
+        if spans[m.start()]:
+            continue
+        title = m.group("quoted") or m.group("bare")
+
+        # a run of references shares the one file named before the first of them
+        gap = joined[end:m.start()]
+        if end >= 0 and len(gap) <= 12 and CONT.fullmatch(gap):
+            target = prev
+        else:
+            target = named(f, joined[max(0, m.start() - 160):m.start()])
+        end, prev = m.end(), target
+        if target is None:
+            continue
+        if target not in cache:
+            cache[target] = targets(target)
+
+        # prefix, not exact: §"Mode 3" cites "Mode 3 - Manual entry", which is the repo style
+        want = norm(title)
+        where = "%s:%d" % (f, raw.count("\n", 0, m.start()) + 1)
+        shown = "§" + (Q + title + Q if m.group("quoted") else title)
+        if not any(t.startswith(want) for t in cache[target]):
+            print("F\t%s — %s names no heading or bold lead-in in %s" % (where, shown, target))
+        elif any(t.startswith(want + " in the rebuild") or t.startswith("the " + want + " in the rebuild")
+                 for t in cache[target]):
+            print("W\t%s — %s resolves to the Observed capture; %s also carries the decided subsection"
+                  % (where, shown, target))
+' "${SECTION_FILES[@]}")"; then
+    while IFS=$'\t' read -r level message; do
+      case "$level" in
+        F) fail "$message" ;;
+        W) warn "$message" ;;
+      esac
+    done <<< "$SECTION_OUT"
+  else
+    fail "the § reference resolver did not run — section references are unchecked"
+  fi
+fi
+
 echo
 if [[ $FAIL -ne 0 ]]; then
   red "check-conventions: FAILED"

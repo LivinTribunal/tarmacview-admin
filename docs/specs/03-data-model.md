@@ -141,8 +141,8 @@ no session handling, no transaction, no containment check and no headers of its 
 paragraph above counts is the places a guard has to be remembered, and that count does not move
 — one shared function and three readers, before and after. Read as *four paths over `document`*
 the rule looks broken; read as what it says, a mount is the rule working. What a mount does not
-do is filter, which is a stated cost §"The documents panel in the rebuild" records with the
-alternative it was weighed against.
+do is filter, which is a stated cost [06-org-report.md](06-org-report.md) §"The documents
+panel in the rebuild" records with the alternative it was weighed against.
 
 **The mechanics are one function, and the third route is what earned it** — added 17 Aug 2026,
 on issue #82. §Incident carries a file of its own on a table of its own, so it takes a route of
