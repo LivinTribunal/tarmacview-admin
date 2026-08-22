@@ -63,7 +63,7 @@ export function can(role: OrganizationRole | null, capability: Capability): Gran
 }
 
 // what the database will actually admit on `person` and `membership`, which today is
-// narrower than the table above: `WITH CHECK` on both is superadmin-only, so
+// narrower than `granted`: `WITH CHECK` on both is superadmin-only, so
 // `manage_people_and_memberships` and `provision_or_reset_account` are granted to
 // `accountable_manager` in the matrix and refused by Postgres - a gap left open on purpose
 // and closed by its own issue, #48. docs/specs/03-data-model.md §"The shared-organisation

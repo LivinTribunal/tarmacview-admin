@@ -73,7 +73,7 @@ enough to build on, open enough to overturn.
 disk. The form field name is Observed, and that it stores a path is *(inferred)* from the
 observed `/storage/organization-logos/{ULID}.png` route — a column of bytes would not be
 served from one. Keeping the bytes out of the row also keeps the register's own query small.
-What serves that path is the section below.
+What serves that path is §"Serving a stored file in the rebuild".
 
 **Deleting an organisation is blocked while dependents exist** — block rather than
 soft-delete. The register offers the delete as a bulk action
@@ -98,7 +98,8 @@ the logo above — the organisation logo was the first consumer, the document li
 and §Incident's own file the third, §Document's three workspace buckets joined the library on
 that same route, and §Map's KML layers are still to come.
 
-**The bytes stay on disk and the row holds the path**, unchanged from the section above.
+**The bytes stay on disk and the row holds the path**, unchanged from §"Organisation
+deletion and the logo in the rebuild".
 Hosting is one small instance with the application and Postgres co-located, so an object
 store is a dependency the deployment does not have.
 
@@ -226,7 +227,7 @@ may delete is answered per table rather than left to fall out of that:
 | `membership` | `superadmin` only, **for now** | Only a superadmin may create one today, so letting a member delete one is asymmetric in the dangerous direction. Awaiting the people-and-memberships register rather than settled |
 | `device_type` | `superadmin` only | The catalogue is deployment-wide, and deleting one entry unsets the type on every airframe of it in the deployment — see §"Catalogue write authority in the rebuild" |
 | `training_type` | the owning tenant | A syllabus is the operator's own record, and deleting an entry is the same authority as writing one |
-| `device` | the owning tenant | Fleet management is the operator's own job — with the condition below |
+| `device` | the owning tenant | Fleet management is the operator's own job — with the airframe condition |
 | `training` | the owning tenant | Same reasoning as the syllabus entry it points at — see §"Trainings in the rebuild" |
 | `training_device` | the owning tenant | Detaching an airframe from a training is not evidence in itself; the training survives it |
 | `flight` | the owning tenant | The operator's own record, on the same reasoning — see §"Flights in the rebuild" |
@@ -244,10 +245,10 @@ the whole table: only the ones with no organisation need a superadmin, so the te
 buckets keep the ordinary delete beside it. It is also the first table where an **`UPDATE`**
 needs the same treatment, for the reason recorded in its own section.
 
-**This and the dependent block above are independent controls.** A member is refused for
-who they are; everybody, superadmin included, is refused while dependents exist. The
-organisation whose only dependents are memberships passes the second and now still fails
-the first for anyone but a superadmin.
+**This and the dependent block in §"Organisation deletion and the logo in the rebuild" are
+independent controls.** A member is refused for who they are; everybody, superadmin
+included, is refused while dependents exist. The organisation whose only dependents are
+memberships passes the second and now still fails the first for anyone but a superadmin.
 
 **The airframe condition.** A device carries maintenance readings and the flights flown on
 it, so a member could delete an airframe that holds history. Any dependent that does hold it
@@ -276,7 +277,7 @@ preserving or consciously changing.
 | `phone_number` | string(255) | | |
 | `position` | string(255) | | Job title within the organisation |
 | `note` | text | | |
-| `organization_id` | FK → Organization | nullable | "Bez organizácie" is a real state. Does not survive into the rebuild — see below |
+| `organization_id` | FK → Organization | nullable | "Bez organizácie" is a real state. Does not survive into the rebuild — see §"Membership in the rebuild" |
 
 **`email` is nullable and that is load-bearing.** A pilot can exist as a flight-log
 subject without ever being able to log in; the UI says so explicitly ("Pre pilotov môžete
@@ -294,7 +295,7 @@ Multi-valued: `A1/A3`, `A2`, `STS` (the report also emits combined labels like `
 
 A **decision about the rebuild**, taken on 16 Aug 2026 by the rebuild loop under the owner's
 standing autonomy grant and recorded on issue #39. The owner has not reviewed it: settled
-enough to build on, open enough to overturn. It settles the modelling the section above
+enough to build on, open enough to overturn. It settles the modelling §"Licence types"
 leaves inferred; that marking describes the *predecessor* and is left standing.
 
 Three columns on `person`, carrying doc 04 §UserResource's *Osvedčenia* section:
@@ -759,8 +760,8 @@ governs it is the existing *Manage trainings* (`09-roles-permissions.md`).
 Delete is a **hard delete**, unlike the organisation register: a training type with no
 trainings attached carries no airworthiness evidence. Training rows now exist and can point
 at one, and the revisit that was deferred here landed with them: the hard delete stands, and
-it is **blocked while a training references the entry** by the `restrict` in the section
-below.
+it is **blocked while a training references the entry** by the `restrict` on `training`'s
+composite key into `training_type`.
 
 ### Trainings in the rebuild — decided
 
@@ -769,9 +770,10 @@ standing autonomy grant and recorded on issue #51. The owner has not reviewed it
 enough to build on, open enough to overturn. Nothing here describes the predecessor; the
 entity table above is what was Observed, and it stays standing.
 
-`training` is **tenant-owned** on the shape the section above established — `organization_id`
-not null, `restrict`, its own tenant-isolation policy. A training record is competency
-evidence, so a tenant delete must be a deliberate act against an emptied organisation.
+`training` is **tenant-owned** on the shape §"Training types in the rebuild" established —
+`organization_id` not null, `restrict`, its own tenant-isolation policy. A training record is
+competency evidence, so a tenant delete must be a deliberate act against an emptied
+organisation.
 
 **The names that change**, and nothing else does:
 
@@ -829,10 +831,11 @@ standing autonomy grant and recorded on issue #59. The owner has not reviewed it
 enough to build on, open enough to overturn. Nothing here describes the predecessor; the
 §Flight and §FlightLog tables are what was Observed, and they stay standing.
 
-`flight` is **tenant-owned** on the shape the two sections above established —
-`organization_id` not null, `restrict`, its own tenant-isolation policy, `WITH CHECK`
-tenant-scoped on both halves and no restrictive delete policy. A flight is the airworthiness
-record, so a tenant delete must be a deliberate act against an emptied organisation.
+`flight` is **tenant-owned** on the shape §"Training types in the rebuild" and §"Trainings
+in the rebuild" established — `organization_id` not null, `restrict`, its own
+tenant-isolation policy, `WITH CHECK` tenant-scoped on both halves and no restrictive delete
+policy. A flight is the airworthiness record, so a tenant delete must be a deliberate act
+against an emptied organisation.
 
 **`pilot_id` and `device_id` are both nullable and stay that way.** A flight with neither is
 normal: automated ingest cannot know who was flying, assignment is a later step, and the
