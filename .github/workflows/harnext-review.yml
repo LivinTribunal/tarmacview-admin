@@ -80,7 +80,16 @@ jobs:
               9. **Structure.** Invoke the `grain-review` skill on the same diff. Findings are tagged `misfiled:` / `unmarked:` / `vocab:` / `shape:` / `reinvent:` / `orphan:`. It must compare against sibling sections before judging; a first-of-its-kind section has no grain to go against.
               10. **Reconcile.** Where the two disagree, **consistency beats cuts** — if `ponytail-review` wants to delete something `grain-review` says matches its siblings, keep it and note `keep: matches <N> siblings`.
 
-            Post one review with `gh pr review <PR>` — `--approve`, `--request-changes`, or `--comment`. In `--request-changes`, list each required change with the file, the line if possible, and the specific rule or lens tag it violates.
+            Post one review with `gh pr review <PR> --comment`, and **begin the body with a verdict marker on its own line**:
+
+                harnext-verdict: approve
+                harnext-verdict: changes-requested
+
+            The marker is the verdict. **Use `--comment`, not `--approve` or `--request-changes`** — GitHub refuses both from the account that opened the PR, and one account opens and reviews every PR in this repo, so an attempted `--request-changes` silently becomes a comment and the verdict is lost. That is #100, and the marker is what replaces the state the API cannot carry.
+
+            **A review with no marker parks the PR on `harnext:needs-judgment`.** It is not treated as an approval. Requesting changes without the marker is the same as saying nothing.
+
+            When the verdict is `changes-requested`, list each required change with the file, the line if possible, and the specific rule or lens tag it violates.
           # --allowedTools is REQUIRED. The action denies ALL tool calls by
           # default; any Bash call without this allowlist is silently
           # permission-denied.
@@ -107,11 +116,26 @@ jobs:
           iter=$(printf '%s\n' "$labels" | grep -oE '^harnext:review-iter-[0-9]+$' | head -n1 | grep -oE '[0-9]+$' || echo "")
           if [ -z "$iter" ]; then iter=1; fi
 
+          # the verdict comes from a marker in the review body, not from the API's review
+          # state. GitHub refuses CHANGES_REQUESTED from the account that opened the PR, and
+          # one account opens and reviews every PR here - so a changes-requested review lands
+          # as COMMENTED, and keying on the state meant the fixer never fired and the chain
+          # advanced to verify, which posted a green pass over open findings. See #100.
           state=$(gh api "repos/${{ github.repository }}/pulls/$NUM/reviews" --jq '.[].state' | tail -n1)
+          body=$(gh api "repos/${{ github.repository }}/pulls/$NUM/reviews" --jq 'last(.[]) | .body' 2>/dev/null || echo "")
+          marker=$(printf '%s\n' "$body" | grep -oiE 'harnext-verdict:[[:space:]]*(approve|changes-requested)' | head -n1 | grep -oiE '(approve|changes-requested)' | tr '[:upper:]' '[:lower:]' || echo "")
 
-          echo "iter=$iter state=$state"
+          # the marker wins; the API state is the fallback for a review posted by an account
+          # that *can* set it, which is any reviewer other than the PR author.
+          case "$marker" in
+            changes-requested) verdict=CHANGES_REQUESTED ;;
+            approve)           verdict=APPROVED ;;
+            *)                 verdict="$state" ;;
+          esac
 
-          if [ "$state" = "CHANGES_REQUESTED" ] && [ "$iter" -lt 3 ]; then
+          echo "iter=$iter state=$state marker=${marker:-none} verdict=${verdict:-none}"
+
+          if [ "$verdict" = "CHANGES_REQUESTED" ] && [ "$iter" -lt 3 ]; then
             # A. loop back into the fixer
             gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/harnext:review-iter-$iter" || true
             next=$((iter + 1))
@@ -120,7 +144,7 @@ jobs:
             exit 0
           fi
 
-          if [ "$state" = "CHANGES_REQUESTED" ] && [ "$iter" -ge 3 ]; then
+          if [ "$verdict" = "CHANGES_REQUESTED" ] && [ "$iter" -ge 3 ]; then
             # B. loop budget exhausted — park for human judgment
             gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/harnext:review-iter-$iter" || true
             gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/harnext:review" || true
@@ -128,7 +152,19 @@ jobs:
             exit 0
           fi
 
-          # C. APPROVED / COMMENTED / DISMISSED / PENDING / empty — hand off to verify
+          # C. an unreadable verdict parks rather than advancing. COMMENTED with no marker
+          # used to fall through to verify, which is exactly how a green pass got posted over
+          # open findings twice. Refusing to act on an input it cannot read is the same stance
+          # this workflow already takes on a 422 from the reviews endpoint.
+          if [ "$verdict" != "APPROVED" ]; then
+            echo "no readable verdict (state=$state marker=${marker:-none}) - parking"
+            gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/harnext:review-iter-$iter" || true
+            gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/harnext:review" || true
+            gh api -X POST "repos/${{ github.repository }}/issues/$NUM/labels" -f labels[]="harnext:needs-judgment"
+            exit 0
+          fi
+
+          # D. approved — hand off to verify
           gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/harnext:review-iter-$iter" || true
           gh api -X DELETE "repos/${{ github.repository }}/issues/$NUM/labels/harnext:review" || true
           gh api -X POST "repos/${{ github.repository }}/issues/$NUM/labels" -f labels[]="harnext:verify"
