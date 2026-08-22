@@ -109,6 +109,11 @@ export function IndexTable({
 
   return (
     <div>
+      {/* the header action, above the search box. a plain <a> for the reason the actions
+          column gives, and rendered only where the declaration carries a path - the page
+          resolved the gate and the declaration is how it reached here. */}
+      {declaration.createPath && <a href={declaration.createPath}>{t('table.action.create')}</a>}
+
       <label htmlFor={`${declaration.resource}-search`}>{t('table.search')}</label>
       <input
         id={`${declaration.resource}-search`}

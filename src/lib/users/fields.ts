@@ -113,12 +113,14 @@ export const personFormFields: readonly FormField[] = [
 // `Upraviť` is offered only to a session that could complete it, which is why this is a
 // function. doc 04's row action and its `Vytvoriť` header need the write authority the
 // database holds at superadmin, and chrome a member can click and cannot finish is worse
-// than absent chrome - mayManagePeople in src/lib/auth/capabilities.ts.
+// than absent chrome - mayManagePeople in src/lib/auth/capabilities.ts. both actions hang
+// off that one flag, so the authority decision is stated once per register.
 export function personTable(mayManage: boolean): TableDeclaration {
   return {
     resource: 'users',
     emptyKey: 'person.index.empty',
     editPath: mayManage ? '/admin/users/{id}/edit' : undefined,
+    createPath: mayManage ? '/admin/users/create' : undefined,
     columns: [
       { key: 'id', labelKey: 'person.column.id', sortable: true },
       { key: 'name', labelKey: 'person.column.name' },

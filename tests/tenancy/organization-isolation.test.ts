@@ -106,6 +106,44 @@ describe('tenant isolation: the two counts beside each organisation', () => {
   })
 })
 
+// what mayManageOrganizations claims, asserted against Postgres rather than against the
+// helper. the register's reads and its delete block are above; nothing here said anything
+// about insert authority until the header action started depending on it. it fails if the
+// policy is widened, and it fails if the helper is widened past the policy.
+describe('what the organisation schema itself decides: who may create a tenant', () => {
+  // `report_token` is not null with no default, so it is supplied here rather than left to
+  // fail the insert for a reason that has nothing to do with the policy under test
+  const create = (session: TenantSession, name: string) =>
+    withTenant(harness.app, session, (tx) =>
+      tx.insert(organization).values({ name, reportToken: `report-token-${name}` }),
+    )
+
+  it('refuses a member creating an organisation, which is what the header gate stands on', async () => {
+    await expect(create(alphaSession(), 'Operator Placeholder Refused')).rejects.toThrow()
+
+    const rows = await harness.owner
+      .select()
+      .from(organization)
+      .where(eq(organization.name, 'Operator Placeholder Refused'))
+    expect(rows).toEqual([])
+  })
+
+  it('admits a superadmin, so the refusal above is the policy and not a broken insert', async () => {
+    await create(superadminSession(), 'Operator Placeholder Admitted')
+
+    const rows = await harness.owner
+      .select()
+      .from(organization)
+      .where(eq(organization.name, 'Operator Placeholder Admitted'))
+    expect(rows).toHaveLength(1)
+
+    // this suite's later counts are over the fixture set, so the row does not outlive its test
+    await harness.owner
+      .delete(organization)
+      .where(eq(organization.name, 'Operator Placeholder Admitted'))
+  })
+})
+
 // ordered: each of these leaves the tenant it touches in the state the next one expects,
 // and the last one removes the dependent-free fixture organisation for good.
 describe('what the organisation schema itself decides: deleting a tenant', () => {

@@ -56,6 +56,13 @@ describe('map index columns', () => {
     expect(mapTable(true).editPath).toBe('/admin/maps/{id}/edit')
     expect(mapTable(false).editPath).toBeUndefined()
   })
+
+  it('offers doc 04 `Pridať mapu` on the same authority, under the chrome one label', () => {
+    // the label normalises to `Vytvoriť` the way the row action normalises to `Upraviť` -
+    // a per-declaration action label is a change to every register
+    expect(mapTable(true).createPath).toBe('/admin/maps/create')
+    expect(mapTable(false).createPath).toBeUndefined()
+  })
 })
 
 describe('map index rows', () => {

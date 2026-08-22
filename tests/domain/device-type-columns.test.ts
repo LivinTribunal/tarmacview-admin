@@ -52,6 +52,14 @@ describe('device-type index columns', () => {
     expect(deviceTypeTable(false).editPath).toBeUndefined()
   })
 
+  it('adopts a header action, on the route the oracle carries rather than a doc 04 line', () => {
+    // doc 04 §DeviceTypeResource names no header, and under this repo's marking discipline
+    // that is a gap in the capture. contracts/routes.json is the evidence the route exists,
+    // and tests/contracts/routes.test.ts asserts every declared `createPath` is served.
+    expect(deviceTypeTable(true).createPath).toBe('/admin/device-types/create')
+    expect(deviceTypeTable(false).createPath).toBeUndefined()
+  })
+
   it('offers the row action to a superadmin and to nobody else', () => {
     // the narrowing is of the acting session's system role, not of the capability matrix -
     // `device_type_deployment_wide` is what refuses the write

@@ -65,6 +65,13 @@ describe('people index columns', () => {
     // mayManagePeople in src/lib/auth/capabilities.ts, and #48 closes the gap.
     expect(personTable(false).editPath).toBeUndefined()
   })
+
+  it('offers doc 04 `Vytvoriť` on the same authority, and to nobody else', () => {
+    // one flag, both actions: the register states its authority decision once rather than
+    // once per action, and the chrome is what renders the header link
+    expect(personTable(true).createPath).toBe('/admin/users/create')
+    expect(personTable(false).createPath).toBeUndefined()
+  })
 })
 
 describe('people index rows', () => {

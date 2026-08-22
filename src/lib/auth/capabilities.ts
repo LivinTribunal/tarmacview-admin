@@ -107,10 +107,23 @@ export function mayManageDeviceTypes(systemRole: SystemRole): boolean {
   return systemRole === 'superadmin'
 }
 
+// and the tenant register, which is on no row of the matrix either: creating an operator is
+// not a capability any organisation role could hold, because the authority to create one
+// cannot come from a membership of it. `organization_tenant_isolation` is what decides, and
+// its `WITH CHECK` admits a superadmin only. docs/specs/03-data-model.md §"Organisation
+// deletion and the logo in the rebuild" is the neighbouring write rule.
+//
+// this narrows the **create** action alone. reaching an existing organisation's workspace is
+// a read a member is entitled to and stays ungated - src/lib/organizations/fields.ts holds
+// that asymmetry beside the declaration it lives in.
+export function mayManageOrganizations(systemRole: SystemRole): boolean {
+  return systemRole === 'superadmin'
+}
+
 // and the admin panel as a whole, which is a **surface** rather than a register - the one
-// question none of the four above answers. whether the predecessor gated its `Administrácia`
-// link was never tested, so there is nothing to reproduce, and `can()` wants an
-// `OrganizationRole` nothing in `src/` resolves yet - #48's blocked ground.
+// question none of the register narrowings above answers. whether the predecessor gated
+// its `Administrácia` link was never tested, so there is nothing to reproduce, and `can()`
+// wants an `OrganizationRole` nothing in `src/` resolves yet - #48's blocked ground.
 //
 // so: deny by default and superadmin-only, the narrowest answer that is certainly not too
 // wide, and one line to widen once the real matrix is recovered.

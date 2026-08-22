@@ -60,6 +60,13 @@ export type TableDeclaration = {
   // a resource whose row action has no served route declares none rather than linking
   // at a live 404.
   editPath?: string
+  // the header action, declared the same way and for the same reason: a path shape rather
+  // than a function, which does not survive the server -> client boundary. unlike
+  // `editPath` it takes no `{id}` substitution - a create route has no row.
+  //
+  // absent is how a register says *not this resource, or not this session*. it is what
+  // carries the per-register write gate into the chrome, so the chrome never decides.
+  createPath?: string
 }
 
 export const pageSizes = [5, 10, 25, 50, 'all'] as const

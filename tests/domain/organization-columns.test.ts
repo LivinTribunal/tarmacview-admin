@@ -2,6 +2,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { IndexTable } from '@/components/index-table'
+import { mayManageOrganizations } from '@/lib/auth/capabilities'
 import { formatCell } from '@/lib/table/view'
 import { organizationTable, organizationTableRow } from '@/lib/organizations/fields'
 import type { OrganizationEntry } from '@/lib/tenant/scoped-organizations'
@@ -31,7 +32,7 @@ const entry: OrganizationEntry = {
 
 describe('organisation index columns', () => {
   it('declares the twelve columns the spec lists, in order', () => {
-    expect(organizationTable.columns.map((column) => column.key)).toEqual([
+    expect(organizationTable(true).columns.map((column) => column.key)).toEqual([
       'id',
       'logo_path',
       'name',
@@ -49,7 +50,7 @@ describe('organisation index columns', () => {
 
   it('hides the six the spec marks *(toggle)* and shows the six it does not', () => {
     expect(
-      organizationTable.columns.filter((column) => column.hiddenByDefault).map((c) => c.key),
+      organizationTable(true).columns.filter((column) => column.hiddenByDefault).map((c) => c.key),
     ).toEqual([
       'specific_permit_number',
       'specific_operation_type',
@@ -61,9 +62,9 @@ describe('organisation index columns', () => {
   })
 
   it('marks sortable exactly the columns carrying `^`, which `Logo` does not', () => {
-    expect(organizationTable.columns.filter((column) => column.sortable).map((c) => c.key)).toEqual(
-      ['id', 'name', 'uas_registration_number', 'people', 'airframes'],
-    )
+    expect(
+      organizationTable(true).columns.filter((column) => column.sortable).map((c) => c.key),
+    ).toEqual(['id', 'name', 'uas_registration_number', 'people', 'airframes'])
   })
 
   it('declares the one row action whose route is now served', () => {
@@ -74,21 +75,36 @@ describe('organisation index columns', () => {
     //
     // `{id}` and not `{org}`: rowPath() substitutes `{id}` and only `{id}`, while the
     // oracle spells the route `{org}` and the served directory is therefore `[org]`.
-    expect(organizationTable.editPath).toBe('/admin/organizations/{id}/edit')
+    expect(organizationTable(true).editPath).toBe('/admin/organizations/{id}/edit')
+  })
+
+  it('gates the header action and leaves the row action open, which is not an oversight', () => {
+    // creating an operator reaches a form `organization_tenant_isolation` refuses a member
+    // outright - mayManageOrganizations in src/lib/auth/capabilities.ts. reaching an
+    // existing operator's workspace is a read a member is entitled to, and `findOrganization`
+    // already narrows it, so the two actions in this one declaration answer differently.
+    expect(organizationTable(true).createPath).toBe('/admin/organizations/create')
+    expect(organizationTable(false).createPath).toBeUndefined()
+    expect(organizationTable(false).editPath).toBe('/admin/organizations/{id}/edit')
+  })
+
+  it('offers the header action to a superadmin and to nobody else', () => {
+    expect(mayManageOrganizations('superadmin')).toBe(true)
+    expect(mayManageOrganizations('member')).toBe(false)
   })
 
   it('declares no bulk action, because nothing yet answers one', () => {
     // `Vymazať vybrané` is Observed, but the capture was GET-only and no write path
     // exists. What the delete actually does is a schema rule, proved in
     // tests/tenancy/organization-isolation.test.ts rather than promised by a checkbox.
-    expect(organizationTable.bulkActionKey).toBeUndefined()
+    expect(organizationTable(true).bulkActionKey).toBeUndefined()
   })
 })
 
 describe('organisation index rows', () => {
   it('carries a cell for every declared column', () => {
     const row = organizationTableRow(entry)
-    for (const column of organizationTable.columns) {
+    for (const column of organizationTable(true).columns) {
       expect(row, `${column.key} has no cell`).toHaveProperty(column.key)
     }
   })
@@ -121,7 +137,7 @@ describe('the logo cell, which is a file and not a value', () => {
   const markup = (organization: OrganizationEntry) =>
     renderToStaticMarkup(
       createElement(IndexTable, {
-        declaration: organizationTable,
+        declaration: organizationTable(true),
         rows: [organizationTableRow(organization)],
       }),
     )
