@@ -251,8 +251,17 @@ Carried from `CLAUDE.md` because these are the ones an autonomous loop erodes fi
   referent was already 159 lines **below** it; #102 copied the sentence and the error with it,
   the gap grew to 287 lines by #105, and the gardening pass in #106 removed it. The `§` resolved
   perfectly throughout — it is the English that was wrong, which is why no check will ever catch
-  this one. Twenty sites still pair a `§` with a direction word and every one of them is
-  currently right; that is the hazard, not the reassurance.
+  this one. It binds the quoted, bare and numeric forms alike: `§"Title"`, `§Word`, `§N`. #116
+  swept the sites the tree then carried, and not one of them was wrong yet; a correct-today
+  pointer is the hazard, not the reassurance. **No count of them is recorded here**: every scope
+  that produces one is arguable, a figure in a constraint reads as a fact to correct, and one
+  unchanged tree was counted four ways in a single session. The issue holds the list.
+- **Where the direction word is the only pointer, name its target — never merely delete it.** A
+  `below` that modifies a function or a table, and not the section reference beside it, carries
+  real navigation: *"the `restrict` below"* becomes *"the `restrict` on the composite key into
+  `device`"*. Nearness to a `§` is not attachment to it, so the `§` rule does not reach these,
+  and deleting the word under a rule that does not cover it costs a reader the hop for nothing.
+  #116's proximity window swept two of them in; #119's review drew the line back out.
 - **When a document carries both `§X` and `§"X in the rebuild"`, cite the decided one in full.**
   The bare form resolves — to the Observed capture of the predecessor instead of the decision
   the rebuild took, which is the same error as promoting an Inferred claim, run backwards. #108

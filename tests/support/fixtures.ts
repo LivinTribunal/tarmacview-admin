@@ -166,8 +166,8 @@ const airframes = [
 ] as const
 
 // the maintenance history - docs/specs/03-data-model.md §"Maintenance log in the rebuild".
-// alpha and bravo only, for the reason every register below gives: charlie is deleted to
-// prove the dependent block lifts, and `maintenance_log.organization_id` is `restrict`.
+// alpha and bravo only, for the reason every register fixture here gives: charlie is deleted
+// to prove the dependent block lifts, and `maintenance_log.organization_id` is `restrict`.
 //
 // the two alpha rows are one case between them, and it is the case the composed baseline
 // exists for: the **newer** service states no cycle count and the older one does, so the

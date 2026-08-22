@@ -241,7 +241,8 @@ describe('what the maintenance schema itself decides: writes and deletes', () =>
   it('lets the owning tenant delete its own record, which no restrictive policy narrows', async () => {
     // a maintenance record is the operator's own and deleting one is the same authority as
     // writing one - docs/specs/03-data-model.md §"Delete authority in the rebuild". what
-    // protects the history from a member is the `restrict` above, not a policy here.
+    // protects the history from a member is the `restrict` on the composite key into
+    // `device`, not a policy here.
     const removed = await withTenant(harness.app, bravoSession(), (tx) =>
       tx
         .delete(maintenanceLog)
