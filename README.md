@@ -15,11 +15,15 @@ record around them.
 
 ## Status
 
-**The rebuild specification, and the walking skeleton of the application on top of it.**
-The skeleton is one vertical slice: the device-type register's routes and form, the schema
-behind them, tenant isolation carried by Postgres row-level security, admin-provisioned
-authentication, and one test from each of the five layers the rebuild is verified against.
-The other twelve registers, flight ingestion and the operator report come next.
+**The rebuild specification, and the application built from it.** On `main`: eight of the
+thirteen admin resources, the organisation workspace with all seven of its tabs, and the
+organisation report — page, print view, data endpoint and document downloads — over a
+schema whose tenant isolation is carried by Postgres row-level security, with
+admin-provisioned authentication. Two of the report's write actions wait on the
+write-authority predicate for memberships, and its maps panel on the geozone viewer in
+[08-maps.md](docs/specs/08-maps.md). What remains is five admin resources — the three
+controller-sync registers, the e-mail log and the microservices page — and flight
+ingestion, blocked on sample logs for the DJI and agricultural formats.
 
 The predecessor system exists and runs in production, but its source repository was lost.
 This repo starts from a clean-room behavioural specification reconstructed by black-box
