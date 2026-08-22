@@ -33,6 +33,10 @@ than these five labels. That matters for the migration, which must decide what e
 existing account becomes; it no longer matters for the build, which stopped deriving its
 matrix from here.
 
+All of that is the predecessor's `Roly` and only the predecessor's. The rebuild keeps the
+label and points the whole control at the *other* axis — §"The people register's `Roly` in
+the rebuild".
+
 ### 2. Organisation role (pivot)
 
 Separate from global roles, set per organisation membership on the *Osoby organizácie*
@@ -215,6 +219,38 @@ failure behaviour, no post-sign-in redirect. Everything below except the path is
   row is not carried over.
 - **Signing in establishes who is calling and nothing more.** No role travels in the
   session; authority still comes from the person row and §"Capability matrix".
+
+### The people register's `Roly` in the rebuild — decided
+
+Also a **decision about the rebuild**, taken on 22 Aug 2026 by the rebuild loop under the
+owner's standing autonomy grant and recorded on issue #55. The owner has not reviewed it:
+settled enough to build on, open enough to overturn. Nothing here describes the predecessor —
+§"1. Global roles" is what was Observed of `/admin/users` → `Roly` and it stays standing.
+
+**`Roly` at `/admin/users` is Axis B**, the per-membership organisation role, in both halves
+of the control: the register's column and the form's multi-select. It is never Axis A, and
+never the predecessor's five combinable global roles. The multi-select offers the four values
+§"Axis B — organisation role, one per membership" defines, and the column renders the same
+four through the same message keys, so the two agree by construction rather than by review.
+
+**The label is not renamed.** `Roly` is the wording an operator reads today and the control
+does render roles; inventing UI wording that was never observed is the larger error.
+
+**Why this axis.** The column sits beside `Organizácia`, and the two are one aggregate per
+membership row in a shared order, so element *n* of each describes the same attachment — the
+useful fact beside an operator's name is the post they hold there. Axis A carries no column in
+doc 04 §UserResource and none in the register's code.
+
+**The plural counts memberships, not roles per membership.** `membership_person_organization_key`
+gives a person at most one role per organisation, which is also why
+[05-organization-workspace.md](05-organization-workspace.md) §0 reads `Rola` singular against
+doc 04's `Roly` plural.
+
+**What this does not decide.** The multi-select's `multiple` comes from the captured contract,
+which records no options for it, so how a submitted selection maps onto membership rows is a
+**write-path** question and stays open. No write path exists, `membership`'s `WITH CHECK` is a
+flat `superadmin`, and the per-membership predicate §"Capability matrix" is waiting on is the
+same one issue #48 owns. Stated open rather than guessed.
 
 ### Consequences
 

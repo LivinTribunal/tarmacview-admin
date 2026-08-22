@@ -16,7 +16,11 @@ import type { OrganizationPersonEntry, PersonEntry } from '@/lib/tenant/scoped-p
 //
 // `Roly` carries `required` from doc 04 §UserResource rather than from the contract - the
 // capture records no attribute for it, and the contract is a floor rather than the whole
-// rule set.
+// rule set. its *options* come from neither: they are the rebuild's four organisation roles
+// and never the predecessor's five combinable global ones, so the multi-select and
+// `personTableRow`'s `roles` cell are one axis - docs/specs/09-roles-permissions.md
+// §"The people register's `Roly` in the rebuild". how a submitted selection writes
+// membership rows is the write path, and is open there rather than guessed here.
 export const personFormFields: readonly FormField[] = [
   {
     name: 'name',
