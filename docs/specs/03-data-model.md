@@ -362,7 +362,7 @@ a column with no reader and no writer is speculative structure. It lands with th
 that shows it.
 
 **One `position` per person, not per membership**, which is the cost of the choice and is
-stated here rather than discovered later. §"Organisation membership (pivot)" below records —
+stated here rather than discovered later. §"Organisation membership (pivot)" records —
 Observed — that the three may live on the pivot or on the user, and the capture could not
 distinguish them; `position` is *"Job title within the organisation"*, so a column on
 `person` gives one job title across every organisation a person belongs to. That row is not edited
@@ -629,7 +629,8 @@ established. A maintenance record is airworthiness evidence, so a tenant delete 
 deliberate act against an emptied organisation. `USING` and `WITH CHECK` are equal and
 tenant-scoped, with no restrictive delete beside them: an operator files its own maintenance
 and deleting one is the same authority as writing one — §"Delete authority in the rebuild".
-What protects the history is the `restrict` below, not a policy on this table.
+What protects the history is the `restrict` on the composite key into `device`, not a policy
+on this table.
 
 **`device_id` carries `organization_id` into a composite foreign key** against
 `device (id, organization_id)`, so a record naming another operator's airframe is refused by
@@ -826,7 +827,7 @@ organisation filter anywhere in the read — the policy scopes it, not a `WHERE`
 A **decision about the rebuild**, taken on 16 Aug 2026 by the rebuild loop under the owner's
 standing autonomy grant and recorded on issue #59. The owner has not reviewed it: settled
 enough to build on, open enough to overturn. Nothing here describes the predecessor; the
-§Flight and §FlightLog tables above are what was Observed, and they stay standing.
+§Flight and §FlightLog tables are what was Observed, and they stay standing.
 
 `flight` is **tenant-owned** on the shape the two sections above established —
 `organization_id` not null, `restrict`, its own tenant-isolation policy, `WITH CHECK`
@@ -857,8 +858,8 @@ policy subquery — the reasoning `training_device` records above, and now an es
 pattern. A leg is not evidence apart from the flight it details, which is why this one
 cascades where the airframe restricts.
 
-**The enum members are the rebuild's own decision, not a recovered fact.** §Flight above
-gives one `parsing_status` value by example, and doc 07's four-valued list belongs to
+**The enum members are the rebuild's own decision, not a recovered fact.** §Flight gives
+one `parsing_status` value by example, and doc 07's four-valued list belongs to
 `MobileLogUpload`, a different entity. So `parsing_status` is `processed | failed`, minimal
 on purpose, and a pending state joins it when the parsers land. A **null status is the
 manual-entry case** — nothing was parsed, and inventing a state to fill the cell would report

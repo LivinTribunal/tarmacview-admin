@@ -75,8 +75,8 @@ export const entryMode = pgEnum('entry_mode', [
 export const parsingStatus = pgEnum('parsing_status', ['processed', 'failed'])
 
 // which bucket a document belongs to - docs/specs/03-data-model.md §Document lists four,
-// and §"The global document library in the rebuild" is what the table below carries. it is
-// never typed by a user: a document takes the category of the register it was added
+// and §"The global document library in the rebuild" is what the `document` table carries.
+// it is never typed by a user: a document takes the category of the register it was added
 // through, which is why contracts/forms/general-documents.json has no field for it.
 // `general` first, because it is the one bucket that is not an operator's own; the other
 // three are doc 05's tab order.
@@ -345,8 +345,8 @@ export const device = pgTable(
     // `training_device` carries `organization_id` into this pair, so a pivot row naming
     // another operator's airframe is rejected by the foreign key rather than merely hidden
     // from a read - docs/specs/03-data-model.md §"Trainings in the rebuild". a table
-    // constraint and not a `uniqueIndex()` like the ones above, because that is the
-    // unambiguously legal target of a composite foreign key.
+    // constraint and not a `uniqueIndex()` like this schema's other uniqueness rules,
+    // because that is the unambiguously legal target of a composite foreign key.
     unique('device_id_organization_key').on(table.id, table.organizationId),
 
     // no restrictive delete policy beside this one, unlike organization/person/membership:

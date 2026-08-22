@@ -159,7 +159,7 @@ re-deriving `flight_date`. The in-memory ceiling `src/lib/table/view.ts` records
 here: this table is period-filtered and its filter narrows the payload, so it is bounded by a
 month rather than by the flights register.
 
-**§Tables records Slovak for all three tables, and what this slice mints sits below them.**
+**§Tables records Slovak for all three tables, and this slice mints more.**
 Marked here so neither half comes to read as the other's, because unmarked means Observed and a
 capture re-minted as a rebuild decision is the same error as a promotion, taken the other way.
 
@@ -290,7 +290,8 @@ An unrecognised `period` returns an HTML error page instead of JSON. Return a JS
 A **decision about the rebuild**, taken on 17 Aug 2026 by the rebuild loop under the owner's
 standing autonomy grant and recorded on issue #87. The owner has not reviewed it: settled
 enough to build on, open enough to overturn. Nothing here describes the predecessor except
-where it says so; §Access and the endpoint above are what was Observed and they stay standing.
+where it says so; §Access and the captured endpoint are what was Observed and they stay
+standing.
 
 **The route keys on the organisation's `id`.** §Access asks for the token's double duty to be
 broken, and the rebuild already broke it without recording that it had: `report_token` is its
@@ -352,7 +353,7 @@ flight contributes to none.
 `max_distance` serialise a null as `0` to hold parity — except that `has_vlos_violation` is
 computed from the *column* rather than from the serialised figure, so **the boolean** never
 mistakes a flight that recorded no distance for one that recorded zero. A reader of the
-payload has no such column, which is the ceiling §"One ceiling on that" above states for the
+payload has no such column, which is the ceiling §"One ceiling on that" states for the
 flights table's own distance cell. `parsing_errors` serialises a null as `""`, which is the
 one blank here that is honest: no error recorded is exactly what an empty message means.
 `parsing_status` does not, and gets a label naming the nothing-was-parsed case — a null
@@ -395,7 +396,7 @@ while the rebuild's columns are `certificate_number`, `certificate_types` and
 `certificate_valid_until`. [03-data-model.md](03-data-model.md) §"Certificates in the
 rebuild" settles the rule and the reason a captured spelling stays — these four keys are the
 same case as the form contract's three — so **every identifier, type, comment, test name and
-sentence around them says certificate**. The `OSVEDČENIE` column in §Tables below is the
+sentence around them says certificate**. The `OSVEDČENIE` column in §Tables is the
 rendering of these keys and takes the domain word, not the wire one. The one place the
 synonym survives in the rebuild is `organization.licence_expiry_warning_days`, which mirrors
 the predecessor's own column ([03-data-model.md](03-data-model.md) §Organization).
@@ -431,7 +432,7 @@ because the last day counts, and one falling **on** the window's own edge is ins
 rendered in is undecidable from the capture — it serialises iso, like `flight_date`, and the
 page renders it through the one date format this application prints.
 
-**The status vocabularies are two, not one shared string.** §Tables below records the valid
+**The status vocabularies are two, not one shared string.** §Tables records the valid
 state as `Platné`/`Platná` — two Observed forms. *Which* form belonged to `ŠKOLENIE` and
 which to `OSVEDČENIE` was never captured, so that the split followed the two nouns'
 grammatical gender is *(inferred)*; the two strings themselves are Observed. The rebuild's
@@ -634,7 +635,7 @@ library is nobody's. `Incidenty` reads the occurrence register, §6's.
 
 **`is_public` is not what the permits group filters on.** Doc 05 §4 flags its own ambiguity
 for this document to settle, and the answer is that every permit the organisation holds lists.
-Filtering on the flag is wrong twice over: §Access above records that **nothing here serves
+Filtering on the flag is wrong twice over: §Access records that **nothing here serves
 anonymously**, so *public* has no surface on which to mean anything; and the column is `not
 null default false`, so a bucket nobody has ticked would read `Letové povolenia (0)` while the
 operator's permits sit in the register — a gap reading as a fact on a regulator-facing pack.

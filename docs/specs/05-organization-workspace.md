@@ -253,8 +253,8 @@ real database and the real policies.
 **All seven tabs are built.** Each is an index table over an organisation-scoped read and
 nothing more.
 
-**§6's column list is *(inferred)***, the way §3's is and for the same reason: §6 above records
-the register as empty and says *"Expect at least"* four columns. The rebuild declares those
+**§6's column list is *(inferred)***, the way §3's is and for the same reason: §6 records the
+register as empty and says *"Expect at least"* four columns. The rebuild declares those
 four — `Názov` · `Dátum` · `Let` · `Zranenia` — and invents no fifth, so nothing here is
 presented as captured. `Let` renders the linked flight's own display name and is blank where
 the report names none, which §6 calls *optional* and
@@ -306,11 +306,11 @@ write path will do with it.
 
 **`is_public` is surfaced and nothing about it is decided.** §4's tab renders `Verejné`,
 stating the affirmative where the flag is set and nothing where it is clear — the shape and
-the reasoning §"`Hlavná` renders the flag and never a negative" below already sets out, plus
+the reasoning §"`Hlavná` renders the flag and never a negative" already sets out, plus
 one reason of its own: it puts the word on the rows that carry the exposure rather than on
 the rows that do not.
 
-The ambiguity §4 records above — the toggle says *public page* while the operator report
+The ambiguity §4 records — the toggle says *public page* while the operator report
 requires a session — is **not** reconciled by showing the flag. That reconciliation belongs
 to [06-org-report.md](06-org-report.md), when the report is built, and no handler reads
 `is_public` yet: the file route serves every byte to a resolved session and has no branch for
@@ -352,7 +352,7 @@ all three remain affirmative-only.
 `Poznámka` is left out — see [03-data-model.md](03-data-model.md) §"Contact and job-title
 columns in the rebuild".
 
-Two readings of §2 above that the capture does not settle:
+Two readings of §2 that the capture does not settle:
 
 - **`Zariadenie` carries the serial number** *(inferred)*. Which field sat under that header
   was not observable, and the five columns record no separate `Sériové číslo` — an aircraft

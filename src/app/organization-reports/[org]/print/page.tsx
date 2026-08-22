@@ -149,8 +149,9 @@ export default async function OrganizationReportPrintPage({
         </dl>
       </header>
 
-      {/* §Layout item 2, and it takes no period, so it prints in both branches below. nobody
-          with anything to surface means no block at all rather than an all-clear. */}
+      {/* §Layout item 2, and it takes no period, so it prints whichever side of the
+          `data === null` ternary renders. nobody with anything to surface means no block at
+          all rather than an all-clear. */}
       {warnings.length > 0 && (
         <section>
           <h2>{t('report.warning.title')}</h2>

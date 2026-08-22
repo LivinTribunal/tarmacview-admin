@@ -8,8 +8,9 @@ import type { TenantTransaction } from '@/lib/tenant/tenant-context'
 // `document`, which is #75's correction and is recorded in that section.
 
 // the **union** of what the four buckets accept, and deliberately not one list per bucket:
-// doc 03 §Document gives permits `.pdf,.jpg,.jpeg,.png,.doc,.docx`, and the section above
-// gives the global library `.pdf`, `.doc` and `.docx`.
+// doc 03 §Document gives permits `.pdf,.jpg,.jpeg,.png,.doc,.docx`, and doc 03
+// §"Serving a stored file in the rebuild" gives the global library `.pdf`, `.doc` and
+// `.docx`.
 //
 // `.webp` stays off it. it is the logo route's own type and no document bucket was ever seen
 // to take one, so the three allow-lists remain three lists rather than converging on whatever

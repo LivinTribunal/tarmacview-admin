@@ -61,8 +61,8 @@ export function listOrganizationDocuments(
 // the row behind /api/documents/{id}/file, and it carries **no bucket filter** - the
 // correction #75 makes to what this file said before it, argued in
 // docs/specs/03-data-model.md §"Serving a stored file in the rebuild". the bucket stays with
-// the registers above; what scopes this read is `document_tenant_isolation`, so another
-// operator's document yields nothing and a global one yields to every session.
+// `listOrganizationDocuments`; what scopes this read is `document_tenant_isolation`, so
+// another operator's document yields nothing and a global one yields to every session.
 export async function findDocument(tx: TenantTransaction, id: number): Promise<Document | null> {
   const [row] = await tx.select().from(document).where(eq(document.id, id)).limit(1)
   return row ?? null

@@ -7,7 +7,7 @@ import type { TenantTransaction } from '@/lib/tenant/tenant-context'
 // clause somebody could forget - it does not exist as far as the connection is concerned.
 // docs/specs/03-data-model.md §"Incidents in the rebuild".
 //
-// `listOrganizationIncidents` below carries `where organization_id`, and that clause is a
+// `listOrganizationIncidents` carries `where organization_id`, and that clause is a
 // **selection and never a boundary** - the same line scoped-airframes.ts and
 // scoped-documents.ts draw: it is the organisation being looked at, never the tenant a
 // session is confined to.
