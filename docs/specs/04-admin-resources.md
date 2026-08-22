@@ -96,7 +96,7 @@ the content type is decided from, are settled in [03-data-model.md](03-data-mode
 | Organizácia | select | | |
 | Heslo | password | ≥8 | Blank on edit = unchanged |
 | Potvrdenie hesla | password | must match | |
-| Roly | multi-select | required | See doc 09 |
+| Roly | multi-select | required | See doc 09 §"The people register's `Roly` in the rebuild" — the column carries the same axis |
 
 *Osvedčenia*
 
