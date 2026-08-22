@@ -133,8 +133,8 @@ export type DocumentGroup = {
 
 // the report's own download path, one per bucket the oracle names. it takes a row id and
 // nothing else that the handler reads: the bucket segment is the address the oracle spells
-// and the boundary is `document_tenant_isolation`, which doc 06 §"Documents panel" records
-// as a stated cost rather than a filter.
+// and the boundary is `document_tenant_isolation`, which doc 06 §"The documents panel in the
+// rebuild" records as a stated cost rather than a filter.
 const downloadPath = (organizationId: number, bucket: string, id: number): string =>
   `/organization-reports/${organizationId}/${bucket}/${id}/download`
 
@@ -160,10 +160,11 @@ const documentEntries = (
     href: downloadPath(organizationId, bucket, row.id),
   }))
 
-// four groups, always, in doc 06 §"Documents panel"'s order. an empty bucket keeps its group
-// and states `(0)`: a count is a figure over a bucket that was actually read, so it is not
-// the affirmative-only rule's territory - an operator looking for a permit needs to see the
-// bucket empty rather than the group missing.
+// four groups, always - doc 06 §"Documents panel" and §"The documents panel in the rebuild",
+// the capture for the order of the four and the decision for what an empty one does. an
+// empty bucket keeps its group and states `(0)`: a count is a figure over a bucket that was
+// actually read, so it is not the affirmative-only rule's territory - an operator looking
+// for a permit needs to see the bucket empty rather than the group missing.
 //
 // the occurrence register is the odd one and reaches its file through the route that already
 // serves it, `/api/incidents/{id}/file`. `contracts/routes.json` carries no report path for

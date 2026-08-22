@@ -10,9 +10,9 @@ import { listOrganizationPilots } from '@/lib/tenant/scoped-people'
 import { listOrganizationTrainings } from '@/lib/tenant/scoped-trainings'
 import { withTenant } from '@/lib/tenant/tenant-context'
 
-// the operator report's data endpoint - docs/specs/06-org-report.md §"Data endpoint". the
-// first surface outside /admin to read tenant-owned data, and the whole contract of the
-// screen doc 06 calls the product's real face.
+// the operator report's data endpoint - docs/specs/06-org-report.md §"The data endpoint in
+// the rebuild". the first surface outside /admin to read tenant-owned data, and the whole
+// contract of the screen doc 06 calls the product's real face.
 //
 // the directory is `[org]` and not `[id]`, the same spelling the organisation workspace
 // uses: the oracle spells the path `/organization-reports/{org}/data` and

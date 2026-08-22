@@ -84,10 +84,11 @@ describe('route contract: register paths, path shapes only, GET-only capture', (
     expect(served).toContain(path)
   })
 
-  // doc 06 §"Documents panel" counts four groups and the oracle carries three download
-  // paths. the fourth reaches its file through `/api/incidents/{id}/file`, which the
-  // occurrence register already serves - a fourth report path would be one the capture does
-  // not have, and `contracts/**` is protected and is never edited to agree with us.
+  // doc 06 §"Documents panel" and §"The documents panel in the rebuild": the capture counts
+  // four groups, the oracle carries three download paths, and the decision sends the fourth
+  // to `/api/incidents/{id}/file`, which the occurrence register already serves - a fourth
+  // report path would be one the capture does not have, and `contracts/**` is protected and
+  // is never edited to agree with us.
   it('mints no report-scoped incidents download path, which the oracle does not carry', () => {
     const reportPaths = served.filter((path) => path.startsWith('/organization-reports/'))
 

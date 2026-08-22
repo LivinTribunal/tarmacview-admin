@@ -6,7 +6,8 @@ import { startTestDatabase, type TestDatabase } from '../support/database'
 import { FIXTURE_STORAGE_ROOT, seedFixtures, type SeededIds } from '../support/fixtures'
 
 // the report's three download paths over a real Postgres and the real policies - doc 06
-// §"Documents panel" and docs/specs/03-data-model.md §"Serving a stored file in the rebuild".
+// §"The documents panel in the rebuild" and docs/specs/03-data-model.md §"Serving a stored
+// file in the rebuild".
 // this is the slice's tier-3 surface: every other read the panel makes resolves an id against
 // rows already in hand, and these three take one out of the url.
 //

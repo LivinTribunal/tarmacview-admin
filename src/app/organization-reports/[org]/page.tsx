@@ -380,7 +380,8 @@ export default async function OrganizationReportPage({
     // the documents panel takes no period, which is why its four reads run whatever
     // `report.data` came back as: withdrawing an operator's permits because two dates arrived
     // the wrong way round is the mistake the warnings block already rules out. `Dokumenty` is
-    // the `operations` bucket, *(inferred)* - doc 06 §"Documents panel" names the alternative.
+    // the `operations` bucket, *(inferred)* - doc 06 §"The documents panel in the rebuild"
+    // names the alternative.
     //
     // they stay in this transaction rather than in the shared read: the printed pack carries
     // evidence and not affordances, so it makes none of them.

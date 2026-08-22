@@ -267,5 +267,8 @@ Carried from `CLAUDE.md` because these are the ones an autonomous loop erodes fi
   the rebuild took, which is the same error as promoting an Inferred claim, run backwards. #108
   cited `§"Documents panel"` in roughly ten places where it meant `§"The documents panel in the
   rebuild"`. `check-conventions.sh` warns on this as of #113 and cannot fail on it, because
-  some sites genuinely do mean the capture; the thirteen still open are #112, and each needs a
-  read rather than a replace.
+  some sites genuinely do mean the capture. Each site needs a read rather than a replace, and
+  **a standing warning on a citation that genuinely means the capture is the resting state,
+  not a leftover to zero out** — #112 re-pointed the sites that meant the decision and left
+  the rest warning on purpose. No count is recorded here, for the reason the direction-word
+  constraint gives.
