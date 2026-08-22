@@ -65,6 +65,11 @@ These are the only routes that serve without a session. Anyone with the slug can
 every layer. That is probably intentional (the geozone data is public aeronautical
 information) but it should be a conscious decision in the rebuild, not an accident.
 
+The KML row above is Observed in both its forms, but the rebuild serves only `?file={id}`
+and **drops `?fallback={path}`** — a stored path taken from the request, which
+[03-data-model.md](03-data-model.md) §"Serving a stored file in the rebuild" refuses
+outright.
+
 ## Other
 
 | Method | Route | Auth | Notes |
