@@ -103,6 +103,14 @@ block an unrelated PR. Sections in order:
    `docs/specs/**` (except `00-index.md` and `10-glossary-sk-en.md`)
    that has no `Observed` / `Inferred` / `Observable` / `Verified`
    marker. Prevents silently promoting an inference to fact.
+6. **§ section references resolve** (`:190-312`) — the `§` half of item 3.
+   Fails when a `§` reference (a quoted title, or a bare word) names no
+   heading and no bold lead-in in the document it points at: the file
+   named immediately before the `§`, or the host file if none is.
+   Warns when it resolves to an Observed capture whose document also
+   carries the decided `… in the rebuild` subsection. Numeric forms
+   (`§5`, `§§5-7`) are skipped, as are fenced code blocks and
+   unqualified references in non-markdown hosts.
 
 Exit codes: `0` on clean or warnings only, `1` on any FAIL.
 

@@ -184,8 +184,8 @@ done
 # marking - it looks like provenance and is not.
 #
 # numeric §N and §§N-M point at doc 05's numbered tabs and are left alone deliberately.
-# the script excludes itself, as sections 1 and 2 do, because it carries § in its own
-# regex and comments.
+# the script excludes itself, as sections 1 and 2 do. belt and braces rather than load-
+# bearing: a non-markdown host's unqualified references are skipped anyway.
 # ---------------------------------------------------------------------------
 SECTION_FILES=()
 for f in "${EXISTING[@]}"; do
@@ -200,15 +200,34 @@ import glob, os, re, sys
 # a wrapped reference is joined before matching: the newline and any line-leading comment
 # marker become spaces of equal length, so byte offsets - and the reported line - survive.
 JOIN = re.compile(r"\n([ \t]*(?://+|--+|\*(?!\*))?)")
-REF  = re.compile(r"§\s*(?:\x22(?P<quoted>[^\x22\n]{1,200}?)\x22|(?P<bare>[A-Za-z][A-Za-z0-9-]*))")
+# no whitespace after the section sign. nothing in the tree writes one, and allowing it makes
+# ordinary prose about the mechanism parse as a reference to a section called "section".
+REF  = re.compile(r"§(?:\"(?P<quoted>[^\"\n]{1,200}?)\"|(?P<bare>[A-Za-z][A-Za-z0-9-]*))")
 NAME = re.compile(r"(?:\]\((?P<link>[^)\s]+\.md)\)|`(?P<tick>[^`\s]+\.md)`|(?P<plain>[\w./-]+\.md)|\bdocs?\.?\s+(?P<num>\d{1,2}))[\s(\[]*$", re.I)
 HEAD = re.compile(r"(?m)^#{1,6}[ \t]+(.+)$")
 BOLD = re.compile(r"(?m)^[ \t]*(?:[-*+][ \t]+)?(?=\*\*[^*\s])")
 CONT = re.compile(r"[\s,;]*(?:and|or|&|/)?\s*")
-Q = "\x22"
+FENCE = re.compile(r"^[ \t]*(?:```|~~~)")
+Q = "\""
 
 def read(path):
     return open(path, encoding="utf8", errors="replace").read()
+
+# fenced blocks are blanked before matching, for the reason strip_code gives: documentation
+# about this rule quotes the unresolvable references the rule forbids, and that is not a
+# violation of it. blanking is space-for-space so byte offsets - and the reported line -
+# survive. inline code spans are deliberately NOT blanked, unlike strip_code: the repo cites
+# titles that contain them - §"`period` is false in three different situations" and seven
+# more - and blanking spans manufactures fourteen false failures.
+def mask_fences(text):
+    out, fence = [], False
+    for line in text.split("\n"):
+        if FENCE.match(line):
+            fence = not fence
+            out.append(" " * len(line))
+        else:
+            out.append(" " * len(line) if fence else line)
+    return "\n".join(out)
 
 def norm(s):
     s = re.sub(r"[`*]", "", s)
@@ -253,7 +272,7 @@ for f in sys.argv[1:]:
         continue
     if "§" not in raw:
         continue
-    joined = JOIN.sub(lambda m: " " * len(m.group(0)), raw)
+    joined = JOIN.sub(lambda m: " " * len(m.group(0)), mask_fences(raw) if f.endswith(".md") else raw)
     end, prev = -1, None
     for m in REF.finditer(joined):
         title = m.group("quoted") or m.group("bare")
@@ -275,10 +294,10 @@ for f in sys.argv[1:]:
         where = "%s:%d" % (f, raw.count("\n", 0, m.start()) + 1)
         shown = "§" + (Q + title + Q if m.group("quoted") else title)
         if not any(t.startswith(want) for t in cache[target]):
-            print("F\t%s - %s names no heading or bold lead-in in %s" % (where, shown, target))
+            print("F\t%s — %s names no heading or bold lead-in in %s" % (where, shown, target))
         elif any(t.startswith(want + " in the rebuild") or t.startswith("the " + want + " in the rebuild")
                  for t in cache[target]):
-            print("W\t%s - %s resolves to the Observed capture; %s also carries the decided subsection"
+            print("W\t%s — %s resolves to the Observed capture; %s also carries the decided subsection"
                   % (where, shown, target))
 ' "${SECTION_FILES[@]}")"; then
     while IFS=$'\t' read -r level message; do
