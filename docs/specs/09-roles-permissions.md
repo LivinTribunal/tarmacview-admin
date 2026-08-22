@@ -160,7 +160,7 @@ register: no row here answers *may this session reach `/admin`*. The rebuild gat
 A alone — deny-by-default and superadmin-only — until a per-membership predicate lands and a
 narrower boundary can be drawn, which is [06-org-report.md](06-org-report.md) §"The report
 page in the rebuild". That decides only what the rebuild does; what the predecessor did with
-the link Observed above stays untested.
+the `Administrácia` link Observed in §"Observed access behaviour" stays untested.
 
 ### Person is not account
 
@@ -214,7 +214,7 @@ failure behaviour, no post-sign-in redirect. Everything below except the path is
   trigger. The rebuild has no `/logout` path: it is a server action, so doc 02's observed
   row is not carried over.
 - **Signing in establishes who is calling and nothing more.** No role travels in the
-  session; authority still comes from the person row and the matrix above.
+  session; authority still comes from the person row and §"Capability matrix".
 
 ### Consequences
 

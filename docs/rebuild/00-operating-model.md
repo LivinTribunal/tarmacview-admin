@@ -256,12 +256,24 @@ Carried from `CLAUDE.md` because these are the ones an autonomous loop erodes fi
   pointer is the hazard, not the reassurance. **No count of them is recorded here**: every scope
   that produces one is arguable, a figure in a constraint reads as a fact to correct, and one
   unchanged tree was counted four ways in a single session. The issue holds the list.
-- **Where the direction word is the only pointer, name its target — never merely delete it.** A
-  `below` that modifies a function or a table, and not the section reference beside it, carries
-  real navigation: *"the `restrict` below"* becomes *"the `restrict` on the composite key into
-  `device`"*. Nearness to a `§` is not attachment to it, so the `§` rule does not reach these,
-  and deleting the word under a rule that does not cover it costs a reader the hop for nothing.
-  #116's proximity window swept two of them in; #119's review drew the line back out.
+- **Where a direction word is the pointer a reader has to follow and following it means leaving
+  the screen, name its target — never merely delete it.** Two cases fail that test: a direction
+  word reaching **across a section or heading boundary**, where `above` no longer means "on
+  this screen", and one that is **the only identification of what is meant** — *"the section
+  above"* with no `§`. Name what it points at: *"the `restrict` below"* becomes *"the `restrict`
+  on the composite key into `device`"*, and deleting the word there costs a reader the hop for
+  nothing. The remedy is naming, so a sentence that already identifies its referent — *"the
+  delete-authority table above"*, *"narrower than `granted`"* — has nothing to fix at any
+  distance, and **a reference to adjacent lines inside one block is ordinary English**: *"the
+  read above"* three lines under its referent is shorter than the identifier that would replace
+  it and rots no faster when the block moves. The rule first bound every direction word not
+  attached to a `§`, at a tree-wide population no constraint survives, and most of those sites
+  were fine — what made #98 harmful was distance, not direction: 159 lines the wrong way, past
+  several headings, checkable on no screen. #116's proximity window swept two sites in, #119
+  drew the line back out, #120 narrowed it to distance and holds the measurement. **The two
+  rules diverge on purpose:** rule one deletes because the `§` already names the target and the
+  direction is a second pointer at any distance; this one names because the direction word is
+  the only pointer there is.
 - **When a document carries both `§X` and `§"X in the rebuild"`, cite the decided one in full.**
   The bare form resolves — to the Observed capture of the predecessor instead of the decision
   the rebuild took, which is the same error as promoting an Inferred claim, run backwards. #108

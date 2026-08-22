@@ -177,8 +177,8 @@ places or the stricter one is decorative.
 
 Three items stood here and two have closed. `docs/specs/01-tech-stack.md` was rewritten: the
 fingerprint stays as Observed fact about the predecessor, and the section after it records
-the decision taken against its advice. The `commands` flip landed with #25 — see the section
-above.
+the decision taken against its advice. The `commands` flip landed with #25 — see
+§"`commands` — applied with the shell".
 
 One item is left, and it is still the owner's edit: **three root-level files match no tier
 pattern at all**, so each falls through to the catch-all rather than to tier 2 —
